@@ -1,6 +1,7 @@
 # maya-usd-build
 
-This package contains the necessary files required to build, test and release the maya-usd project, specifically the Animal fork of it https://github.al.com.au/rnd/maya-usd/
+This package contains the necessary files required to build, test and release the maya-usd project inside the Animal Logic ecosystem.
+It's set up to work with the Animal fork of maya-usd https://github.al.com.au/rnd/maya-usd/
 
 Contents:
 + rez package files
@@ -8,10 +9,10 @@ Contents:
 + docker setup
 + jenkins setup
 
-We layer our rez build system on top of the opensource CMake infrastructure, and call it. A lot of our CMake/build infrastructure is just translating between data that rez exposes, and information that the open source build needs.
+We layer our rez build system on top of the opensource CMake infrastructure...   A lot of our CMake/build infrastructure is just translating between data that rez exposes, and information that the open source build needs.
 
-There are a few special things, such as:
-
+There are a few specific things, such as:
++ We don't rely on cmake "FindPackage" macros for Boost, USD etc as rez provides us with the same information
 + To avoid having a dependency on AL_USDMaya when working with USD files, some of the schema metadata defined here is filtered out of the relevant pluginInfo.json file, and is expected to be part of the AL_USDCommonSchemas. See here. AL_USDCommonSchemas is included by our tests, but not when running a standard environment, so please be aware of this when attempting to use functionality which relies on ths metadata (There is an argument for adding this dependency)
 
 
@@ -77,7 +78,7 @@ remote add LumaPublic https://github.com/LumaPictures/maya-usd/
 ```
 
 ## Pulling updates from ADSKPublic
-pull in any changes we want updates ADSKPublic dev branch. This should just be a git pull
+pull in any changes we want updates ADSKPublic dev branch. This should just be a git pull "git pull ADSKPublic dev"
 
 Note that before merging these to develop (or some other release branch)  be careful of things like:
 
@@ -98,3 +99,8 @@ Normally we would:
 
 Additional notes: 
 + For each PR we make internally, we should tag as "nopushtoadsk" or "pushtoasdk". We want to keep "nopushtoadsk" to a minimum as these cause merge conflicts
+
+
+
+# Why do this as a separate git repo?
+See https://www.al.com.au:8443/display/~eoinm/Options+for+dev+workflow+Transition+from+AL_USDMaya+to+maya-usd for background info
