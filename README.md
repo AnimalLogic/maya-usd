@@ -50,3 +50,7 @@ When you rez-release/rez-unleash, we don't work with the local clone, but look f
 ## Non-interactive use
 For non-interactive use (e.g Jenkins) it should ideally do something to release above - but we need to finesse this workflow
 
+
+# Running tests on maya-usd
+see https://www.al.com.au:8443/display/~eoinm/Docker+Cookbook+for+maya-usd+tests for some info
+
