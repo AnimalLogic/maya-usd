@@ -1,4 +1,4 @@
-# maya-usd-build
+# Intro
 
 This package contains the necessary files required to build, test and release the maya-usd project inside the Animal Logic ecosystem.
 It's set up to work with the Animal fork of maya-usd https://github.al.com.au/rnd/maya-usd/
