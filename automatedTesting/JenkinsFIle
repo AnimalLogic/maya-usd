@@ -1,0 +1,39 @@
+//This is a copy of the Jenkins setup in http://hudson:8081/hudson/job/maya-usd/configure - it's here for reference, and would not normally be run directly
+
+
+@Library('AL@master') _
+// Docker build
+node ('dockerBig')
+{
+    algit.checkout("http://github.al.com.au/${GITHUB_ORGANIZATION}/${GITHUB_REPO}", params.GIT_BRANCH,true)
+
+    // Sets the status as 'PENDING'
+    algit.reportStatusToGitHub('PENDING', 'Docker build pending', "Docker_build_and_tests")
+
+    try {
+        ansiColor('xterm')
+        {
+            def workspace = pwd()
+            stage("Opensource maya-usd")
+            {
+                sh "docker run --rm -e BUILD_PROCS=16 -v /data/jenkins/workspace/maya-usd:/tmp/usd-build/maya-usd -v /depts/rnd/dev/eoinm/projects/mayausddocker/mayausd_build:/tmp/usd-build/build_scripts sydharbor01.al.com.au/usd/usd/usd-docker/usd:19.11-centos7-maya2019 bash /tmp/usd-build/build_scripts/build_usdmaya_AL.sh"
+            }
+
+            algit.reportStatusToGitHub('SUCCESS', 'Docker build success', "Docker_build_and_tests")
+        }
+    }
+    catch(Exception e) {
+        currentBuild.result = 'UNSTABLE'
+        global.notifyResult(currentBuild.result,
+                            'HipChat-JenkinsUsdBuilds-Token',
+                            'JenkinsUsdBuilds',
+                            '')
+        algit.reportStatusToGitHub(currentBuild.result, 'Docker build error', "Docker_build_and_tests")
+        throw e
+    }
+    finally {
+        cleanWs notFailBuild: true
+    }
+} // node
+
+
