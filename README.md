@@ -21,14 +21,14 @@ There are a few specific things, such as:
 + develop - AL integration branch (merge to develop when ready)
 + dev - should keep parity with Autodesk https://github.com/autodesk/maya-usd  dev branch
 
-## What can we actually build and release?
+## What does this repo build and release?
 
 Currently we build the following as rez packages
 + AL_USDTransaction
 + AL_USDUtils
 + AL_USDMaya plugin
 
-We intend to be able to soon package and release
+We soon intend to be able to rez package and release
 + pxrUSDMaya plugin
 + adskUSDMaya plugin
 
@@ -102,6 +102,9 @@ Additional notes:
 + For each PR we make internally, we should tag as "nopushtoadsk" or "pushtoasdk". We want to keep "nopushtoadsk" to a minimum as these cause merge conflicts
 
 
-
-# Why do this as a separate git repo?
+# FAQ
+## Why do this as a separate git repo?
 See https://www.al.com.au:8443/display/~eoinm/Options+for+dev+workflow+Transition+from+AL_USDMaya+to+maya-usd for background info
+
+## Where are the docs
+Autodesk have removed the AL_USDMaya docs from their repo. The most up to date docs are here https://github.al.com.au/rnd/AL_USDMaya/blob/develop/docs. We should probably move those docs to this repo
