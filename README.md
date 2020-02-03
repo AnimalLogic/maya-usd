@@ -65,11 +65,11 @@ For non-interactive use (e.g Jenkins) it should ideally do something to release 
 # Interacting with the Open source repository
 
 Some labels for the various repos we interact with
-1. https://github.com/autodesk/maya-usd ADSKPublic
-2. https://github.com/AnimalLogic/maya-usd ALPublic
-3. https://github.al.com.au/rnd/maya-usd ALInternal
+1. https://github.com/autodesk/maya-usd **ADSKPublic**
+2. https://github.com/AnimalLogic/maya-usd **ALPublic**
+3. https://github.al.com.au/rnd/maya-usd **ALInternal**
 
-List of common remotes for consistency (need these when pushing, pulling etc
+List of common remotes for consistency (need these when pushing, pulling etc)
 ```
 remote add ALPublic https://github.com/AnimalLogic/maya-usd/
 remote add ADSKPublic https://github.com/Autodesk/maya-usd/
@@ -94,8 +94,9 @@ Normally we would:
 + open a PR against **ALInternal**
 + and once approved, push the branch to **ALPublic**
 + Make sure the dev branch on **ALPublic** is up to date (@todo - automate this)
-+ Create the PR against **ADSKPublic** de branch from **ALPublic**
++ Create the PR against **ADSKPublic** dev branch from **ALPublic**
 + Update the table https://www.al.com.au:8443/display/~eoinm/Pull+Requests+AL_USDMaya+to+maya-usd that tracks the state of various PRs in the 3 repos (note, when opening a PR against **ALPublic**, please prefix the PR Title with AL#XXX where XXX is the ID of the internal PR
++ Add the [pushedToADSKPublic](https://github.al.com.au/rnd/maya-usd/labels/pushedToADSKPublic) tag to the **ALInternal** PR
 
 Additional notes: 
 + For each PR we make internally, we should tag as "nopushtoadsk" or "pushtoasdk". We want to keep "nopushtoadsk" to a minimum as these cause merge conflicts
