@@ -72,10 +72,10 @@ Some labels for the various repos we interact with
 
 List of common remotes for consistency (need these when pushing, pulling etc)
 ```
-remote add ALPublic https://github.com/AnimalLogic/maya-usd/
-remote add ADSKPublic https://github.com/Autodesk/maya-usd/
-remote add BlueSkyPublic https://github.com/BlueSkyStudios/maya-usd/
-remote add LumaPublic https://github.com/LumaPictures/maya-usd/
+git remote add ALPublic https://github.com/AnimalLogic/maya-usd/
+git remote add ADSKPublic https://github.com/Autodesk/maya-usd/
+git remote add BlueSkyPublic https://github.com/BlueSkyStudios/maya-usd/
+git remote add LumaPublic https://github.com/LumaPictures/maya-usd/
 ```
 
 ## Pulling updates from ADSKPublic
