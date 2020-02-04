@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PYTHON_LIBRARIES ${python_LIBRARIES})
 
 ####################################################################################################
-# Setup build to point at maya-usd repo
+# Setup build to build from maya-usd repo
 ####################################################################################################
 set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 

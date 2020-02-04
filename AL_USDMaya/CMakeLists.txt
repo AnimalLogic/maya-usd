@@ -23,7 +23,7 @@ include(maya-usd-subproject)
 
 ####################################################################################################
 
-option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
+option(BUILD_MAYAUSD_LIBRARY "Build Core usdMaya library." ON) #This probably shouldnt be an option as the build will fail otherwise
 set(BUILD_USDMAYA_PXR_TRANSLATORS OFF CACHE BOOL "disable pixar shape translator in AL_USDMaya" )
 
 set(MAYA_Foundation_LIBRARY Foundation)
