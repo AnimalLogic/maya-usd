@@ -111,6 +111,8 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 + Make any dependencies/duplications on other PRs explicit (i.e mention in the description)
 + make sure you have tests, good comments etc
 + There's a WIP coding standard/style guide [here](https://docs.google.com/document/d/1Jvbpfh2WNzHxGQtjqctZ1K1lnpaAtHOUwm0kmmEcxjY/edit)
++ label the PR title with the "[al]" prefix (it's just a convention, nothing relies on it)
++ We should probably establish a convention for branch names, but we don't have one so far.. @todo
 
 
 # FAQ
