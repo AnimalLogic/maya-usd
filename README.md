@@ -96,10 +96,19 @@ Normally we would:
 + Make sure the dev branch on **ALPublic** is up to date (@todo - automate this)
 + Create the PR against **ADSKPublic** dev branch from **ALPublic**
 + Update the table https://www.al.com.au:8443/display/~eoinm/Pull+Requests+AL_USDMaya+to+maya-usd that tracks the state of various PRs in the 3 repos (note, when opening a PR against **ALPublic**, please prefix the PR Title with AL#XXX where XXX is the ID of the internal PR
-+ Add the [pushedToADSKPublic](https://github.al.com.au/rnd/maya-usd/labels/pushedToADSKPublic) tag to the **ALInternal** PR
++ label the PR as below
 
-Additional notes: 
-+ For each PR we make internally, we should tag as "nopushtoadsk" or "pushtoasdk". We want to keep "nopushtoadsk" to a minimum as these cause merge conflicts
+### Labelling PRs 
+For each PR we open in **ALInternal**, we should label as one (and only one) of:
+* [pushToADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AtoPushToADSKPublic)
+* [pushedToADSKPublic](https://github.al.com.au/rnd/maya-usd/labels/pushedToADSKPublic)
+* [mergedInADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AmergedInADSKPublic)
+
+### Tips for PRs on **ADSKPublic**
++ Make sure the description is rock solid and explains exactly what functionality exists, and how you've improved it, or what you've done - see https://github.com/Autodesk/maya-usd/pull/185 for any example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
++ Make any dependencies/duplications on other PRs explicit (i.e mention in the description)
++ make sure you have tests, good comments etc
++ There's a WIP coding standard/style guide [here](https://docs.google.com/document/d/1Jvbpfh2WNzHxGQtjqctZ1K1lnpaAtHOUwm0kmmEcxjY/edit)
 
 
 # FAQ
