@@ -9,12 +9,19 @@ cmake_minimum_required(VERSION 2.8.12)
 cmake_policy(SET CMP0079 OLD)
 cmake_policy(SET CMP0026 OLD)
 
+
+####################################################################################################
+# Setup build to build from maya-usd repo
+####################################################################################################
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 set (MAYA_USD_WIP_REPO_DIR_REL ${CMAKE_CURRENT_SOURCE_DIR}/../../maya-usd)
 get_filename_component(MAYA_USD_WIP_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
 
 include(maya-usd-subproject)
+
+####################################################################################################
 
 option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 set(BUILD_USDMAYA_PXR_TRANSLATORS OFF CACHE BOOL "disable pixar shape translator in AL_USDMaya" )
@@ -41,11 +48,11 @@ string(SUBSTRING $ENV{REZ_USDBASE_VERSION} 1 -1 USD_VERSION_NUM_TMP)
 string(REPLACE "." "" USD_VERSION_NUM ${USD_VERSION_NUM_TMP})
 MESSAGE("USD_VERSION_NUM" + ${USD_VERSION_NUM})
 
-set(BOOST_ROOT ${boost_ROOT})
+####################################################################################################
+# Boost
+####################################################################################################
 
-add_definitions("-DAL_MAYA_ENABLE_SIMD=1")
-add_definitions(-DLINUX)
-add_definitions("-DUSD_VERSION_NUM=${USD_VERSION_NUM}") 
+set(BOOST_ROOT ${boost_ROOT})
 
 IF(DEFINED boost_NAMESPACE)
   add_definitions("-DBOOST_NAMESPACE=${boost_NAMESPACE}")
@@ -64,6 +71,30 @@ ENDIF()
 IF(NOT DEFINED BOOST_INCLUDEDIR)
 	set(BOOST_INCLUDEDIR ${AL_boost_INCLUDE_DIRS})
 ENDIF()
+
+# FindBoost is particularly buggy, and doesn't like custom boost locations.
+# Adding specific components forces calls to _Boost_find_library, which
+# is the rationale for listing them here.
+find_package(Boost COMPONENTS
+                python # initialises Boost_PYTHON_LIBRARY
+                thread # initialises Boost_THREAD_LIBRARY
+                REQUIRED
+)
+
+if((CMAKE_COMPILER_IS_GNUCC AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.3)) OR
+    ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)))
+    set(NEED_BOOST_FILESYSTEM ON)
+    find_package(Boost COMPONENTS
+                    filesystem # initialises Boost_FILESYSTEM_LIBRARY
+                    REQUIRED)
+endif()
+
+####################################################################################################
+
+add_definitions("-DAL_MAYA_ENABLE_SIMD=1")
+add_definitions(-DLINUX)
+add_definitions("-DUSD_VERSION_NUM=${USD_VERSION_NUM}") 
+
 
 
 #set cmake modules - ";" separated not ":"!
@@ -87,22 +118,6 @@ find_package(Maya REQUIRED)
 set(PYTHON_LIBRARY $ENV{MAYA_LOCATION}/lib/libpython2.7.so CACHE STRING "" FORCE)
 find_package(PythonLibs)
 
-# FindBoost is particularly buggy, and doesn't like custom boost locations.
-# Adding specific components forces calls to _Boost_find_library, which
-# is the rationale for listing them here.
-find_package(Boost COMPONENTS
-                python # initialises Boost_PYTHON_LIBRARY
-                thread # initialises Boost_THREAD_LIBRARY
-                REQUIRED
-)
-
-if((CMAKE_COMPILER_IS_GNUCC AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.3)) OR
-    ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)))
-    set(NEED_BOOST_FILESYSTEM ON)
-    find_package(Boost COMPONENTS
-                    filesystem # initialises Boost_FILESYSTEM_LIBRARY
-                    REQUIRED)
-endif()
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
@@ -158,7 +173,7 @@ include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
 
 
 
-#@note: We could avoid all of this by just calling FetchContent_MakeAvailable() or similar when we fetch teh repo
+#@note: We could avoid all of this by just calling FetchContent_MakeAvailable() or similar when we fetch the repo
 # but for now we're not building everything (e.g pxr plugin) and need a bit more control??
 if (BUILD_MAYAUSD_LIBRARY)
     add_subdirectory(${MAYA_USD_SOURCE_DIR}/lib ${MAYA_USD_BUILD_DIR}/maya_usd_lib) #@todo not sure of this suffix..

@@ -12,9 +12,10 @@ Contents:
 We layer our rez build system on top of the opensource CMake infrastructure...   A lot of our CMake/build infrastructure is just translating between cmake variables/options that rez exposes, and cmake variables/option that the open source build needs.
 
 There are a few specific things in the CMake, such as:
-+ We don't rely on cmake "FindPackage" macros for Boost, USD et al as rez provides us with the same information
++ We don't rely on cmake "FindPackage" macros for Boost, USD, Maya, Python et al as rez provides us with more precise information
 + To avoid having a dependency on AL_USDMaya when working with USD files, some of the schema metadata defined here is filtered out of the relevant pluginInfo.json file, and is expected to be part of the AL_USDCommonSchemas. AL_USDCommonSchemas is included by our tests, but not when running a standard environment, so please be aware of this when attempting to use functionality which relies on ths metadata (There is an argument for adding this dependency)
 + Rez has it's own install code/logic which we use
++ we run tests, generate documentation etc in Rez and/or AL specific ways
 
 
 # Important branches
@@ -34,7 +35,6 @@ We soon intend to be able to rez package and release
 + adskUSDMaya plugin
 
 Note that all 3 plugins depend on a common library called "mayaUsd". This is currently released as part of AL_USDMaya but once we have a need to build one of the other plugins, we will release this as a separate library
-
 
 
 # Workflows
