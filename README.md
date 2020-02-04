@@ -1,6 +1,6 @@
 # Intro
 
-This package contains the necessary files required to build, test and release the maya-usd project inside the Animal Logic ecosystem.
+This package is a "meta-package" which contains the necessary files required to build, test and release the maya-usd project inside the Animal Logic ecosystem.
 It's set up to work with the Animal fork of maya-usd https://github.al.com.au/rnd/maya-usd/
 
 Contents:
@@ -9,17 +9,18 @@ Contents:
 + docker setup
 + jenkins setup
 
-We layer our rez build system on top of the opensource CMake infrastructure...   A lot of our CMake/build infrastructure is just translating between data that rez exposes, and information that the open source build needs.
+We layer our rez build system on top of the opensource CMake infrastructure...   A lot of our CMake/build infrastructure is just translating between cmake variables/options that rez exposes, and cmake variables/option that the open source build needs.
 
-There are a few specific things, such as:
-+ We don't rely on cmake "FindPackage" macros for Boost, USD etc as rez provides us with the same information
+There are a few specific things in the CMake, such as:
++ We don't rely on cmake "FindPackage" macros for Boost, USD et al as rez provides us with the same information
 + To avoid having a dependency on AL_USDMaya when working with USD files, some of the schema metadata defined here is filtered out of the relevant pluginInfo.json file, and is expected to be part of the AL_USDCommonSchemas. AL_USDCommonSchemas is included by our tests, but not when running a standard environment, so please be aware of this when attempting to use functionality which relies on ths metadata (There is an argument for adding this dependency)
++ Rez has it's own install code/logic which we use
 
 
 # Important branches
 + master - AL standard release branch
 + develop - AL integration branch (merge to develop when ready)
-+ dev - should keep parity with Autodesk https://github.com/autodesk/maya-usd  dev branch
++ dev - should keep parity with Autodesk https://github.com/autodesk/maya-usd dev branch
 
 ## What does this repo build and release?
 
