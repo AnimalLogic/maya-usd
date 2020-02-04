@@ -79,7 +79,8 @@ git remote add LumaPublic https://github.com/LumaPictures/maya-usd/
 ```
 
 ## Pulling updates from ADSKPublic
-pull in any changes we want updates ADSKPublic dev branch. This should just be a git pull "git pull ADSKPublic dev"
+pull in any changes we want updates ADSKPublic dev branch. This should just be a:
+```git pull ADSKPublic dev```
 
 Note that before merging these to develop (or some other release branch)  be careful of things like:
 
