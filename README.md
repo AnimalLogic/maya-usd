@@ -108,7 +108,7 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 
 ### Tips for PRs on **ADSKPublic**
 
-+ **Description**: Make sure the description is rock solid and explains exactly what functionality exists, and how you've improved it, or what you've done - see https://github.com/Autodesk/maya-usd/pull/185 for any example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
++ **Description**: Make sure the description is rock solid and explains exactly what you've done and what problem you're solving. if it's extending existing functionality or beaviour - describe that, and how you've improved, extended or modified it. See https://github.com/Autodesk/maya-usd/pull/185 for an example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
 + **Title** - prefix  with the "[al]" prefix (it's just a convention, nothing relies on it), and postfix with the AL Internal PR e.g "[al] ColorSet import/export: support USD displayOpacity primvar (#1015)"
 + **Branch Name** - We should probably establish a convention for branch names, but we don't have one so far.. @todo
 + Make any dependencies/duplications on other PRs explicit (i.e mention in the description) so they know in which order to merge
