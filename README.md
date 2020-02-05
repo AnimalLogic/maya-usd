@@ -85,17 +85,18 @@ pull in any changes we want updates ADSKPublic dev branch. This should just be a
 Note that before merging these to develop (or some other release branch)  be careful of things like:
 
 + ABI/API breaking changes
-+ changed dependencies
-+ changes to maya serialisation (proxy Node attribute, MpxData etc)
-+ Updated versionss of USD 
-
++ changed dependencies on external libraries
++ changes to maya serialisation (Node attributes etc, MpxData etc)
++ Reliance on Updated versions of USD 
 
 
 ## Pushing PRs to ADSKPublic
-Normally we would:
-+ open a PR against **ALInternal**
-+ and once approved, push the branch to **ALPublic**
+Normally we would open a PR against the develop branch on **ALInternal**, go through the code review process, and merge it for release.
+
+Then:
++ create the same PR on **ALInternal** against the dev branch ( Make sure the dev branch is up to date (@todo - automate this)) so tests will run, merge conflicts will be detected etc
 + Make sure the dev branch on **ALPublic** is up to date (@todo - automate this)
++ Once PR approved, push the branch to **ALPublic** (you can rebase or squash if you want to hide the commit history)
 + Create the PR against **ADSKPublic** dev branch from **ALPublic**
 + Update the table https://www.al.com.au:8443/display/~eoinm/Pull+Requests+AL_USDMaya+to+maya-usd that tracks the state of various PRs in the 3 repos (note, when opening a PR against **ALPublic**, please prefix the PR Title with AL#XXX where XXX is the ID of the internal PR
 + label the PR as below
@@ -107,17 +108,19 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 * [mergedInADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AmergedInADSKPublic)
 
 ### Tips for PRs on **ADSKPublic**
-+ Make sure the description is rock solid and explains exactly what functionality exists, and how you've improved it, or what you've done - see https://github.com/Autodesk/maya-usd/pull/185 for any example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
-+ Make any dependencies/duplications on other PRs explicit (i.e mention in the description)
-+ make sure you have tests, good comments etc
+
++ **Description**: Make sure the description is rock solid and explains exactly what functionality exists, and how you've improved it, or what you've done - see https://github.com/Autodesk/maya-usd/pull/185 for any example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
++ **Title** - prefix  with the "[al]" prefix (it's just a convention, nothing relies on it), and postfix with the AL Internal PR e.g "[al] ColorSet import/export: support USD displayOpacity primvar (#1015)"
++ **Branch Name** - We should probably establish a convention for branch names, but we don't have one so far.. @todo
++ Make any dependencies/duplications on other PRs explicit (i.e mention in the description) so they know in which order to merge
++ As usual make sure you have tests, good comments etc
 + There's a WIP coding standard/style guide [here](https://docs.google.com/document/d/1Jvbpfh2WNzHxGQtjqctZ1K1lnpaAtHOUwm0kmmEcxjY/edit)
-+ label the PR title with the "[al]" prefix (it's just a convention, nothing relies on it)
-+ We should probably establish a convention for branch names, but we don't have one so far.. @todo
+
 
 
 # FAQ
 ## Why do this as a separate git repo?
 See https://www.al.com.au:8443/display/~eoinm/Options+for+dev+workflow+Transition+from+AL_USDMaya+to+maya-usd for background info
 
-## Where are the docs
+## Where are the docs?
 Autodesk have removed the AL_USDMaya docs from their repo. The most up to date docs are here https://github.al.com.au/rnd/AL_USDMaya/blob/develop/docs. We should probably move those docs to this repo
