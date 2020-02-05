@@ -60,9 +60,8 @@ When you rez-release/rez-unleash, we don't work with the local clone, but look f
 For non-interactive use (e.g Jenkins) it should ideally do something to release above - but we need to finesse this workflow
 
 # Tests
-1. When any changes are made to github.al.com.au/rnd/maya-usd, Jenkins will run some tests. These tests use docker for a "vanilla" open source build that doesn't rely on any AL specific environment, see  https://www.al.com.au:8443/display/~eoinm/Docker+Cookbok+for+maya-usd+tests for some info. Some of the files used in this process are here https://github.al.com.au/rnd/maya-usd-build/tree/develop/automatedTesting
+1. When any changes are made to github.al.com.au/rnd/maya-usd, Jenkins will run some tests. These tests use docker for a "vanilla" open source build that doesn't rely on any AL specific environment, see [docker cookbook](https://www.al.com.au:8443/display/~eoinm/Docker+Cookbook+for+maya-usd+tests) for some info. Some of the files used in this process are here https://github.al.com.au/rnd/maya-usd-build/tree/develop/automatedTesting
 2. This repository should run tests using AL infrastructure when changes are made to it - this is @todo
-
 # Interacting with the Open source repository
 
 Some labels for the various repos we interact with
