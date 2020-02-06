@@ -131,4 +131,4 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 See https://www.al.com.au:8443/display/~eoinm/Options+for+dev+workflow+Transition+from+AL_USDMaya+to+maya-usd for background info
 
 ## Where are the docs?
-Autodesk have removed the AL_USDMaya docs from their repo. The most up to date docs are here https://github.al.com.au/rnd/AL_USDMaya/blob/develop/docs. We should probably move those docs to this repo
+The most up to date docs are here https://github.al.com.au/rnd/AL_USDMaya/blob/develop/docs, and https://github.al.com.au/rnd/maya-usd/tree/master/plugin/al/docs - we should reconcile the 2
