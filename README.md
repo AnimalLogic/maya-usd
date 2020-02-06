@@ -59,23 +59,32 @@ When you rez-release/rez-unleash, we don't work with the local clone, but look f
 ### Non-interactive use
 For non-interactive use (e.g Jenkins) it should ideally do something to release above - but we need to finesse this workflow
 
-# Tests
-1. When any changes are made to github.al.com.au/rnd/maya-usd, Jenkins will run some tests. These tests use docker for a "vanilla" open source build that doesn't rely on any AL specific environment, see [docker cookbook](https://www.al.com.au:8443/display/~eoinm/Docker+Cookbook+for+maya-usd+tests) for some info. Some of the files used in this process are here https://github.al.com.au/rnd/maya-usd-build/tree/develop/automatedTesting
-2. This repository should run tests using AL infrastructure when changes are made to it - this is @todo
-# Interacting with the Open source repository
+# Repositories
 
-Some labels for the various repos we interact with
+Some labels for the various repos we interact with when pushing, pulling etc)
 1. https://github.com/autodesk/maya-usd **ADSKPublic**
 2. https://github.com/AnimalLogic/maya-usd **ALPublic**
 3. https://github.al.com.au/rnd/maya-usd **ALInternal**
+3. https://github.al.com.au/rnd/maya-usd-build **Build**
 
-List of common remotes for consistency (need these when pushing, pulling etc)
+Handy snippet for commonly used repos
 ```
 git remote add ALPublic https://github.com/AnimalLogic/maya-usd/
 git remote add ADSKPublic https://github.com/Autodesk/maya-usd/
 git remote add BlueSkyPublic https://github.com/BlueSkyStudios/maya-usd/
 git remote add LumaPublic https://github.com/LumaPictures/maya-usd/
 ```
+
+
+# Tests
+1. When a PR is opened or updated on  **ALInternal**, Jenkins will run some tests http://hudson:8081/hudson/job/maya-usd/ These tests use docker for a "vanilla" open source build that doesn't rely on any AL specific environment
+2. When the dev branch is changed, Jenkins will run the same tests - see http://hudson:8081/hudson/job/maya-usd-dev
+3. This repository **Build** should run tests using rez/AL environment when changes are made to the build intrastructure (and probably **ALInternal** - but this is @todo
+
+For more info on the docker tests, see [docker cookbook](https://www.al.com.au:8443/display/~eoinm/Docker+Cookbook+for+maya-usd+tests) for some info. Some of the files used in this process are here https://github.al.com.au/rnd/maya-usd-build/tree/develop/automatedTesting
+
+
+# Interacting with the Open source repositories
 
 ## Pulling updates from ADSKPublic
 pull in any changes we want updates ADSKPublic dev branch. This should just be a:
