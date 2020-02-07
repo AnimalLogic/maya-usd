@@ -53,7 +53,8 @@ You make changes to the build files in this repository (so a code review of a Pr
 ### Releasing
 When you rez-release/rez-unleash, we don't work with the local clone, but look for a git tag in your package.py - and then checkout a fresh copy of maya-usd using that tag, and release it.
 + Currently this is partially working
-+ We need to extend the release process so it tags the maya-usd repo in the same way it tags the repo we're releasing
++ We need to extend the release process so it tags the maya-usd repo in the same way it tags the repo we're releasing. For now we can do this manually @todo
++ We should also do the same checks rez does before allowing release of a package - check for uncommitted files, check we're on a release branch etc see https://github.al.com.au/rnd/maya-usd-build/issues/12
 
 
 ### Non-interactive use
@@ -113,7 +114,7 @@ Then:
 For each PR we open in **ALInternal**, we should label as one (and only one) of:
 * [pushToADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AtoPushToADSKPublic)
 * [pushedToADSKPublic](https://github.al.com.au/rnd/maya-usd/labels/pushedToADSKPublic)
-* [mergedInADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AmergedInADSKPublic)
+* [mergedInADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AmergedInADSKPublic) For these we don't normally need to merge them into our develop branch as we'll get them by updating "dev"
 
 ### Tips for PRs on **ADSKPublic**
 
@@ -123,6 +124,7 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 + Make any dependencies/duplications on other PRs explicit (i.e mention in the description) so they know in which order to merge
 + As usual make sure you have tests, good comments etc
 + There's a WIP coding standard/style guide [here](https://docs.google.com/document/d/1Jvbpfh2WNzHxGQtjqctZ1K1lnpaAtHOUwm0kmmEcxjY/edit)
++ Don't add Version.h to the PR - @todo fix this tiresome problem!
 
 
 
