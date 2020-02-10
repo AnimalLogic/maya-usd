@@ -100,12 +100,17 @@ Note that before merging these to develop (or some other release branch)  be car
 
 
 ## Pushing PRs to ADSKPublic
-Normally we would open a PR against the develop branch on **ALInternal**, go through the code review process, and merge it for release.
+Normally we would open a PR against the develop branch on **ALInternal**, go through the code review process etc
 
 Then:
-+ create the same PR on **ALInternal** against the dev branch ( Make sure the dev branch is up to date (@todo - automate this)) so tests will run, merge conflicts will be detected etc
-+ Make sure the dev branch on **ALPublic** is up to date (@todo - automate this)
-+ Once PR approved, push the branch to **ALPublic** (you can rebase or squash if you want to hide the commit history)
++ update the  PR on **ALInternal** to have the dev branch as it's base ( Make sure the dev branch is up to date (@todo - automate this)) so tests will run, merge conflicts will be detected etc
++ merge into develop for production use/testing/release
++ Tag the branc as "merged_to_develop"
+
+Once some time (a week?) has passed of the feature in production:
+
++ Make sure the dev branch on **ALPublic** is still up to date (@todo - automate this)
++ Push the branch to **ALPublic** (you can rebase or squash if you want to hide the commit history)
 + Create the PR against **ADSKPublic** dev branch from **ALPublic**
 + Update the table https://www.al.com.au:8443/display/~eoinm/Pull+Requests+AL_USDMaya+to+maya-usd that tracks the state of various PRs in the 3 repos (note, when opening a PR against **ALPublic**, please prefix the PR Title with AL#XXX where XXX is the ID of the internal PR
 + label the PR as below
@@ -117,7 +122,6 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 * [mergedInADSKPublic](https://github.al.com.au/rnd/maya-usd/pulls?q=is%3Apr+is%3Aopen+label%3AmergedInADSKPublic) For these we don't normally need to merge them into our develop branch as we'll get them by updating "dev"
 
 ### Tips for PRs on **ADSKPublic**
-
 + **Description**: Make sure the description is rock solid and explains exactly what you've done and what problem you're solving. if it's extending existing functionality or beaviour - describe that, and how you've improved, extended or modified it. See https://github.com/Autodesk/maya-usd/pull/185 for an example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
 + **Title** - prefix  with the "[al]" prefix (it's just a convention, nothing relies on it), and postfix with the AL Internal PR e.g "[al] ColorSet import/export: support USD displayOpacity primvar (#1015)"
 + **Branch Name** - We should probably establish a convention for branch names, but we don't have one so far.. so either use the branchname from **ALInternal**, or if you want to use a different one - do so, but record it in the [Internal->External PR table](https://www.al.com.au:8443/display/~eoinm/Pull+Requests+AL_USDMaya+to+maya-usd). Note to push to a different named branch, just separate original and remote with a colon e.g "git push ALPublic displayOpacity1:AL1015-support_USD_displayOpacity"
