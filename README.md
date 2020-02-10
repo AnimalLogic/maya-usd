@@ -120,7 +120,7 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 
 + **Description**: Make sure the description is rock solid and explains exactly what you've done and what problem you're solving. if it's extending existing functionality or beaviour - describe that, and how you've improved, extended or modified it. See https://github.com/Autodesk/maya-usd/pull/185 for an example. Reviewers in the open source world don't know anything about Animal Logic internal processes or workflows, so assume minimal context
 + **Title** - prefix  with the "[al]" prefix (it's just a convention, nothing relies on it), and postfix with the AL Internal PR e.g "[al] ColorSet import/export: support USD displayOpacity primvar (#1015)"
-+ **Branch Name** - We should probably establish a convention for branch names, but we don't have one so far.. @todo
++ **Branch Name** - We should probably establish a convention for branch names, but we don't have one so far.. so either use the branchname from **ALInternal**, or if you want to use a different one - do so, but record it in the [Internal->External PR table](https://www.al.com.au:8443/display/~eoinm/Pull+Requests+AL_USDMaya+to+maya-usd). Note to push to a different named branch, just separate original and remote with a colon e.g "git push ALPublic displayOpacity1:AL1015-support_USD_displayOpacity"
 + Make any dependencies/duplications on other PRs explicit (i.e mention in the description) so they know in which order to merge
 + As usual make sure you have tests, good comments etc
 + There's a WIP coding standard/style guide [here](https://docs.google.com/document/d/1Jvbpfh2WNzHxGQtjqctZ1K1lnpaAtHOUwm0kmmEcxjY/edit)
