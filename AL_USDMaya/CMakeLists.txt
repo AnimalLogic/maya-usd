@@ -22,7 +22,6 @@ get_filename_component(MAYA_USD_WIP_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLU
 include(maya-usd-subproject)
 
 ####################################################################################################
-
 option(BUILD_MAYAUSD_LIBRARY "Build Core usdMaya library." ON) #This probably shouldnt be an option as the build will fail otherwise
 set(BUILD_USDMAYA_PXR_TRANSLATORS OFF CACHE BOOL "disable pixar shape translator in AL_USDMaya" )
 
@@ -126,7 +125,9 @@ set(CMAKE_CXX_FLAGS
     -msse3
     -Werror
     "${_PXR_CXX_WARNING_FLAGS}"
+    "${_PXR_CXX_FLAGS}"
 )
+
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6)
     list(APPEND CMAKE_CXX_FLAGS -D_GLIBCXX_USE_CXX11_ABI=0)
 endif()
