@@ -91,12 +91,16 @@ For more info on the docker tests, see [docker cookbook](https://www.al.com.au:8
 pull in any changes we want updates ADSKPublic dev branch. This should just be a:
 ```git pull ADSKPublic dev```
 
+Before pushing the changes to **ALInternal** - make sure the SHAs of the HEAD commits are the same - I saw some cases where they weren't (not sure why) and it caused a bit of merge madness.
+
 Note that before merging these to develop (or some other release branch)  be careful of things like:
 
 + ABI/API breaking changes
 + changed dependencies on external libraries
 + changes to maya serialisation (Node attributes etc, MpxData etc)
 + Reliance on Updated versions of USD 
+
+**For those reasons, it's probably a good idea to create a PR before merging those changes to develop**
 
 
 ## Pushing PRs to ADSKPublic
