@@ -20,6 +20,7 @@ set (MAYA_USD_WIP_REPO_DIR_REL ${CMAKE_CURRENT_SOURCE_DIR}/../../maya-usd)
 get_filename_component(MAYA_USD_WIP_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
 
 include(maya-usd-subproject)
+list(APPEND CMAKE_MODULE_PATH ${MAYA_USD_SOURCE_DIR}/cmake/modules)
 
 ####################################################################################################
 option(BUILD_MAYAUSD_LIBRARY "Build Core usdMaya library." ON) #This probably shouldnt be an option as the build will fail otherwise
@@ -30,7 +31,11 @@ set(MAYA_OpenMaya_LIBRARY OpenMaya)
 set(MAYA_OpenMayaAnim_LIBRARY OpenMayaAnim)
 set(MAYA_OpenMayaUI_LIBRARY OpenMayaUI)
 set(MAYA_OpenMayaRender_LIBRARY OpenMayaRender)
+    
+set(UFE_LIB_ROOT $ENV{REZ_MAYADEVKIT_ROOT}/maya/devkitBase/devkit/ufe)
+set(UFE_INCLUDE_ROOT $ENV{REZ_MAYADEVKIT_ROOT}/maya/devkitBase/devkit/ufe)
 
+find_package(UFE)
 
 include ( RezBuild )
 rez_find_packages ( PREFIX pkgs AUTO )
