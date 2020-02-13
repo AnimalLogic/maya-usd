@@ -1,6 +1,7 @@
 # Intro
 
 This repo is a "meta-package" which contains the necessary files required to build, test and release the maya-usd project inside the Animal Logic ecosystem.
+
 It's set up to work with the Animal fork of maya-usd https://github.al.com.au/rnd/maya-usd/
 
 Contents:
@@ -38,6 +39,7 @@ Note that all 3 plugins depend on a common library called "mayaUsd". This is cur
 
 
 # Workflows
+**Note that the workflows we describe are provisional and will certainly need to be tuned over the next few months!**
 
 ## working with the AL Fork of maya-usd (standard dev workflow)
 We attempt to cover 3 workflows
@@ -51,10 +53,8 @@ You work with, commit, push and generally manipulate the source files in that lo
 You make changes to the build files in this repository (so a code review of a Production feature might include 2 PRs - one from maya-usd-build and one from maya-usd
 
 ### Releasing
-When you rez-release/rez-unleash, we don't work with the local clone, but look for a git tag in your package.py - and then checkout a fresh copy of maya-usd using that tag, and release it.
-+ Currently this is partially working
-+ We need to extend the release process so it tags the maya-usd repo in the same way it tags the repo we're releasing. For now we can do this manually @todo
-+ We should also do the same checks rez does before allowing release of a package - check for uncommitted files, check we're on a release branch etc see https://github.al.com.au/rnd/maya-usd-build/issues/12
+When you rez-release/rez-unleash, we should be releasing your local git clone as above, provided it passes all of the validation checks etc (no untracked files, releasing from a release branch etc). As this work is currently WIP (see https://github.al.com.au/rnd/maya-usd-build/issues/12) we have a workaround where we work with the local clone, but checkout a new copy of the repo (master branch) and then  release that
++ We need to extend the release process so it tags the maya-usd repo in the same way it tags the repo we're releasing. For now we can do this manually (i.e git tag "AL_USDMaya-MAJOR.MINOR.PATCH" commitID)
 
 
 ### Non-interactive use
