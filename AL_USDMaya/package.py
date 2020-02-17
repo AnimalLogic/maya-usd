@@ -62,6 +62,9 @@ def commands():
     # manually set usd's limit to this empirically observed value
     env.PXR_WORK_THREAD_LIMIT='-3'
 
+with scope('config') as config:
+    config.sub_repository_urls = ['https://github.al.com.au/rnd/maya-usd.git']
+
 def preprocess(this, data):
     #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
     import os
