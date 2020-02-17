@@ -251,7 +251,6 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
-    @unittest.skip("Not working")
     def test_getMayaPathFromUsdPrim_reopenImport(self):
         """Saving and reopening a Maya scene with dynamic translated prims should work."""
 
@@ -284,7 +283,6 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         # Cleanup
         os.remove(_file.name)
 
-    @unittest.skip("Not working")
     def test_getMayaPathFromUsdPrim_reopenStaticImport(self):
         """Saving and reopening a Maya scene with static translated prims should work."""
 
