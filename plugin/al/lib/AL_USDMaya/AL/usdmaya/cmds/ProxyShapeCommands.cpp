@@ -27,6 +27,9 @@
 #include "maya/MFnDagNode.h"
 #include "maya/MSyntax.h"
 
+#include <ufe/observableSelection.h>
+#include <ufe/globalSelection.h>
+
 namespace {
     typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
 }
@@ -101,7 +104,7 @@ MDagPath ProxyShapeCommandBase::getShapePath(const MArgDatabase& args)
 
 
 //----------------------------------------------------------------------------------------------------------------------
-nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
+nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args, MDagPath* returnedPath)
 {
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::getShapeNode\n");
   MDagPath path;
@@ -123,6 +126,7 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
         MFnDagNode fn(path);
         if(fn.typeId() == nodes::ProxyShape::kTypeId)
         {
+          if(returnedPath) *returnedPath = path;
           return (nodes::ProxyShape*)fn.userNode();
         }
       }
@@ -152,6 +156,7 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
               MFnDagNode fn(path);
               if(fn.typeId() == nodes::ProxyShape::kTypeId)
               {
+                if(returnedPath) *returnedPath = path;
                 return (nodes::ProxyShape*)fn.userNode();
               }
             }
@@ -1024,7 +1029,9 @@ MSyntax ProxyShapeSelect::createSyntax()
   syntax.addFlag("-r", "-replace", MSyntax::kNoArg);
   syntax.addFlag("-d", "-deselect", MSyntax::kNoArg);
   syntax.addFlag("-i", "-internal", MSyntax::kNoArg);
+  syntax.addFlag("-ls", "-list", MSyntax::kNoArg);
   syntax.makeFlagMultiUse("-pp");
+  syntax.enableQuery(true);
   return syntax;
 }
 
@@ -1042,67 +1049,94 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
   {
     MArgDatabase db = makeDatabase(args);
     AL_MAYA_COMMAND_HELP(db, g_helpText);
+    MDagPath proxyDagPath;
     nodes::ProxyShape* proxy = getShapeNode(db);
     if(!proxy)
     {
       throw MS::kFailure;
     }
-    SdfPathVector orderedPaths;
-    nodes::SelectionUndoHelper::SdfPathHashSet unorderedPaths;
 
-    MGlobal::ListAdjustment mode = MGlobal::kAddToList;
-    if(db.isFlagSet("-cl"))
+    if(db.isFlagSet("-ls") && db.isQuery())
     {
-      mode = MGlobal::kReplaceList;
-    }
-    else
-    {
-      for(uint32_t i = 0, n = db.numberOfFlagUses("-pp"); i < n; ++i)
+      MString matchString = MString("|world") + proxyDagPath.fullPathName();
+
+      m_helper = nullptr;
+      auto sl = Ufe::GlobalSelection::get();
+      MStringArray strings;
+      for(auto& item : *sl)
       {
-        MArgList args;
-        db.getFlagArgumentList("-pp", i, args);
-        MString pathString = args.asString(0);
-
-        SdfPath path(AL::maya::utils::convert(pathString));
-
-        if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
+        auto path = item->path();
+        auto pathStr = path.string();
+        if(std::strncmp(pathStr.c_str(), matchString.asChar(), matchString.length()) == 0)
         {
-          auto insertResult = unorderedPaths.insert(path);
-          if (insertResult.second) {
-            orderedPaths.push_back(path);
-          }
+          size_t index = pathStr.find_first_of('/');
+          strings.append(pathStr.c_str() + index);
         }
       }
+      setResult(strings);
+      return MS::kSuccess;
+    }
+    else
+    if(!db.isQuery())
+    {
+      SdfPathVector orderedPaths;
+      nodes::SelectionUndoHelper::SdfPathHashSet unorderedPaths;
 
-      if(db.isFlagSet("-tgl"))
-      {
-        mode = MGlobal::kXORWithList;
-      }
-      else
-      if(db.isFlagSet("-a"))
-      {
-        mode = MGlobal::kAddToList;
-      }
-      else
-      if(db.isFlagSet("-r"))
+      MGlobal::ListAdjustment mode = MGlobal::kAddToList;
+      if(db.isFlagSet("-cl"))
       {
         mode = MGlobal::kReplaceList;
       }
       else
-      if(db.isFlagSet("-d"))
       {
-        mode = MGlobal::kRemoveFromList;
-      }
-    }
-    const bool isInternal = db.isFlagSet("-i");
+        for(uint32_t i = 0, n = db.numberOfFlagUses("-pp"); i < n; ++i)
+        {
+          MArgList args;
+          db.getFlagArgumentList("-pp", i, args);
+          MString pathString = args.asString(0);
 
-    m_helper = new nodes::SelectionUndoHelper(proxy, unorderedPaths, mode, isInternal);
-    if(!proxy->doSelect(*m_helper, orderedPaths))
-    {
-      delete m_helper;
-      m_helper = 0;
+          SdfPath path(AL::maya::utils::convert(pathString));
+
+          if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
+          {
+            auto insertResult = unorderedPaths.insert(path);
+            if (insertResult.second) {
+              orderedPaths.push_back(path);
+            }
+          }
+        }
+
+        if(db.isFlagSet("-tgl"))
+        {
+          mode = MGlobal::kXORWithList;
+        }
+        else
+        if(db.isFlagSet("-a"))
+        {
+          mode = MGlobal::kAddToList;
+        }
+        else
+        if(db.isFlagSet("-r"))
+        {
+          mode = MGlobal::kReplaceList;
+        }
+        else
+        if(db.isFlagSet("-d"))
+        {
+          mode = MGlobal::kRemoveFromList;
+        }
+      }
+      const bool isInternal = db.isFlagSet("-i");
+
+      m_helper = new nodes::SelectionUndoHelper(proxy, unorderedPaths, mode, isInternal);
+      if(!proxy->doSelect(*m_helper, orderedPaths))
+      {
+        delete m_helper;
+        m_helper = 0;
+      }
+      return _redoIt(isInternal);
     }
-    return _redoIt(isInternal);
+
   }
   catch(const MStatus& status)
   {
@@ -1120,6 +1154,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
     status.perror("(ProxyShapeSelect::doIt) Unknown internal failure!");
     return status;
   }
+  return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
