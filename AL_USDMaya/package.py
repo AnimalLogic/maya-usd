@@ -63,7 +63,7 @@ def commands():
     env.PXR_WORK_THREAD_LIMIT='-3'
 
 with scope('config') as config:
-    config.sub_repository_urls = ['https://github.al.com.au/rnd/maya-usd.git']
+    config.sub_repositories = ['../../maya-usd']
 
 def preprocess(this, data):
     #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
