@@ -221,6 +221,11 @@ target_link_libraries(${LIBRARY_NAME}
     $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 
+if(UFE_FOUND)
+    add_definitions(-DWANT_UFE_BUILD=1)
+    target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
+endif()
+
 if(NEED_BOOST_FILESYSTEM)
     target_link_libraries(${LIBRARY_NAME}
                         ${Boost_FILESYSTEM_LIBRARY}
