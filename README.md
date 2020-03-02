@@ -53,12 +53,18 @@ You work with, commit, push and generally manipulate the source files in that lo
 You make changes to the build files in this repository (so a code review of a Production feature might include 2 PRs - one from maya-usd-build and one from maya-usd
 
 ### Releasing
-When you rez-release/rez-unleash, we should be releasing your local git clone as above, provided it passes all of the validation checks etc (no untracked files, releasing from a release branch etc). As this work is currently WIP (see https://github.al.com.au/rnd/maya-usd-build/issues/12) we have a workaround where we work with the local clone, but checkout a new copy of the repo (master branch) and then  release that
-+ We need to extend the release process so it tags the maya-usd repo in the same way it tags the repo we're releasing. For now we can do this manually (i.e git tag "AL_USDMaya-MAJOR.MINOR.PATCH" commitID)
+When you rez-release/rez-unleash, we look for the local/sibling  git clone of maya-usd as above, and as of rez 2.47.4.4, thesame validation checks are run on the subrepo as are run on the rez package repo.. i.e:
++ no untracked files
++ no uncommitted files
++ releasing from a release branch etc
+
+Post release, we:
++ tag the sub repo (i.e maya-usd) in the same way we tag the repo we're releasing (i.e git tag "AL_USDMaya-MAJOR.MINOR.PATCH" commitID)
++ add the commit id, and history to the package.py of the package we're releasing
 
 
 ### Non-interactive use
-For non-interactive use (e.g Jenkins) it should ideally do something to release above - but we need to finesse this workflow
+For non-interactive use (e.g Jenkins) we need to think more about how it should work - i.e how do we drive the checkout of a particular commit or branch from the build repo? (e.g when running unit tests on AL)
 
 # Repositories
 
