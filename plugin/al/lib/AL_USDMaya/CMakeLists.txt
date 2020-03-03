@@ -170,14 +170,15 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
-# AL_USDMayaGL
 target_include_directories(
     ${LIBRARY_NAME}
     PUBLIC
     ${PXR_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
+    $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
 set(Boost_LINK_LIBRARIES
@@ -196,7 +197,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDTransaction
     ar 
     gf 
@@ -217,6 +218,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
+    $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 
 if(UFE_FOUND)

@@ -225,9 +225,6 @@ class ProxyShape
   typedef MayaUsdProxyShapeBase ParentClass;
 public:
 
-  /// returns the shape's parent transform
-  MDagPath parentTransform();
-
   /// a method that registers all of the events in the ProxyShape
   AL_USDMAYA_PUBLIC
   void registerEvents();
@@ -798,7 +795,7 @@ public:
   /// \param param are flags which direct the translation of the prims
   AL_USDMAYA_PUBLIC
   void translatePrimsIntoMaya(
-      const AL::usd::utils::UsdPrimVector& importPrims,
+      const MayaUsdUtils::UsdPrimVector& importPrims,
       const SdfPathVector& teardownPaths,
       const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
 
@@ -910,9 +907,9 @@ private:
                 << m_selected << ":"
                 << int(m_refCount) << std::endl;
     }
-    uint32_t selected() const { return m_selected; }
-    uint32_t required() const { return m_required; }
-    uint32_t refCount() const { return m_refCount; }
+    uint16_t selected() const { return m_selected; }
+    uint16_t required() const { return m_required; }
+    uint16_t refCount() const { return m_refCount; }
     void prepSelect()
       { m_selectedTemp = m_selected; }
   private:
@@ -921,10 +918,10 @@ private:
     // ref counting values
     struct
     {
-      uint64_t m_required:16;
-      uint64_t m_selectedTemp:16;
-      uint64_t m_selected:16;
-      uint64_t m_refCount:16;
+      uint16_t m_required;
+      uint16_t m_selectedTemp;
+      uint16_t m_selected;
+      uint16_t m_refCount;
     };
   };
 

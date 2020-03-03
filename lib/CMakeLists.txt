@@ -1,6 +1,6 @@
 #
 # =======================================================================
-# Copyright 2019 Autodesk
+# Copyright 2020 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,6 @@
 
 cmake_minimum_required(VERSION 3.1.1)
 project(mayaUsd)
-
-if (POLICY CMP0074)
-    cmake_policy(SET CMP0074 OLD)
-endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -91,6 +87,7 @@ list(APPEND mayaUsd_src
     fileio/translators/translatorCurves.cpp
     fileio/translators/translatorGprim.cpp
     fileio/translators/translatorMaterial.cpp
+    fileio/translators/translatorMayaReference.cpp
     fileio/translators/translatorMesh.cpp
     fileio/translators/translatorMesh_PrimVars.cpp
     fileio/translators/translatorMesh_SubDiv.cpp
@@ -145,6 +142,7 @@ list(APPEND mayaUsd_src
     render/pxrUsdMayaGL/usdProxyShapeAdapter.cpp
     render/pxrUsdMayaGL/userData.cpp
     #
+    render/vp2RenderDelegate/basisCurves.cpp
     render/vp2RenderDelegate/bboxGeom.cpp
     render/vp2RenderDelegate/debugCodes.cpp
     render/vp2RenderDelegate/draw_item.cpp
@@ -183,14 +181,27 @@ list(APPEND mayaUsdShaderFragments_xmls
     render/vp2ShaderFragments/usdPreviewSurfaceCombiner.xml
     render/vp2ShaderFragments/usdPreviewSurfaceLighting.xml
     # New fragments
+    render/vp2ShaderFragments/BasisCurvesLinearDomain_GLSL.xml
+    render/vp2ShaderFragments/BasisCurvesLinearDomain_HLSL.xml
+    render/vp2ShaderFragments/BasisCurvesLinearDomain_Cg.xml
+    render/vp2ShaderFragments/BasisCurvesLinearFallbackShader.xml
+    render/vp2ShaderFragments/BasisCurvesLinearHull.xml
+    render/vp2ShaderFragments/BasisCurvesCubicDomain_GLSL.xml
+    render/vp2ShaderFragments/BasisCurvesCubicDomain_HLSL.xml
+    render/vp2ShaderFragments/BasisCurvesCubicDomain_Cg.xml
+    render/vp2ShaderFragments/BasisCurvesCubicFallbackShader.xml
+    render/vp2ShaderFragments/BasisCurvesCubicHull.xml
     render/vp2ShaderFragments/FallbackCPVShader.xml
     render/vp2ShaderFragments/FallbackShader.xml
     render/vp2ShaderFragments/Float4ToFloat3.xml
     render/vp2ShaderFragments/Float4ToFloat4.xml
+    render/vp2ShaderFragments/NwFaceCameraIfNAN.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_color.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float3.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float4.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_vector.xml
     render/vp2ShaderFragments/UsdUVTexture.xml
     # USD plug info
     render/vp2ShaderFragments/plugInfo.json
@@ -301,6 +312,7 @@ list(APPEND mayaUsdTranslators_headers
     fileio/translators/translatorCurves.h
     fileio/translators/translatorGprim.h
     fileio/translators/translatorMaterial.h
+    fileio/translators/translatorMayaReference.h
     fileio/translators/translatorMesh.h
     fileio/translators/translatorNurbsPatch.h
     fileio/translators/translatorPrim.h
@@ -487,19 +499,19 @@ endif()
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
-    mayaUsd_init_rpath(rpath "plugin")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib")
+    mayaUsd_init_rpath(rpath "lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
-endif()
-
-if (IS_LINUX)
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
     endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
@@ -641,6 +653,9 @@ if(UFE_FOUND)
     if(IS_MACOSX OR IS_LINUX)
         mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
         mayaUsd_add_rpath(rpath "../..")
+        if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+        endif()
         mayaUsd_install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
     endif()
 
@@ -743,6 +758,10 @@ set(PYLIB_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/lib)
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib")
     mayaUsd_add_rpath(rpath "../../..")
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../Maya.app/Contents/MacOS")
+        mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+    endif()
     mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
 endif()
 
@@ -758,9 +777,7 @@ if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${PYLIB_INSTALL_PREFIX} OPTIONAL)
 endif()
 
-install(CODE
-    "file(TOUCH \"${PYLIB_INSTALL_PREFIX}/../__init__.py\")")
-
+install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME})
 install(FILES python/__init__.py DESTINATION ${PYLIB_INSTALL_PREFIX})
 
 add_subdirectory(usd)

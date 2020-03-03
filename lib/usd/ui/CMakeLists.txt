@@ -18,10 +18,6 @@
 
 project(mayaUsdUI)
 
-if (POLICY CMP0074)
-    cmake_policy(SET CMP0074 OLD)
-endif()
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -29,22 +25,26 @@ set(CMAKE_AUTOUIC ON)
 add_library(${PROJECT_NAME} SHARED
 	cmds/USDImportDialogCmd.cpp
 	factories/TreeModelFactory.cpp
+	images/ui.qrc
 	views/ItemDelegate.cpp
 	views/TreeItem.cpp
 	views/TreeModel.cpp
 	views/USDImportDialog.cpp
 	views/USDImportDialog.ui
+	views/USDQtUtil.cpp
 )
 
 list(APPEND mayaUsdUI_headers
 	api.h
 	cmds/USDImportDialogCmd.h
 	factories/TreeModelFactory.h
+	views/IMayaMQtUtil.h
 	views/IUSDImportView.h
 	views/ItemDelegate.h
 	views/TreeItem.h
 	views/TreeModel.h
 	views/USDImportDialog.h
+	views/USDQtUtil.h
 )
 
 # Promote headers
@@ -78,22 +78,20 @@ set(MAYAUSDUI_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 if(IS_MACOSX OR IS_LINUX)
     # rpath setup
-    mayaUsd_init_rpath(rpath "plugin")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib")
+    mayaUsd_init_rpath(rpath "lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
+    if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_add_rpath(rpath ${MAYAUSDUI_INSTALL_PATH})
     mayaUsd_install_rpath(rpath ${PROJECT_NAME})
-endif()
-
-if(IS_LINUX)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
-
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib64")
-    endif()
 endif()
 
 install(

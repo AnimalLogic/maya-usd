@@ -22,8 +22,8 @@
 #include "./debugCodes.h"
 #include "./userData.h"
 
-#include "../px_vp20/utils.h"
-#include "../px_vp20/utils_legacy.h"
+#include "mayaUsd/render/px_vp20/utils.h"
+#include "mayaUsd/render/px_vp20/utils_legacy.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
@@ -49,6 +49,10 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
+#if USD_VERSION_NUM > 2002
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
+#endif
 #include "pxr/usd/sdf/path.h"
 
 #if USD_VERSION_NUM < 1911
@@ -418,6 +422,10 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _objectSoftSelectEnabled(false),
         _softSelectOptionsCallbackId(0),
         _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
+#if USD_VERSION_NUM > 2002
+        _hgi(Hgi::GetPlatformDefaultHgi()),
+        _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())},
+#endif
         _selectionResolution(256),
         _enableDepthSelection(false)
 {
@@ -429,7 +437,11 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _legacyViewportPrefix = _rootId.AppendChild(_tokens->LegacyViewport);
     _viewport2Prefix = _rootId.AppendChild(_tokens->Viewport2);
 
+#if USD_VERSION_NUM > 2002
+    _renderIndex.reset(HdRenderIndex::New(&_renderDelegate, {&_hgiDriver}));
+#else
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));
+#endif
     if (!TF_VERIFY(_renderIndex)) {
         return;
     }
@@ -993,6 +1005,8 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
+    GLUniformBufferBindingsSaver bindingsSaver;
+
     return _TestIntersection(primFilter.collection,
                              primFilter.renderTags,
                              viewMatrix, projectionMatrix,
@@ -1196,6 +1210,8 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
 
     _selectResults.clear();
 
+    GLUniformBufferBindingsSaver bindingsSaver;
+
     for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
             "    --- Intersection Testing with collection: %s\n",
@@ -1294,27 +1310,7 @@ UsdMayaGLBatchRenderer::_Render(
                  GL_DEPTH_BUFFER_BIT |
                  GL_VIEWPORT_BIT);
 
-    // XXX: When Maya is using OpenGL Core Profile as the rendering engine (in
-    // either compatibility or strict mode), batch renders like those done in
-    // the "Render View" window or through the ogsRender command do not
-    // properly track uniform buffer binding state. This was causing issues
-    // where the first batch render performed would look correct, but then all
-    // subsequent renders done in that Maya session would be completely black
-    // (no alpha), even if the frame contained only Maya-native geometry or if
-    // a new scene was created/opened.
-    //
-    // To avoid this problem, we need to save and restore Maya's bindings
-    // across Hydra calls. We try not to bog down performance by saving and
-    // restoring *all* GL_MAX_UNIFORM_BUFFER_BINDINGS possible bindings, so
-    // instead we only do just enough to avoid issues. Empirically, the
-    // problematic binding has been the material binding at index 4.
-    static constexpr size_t _UNIFORM_BINDINGS_TO_SAVE = 5u;
-    std::vector<GLint> uniformBufferBindings(_UNIFORM_BINDINGS_TO_SAVE, 0);
-    for (size_t i = 0u; i < uniformBufferBindings.size(); ++i) {
-        glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING,
-                        (GLuint)i,
-                        &uniformBufferBindings[i]);
-    }
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling
@@ -1373,13 +1369,6 @@ UsdMayaGLBatchRenderer::_Render(
     }
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-
-    // XXX: Restore Maya's uniform buffer binding state. See above for details.
-    for (size_t i = 0u; i < uniformBufferBindings.size(); ++i) {
-        glBindBufferBase(GL_UNIFORM_BUFFER,
-                         (GLuint)i,
-                         uniformBufferBindings[i]);
-    }
 
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT |
                    // GL_DEPTH_BUFFER_BIT | GL_VIEWPORT_BIT
