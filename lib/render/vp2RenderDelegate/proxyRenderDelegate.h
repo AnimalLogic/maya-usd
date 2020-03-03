@@ -54,6 +54,7 @@ class HdRprimCollection;
 class UsdImagingDelegate;
 class MayaUsdProxyShapeBase;
 class HdxTaskController;
+class MayaUsdProxyShapeBase;
 
 /*! \brief  Enumerations for selection status
 */
@@ -142,8 +143,8 @@ private:
     void _FilterSelection();
     void _UpdateSelectionStates();
 
-    const MayaUsdProxyShapeBase*  _proxyShape{ nullptr }; //!< DG proxy shape node
-    MDagPath                      _proxyDagPath;          //!< DAG path of the proxy shape (assuming no DAG instancing)
+    MayaUsdProxyShapeBase*  _proxyShape{ nullptr }; //!< DG proxy shape node
+    MDagPath                      _proxyDagPath;    //!< DAG path of the proxy shape (assuming no DAG instancing)
 
     // USD & Hydra Objects
     HdEngine            _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
@@ -186,6 +187,9 @@ private:
 inline bool ProxyRenderDelegate::_isInitialized() {
     return (_sceneDelegate != nullptr);
 }
+
+
+extern UsdImagingDelegate* g_sceneDelegate;  //!< USD scene delegate
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

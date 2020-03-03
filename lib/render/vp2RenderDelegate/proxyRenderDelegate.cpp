@@ -33,6 +33,7 @@
 #include "../../nodes/proxyShapeBase.h"
 #include "../../nodes/stageData.h"
 #include "../../utils/util.h"
+#include "../../ufe/Global.h"
 
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -51,8 +52,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+UsdImagingDelegate* g_sceneDelegate = 0;  //!< USD scene delegate
+
 namespace
 {
+
     //! Representation selector for shaded and textured viewport mode
     const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
 
@@ -274,6 +278,7 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
         _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
+        g_sceneDelegate = _sceneDelegate;
 
         _taskController = new HdxTaskController(_renderIndex,
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
@@ -540,13 +545,20 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShape->ufePath() + pathSegment);
+    Ufe::SceneItem::Ptr si = handler->createItem(_proxyShape->ufePath() + pathSegment);
     if (!si) {
-        TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
-        return false;
+        MayaUsd::ufe::refreshStages();
+        si = handler->createItem(_proxyShape->ufePath() + pathSegment);
+        if(!si)
+        {
+            TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
+            return false;
+        }
     }
-
+    if(_proxyShape)
+        _proxyShape->notifyPreSelectionChanged();
     auto globalSelection = Ufe::GlobalSelection::get();
+
 
     // If update for selection is enabled, we can query selection list adjustment
     // mode once per selection update to avoid any potential performance hit due
@@ -580,6 +592,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection.");
         break;
     }
+    if(_proxyShape)
+        _proxyShape->notifyPostSelectionChanged();
     return true;
 #else
     return false;

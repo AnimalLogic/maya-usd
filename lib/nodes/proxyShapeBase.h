@@ -216,6 +216,9 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         Ufe::Path ufePath() const;
 #endif
 
+        virtual void notifyPreSelectionChanged() {}
+        virtual void notifyPostSelectionChanged() {}
+
     protected:
         MAYAUSD_CORE_PUBLIC
         MayaUsdProxyShapeBase();

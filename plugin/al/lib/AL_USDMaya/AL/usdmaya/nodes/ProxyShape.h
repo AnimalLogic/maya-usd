@@ -837,6 +837,7 @@ public:
   bool primHasExcludedParent(UsdPrim prim);
 
 private:
+
   /// \brief  constructs the USD imaging engine for this shape
   void constructGLImagingEngine();
 
@@ -1052,6 +1053,10 @@ public:
   }
 
 private:
+
+  void notifyPreSelectionChanged() override;
+  void notifyPostSelectionChanged() override;
+
   SdfPathVector m_pathsOrdered;
   AL_USDMAYA_PUBLIC
   static std::vector<MObjectHandle> m_unloadedProxyShapes;
