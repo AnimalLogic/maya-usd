@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,11 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "USDQtUtil.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-TF_DEBUG_CODES(ALUTILS_INFO);
-PXR_NAMESPACE_CLOSE_SCOPE
+#include <maya/MQtUtil.h>
+
+#include <QtGui/QPixmap>
+
+MAYAUSD_NS_DEF {
+
+int USDQtUtil::dpiScale(int size) const
+{
+	return MQtUtil::dpiScale(size);
+}
+
+float USDQtUtil::dpiScale(float size) const
+{
+	return MQtUtil::dpiScale(size);
+}
+
+QPixmap* USDQtUtil::createPixmap(const std::string& imageName) const
+{
+	return MQtUtil::createPixmap(imageName.c_str());
+}
+
+} // namespace MayaUsd
