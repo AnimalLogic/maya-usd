@@ -16,7 +16,7 @@
 
 #include "UsdRotatePivotTranslateUndoableCommand.h"
 #include "private/Utils.h"
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
@@ -29,7 +29,7 @@ UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(c
 	, fTimeCode(timeCode)
 	, fNoPivotOp(false)
 {
-	AL::usd::utils::MayaTransformAPI api(prim);
+	MayaUsdUtils::MayaTransformAPI api(prim);
 	fPrevPivotValue = api.rotatePivot(fTimeCode);
 }
 
@@ -47,7 +47,7 @@ void UsdRotatePivotTranslateUndoableCommand::undo()
 {
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotatePivotTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n",
 	  fPath.string().c_str(), fPrevPivotValue[0], fPrevPivotValue[1], fPrevPivotValue[2], fTimeCode.GetValue());
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.rotatePivot(GfVec3f(fPrevPivotValue), fTimeCode);
 
 	// Todo : We would want to remove the xformOp
@@ -69,7 +69,7 @@ bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, doubl
 {
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotatePivotTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n", 
 		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.rotatePivot(GfVec3f(x, y, z), fTimeCode);
 	return true;
 }

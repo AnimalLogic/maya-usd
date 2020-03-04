@@ -17,7 +17,7 @@
 #include "UsdTranslateUndoableCommand.h"
 #include "private/Utils.h"
 #include "Utils.h"
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
@@ -30,7 +30,7 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const UsdPrim& prim, co
 	, fTimeCode(timeCode)
 	, fNoTranslateOp(false)
 {
-	AL::usd::utils::MayaTransformAPI api(prim);
+	MayaUsdUtils::MayaTransformAPI api(prim);
 	fPrevTranslateValue = api.translate(fTimeCode);
 }
 
@@ -49,7 +49,7 @@ void UsdTranslateUndoableCommand::undo()
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n", 
 		fPath.string().c_str(), fPrevTranslateValue[0], fPrevTranslateValue[1], fPrevTranslateValue[2], fTimeCode.GetValue());
 	
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.translate(fPrevTranslateValue, fTimeCode);
 
 	// Todo : We would want to remove the xformOp
@@ -76,7 +76,7 @@ bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
 {
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n",
 		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.translate(GfVec3d(x, y, z), fTimeCode);
 	return true;
 }

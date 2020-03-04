@@ -20,7 +20,7 @@
 #include "UsdScaleUndoableCommand.h"
 #include "UsdRotatePivotTranslateUndoableCommand.h"
 #include "UsdScalePivotTranslateUndoableCommand.h"
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "private/Utils.h"
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -130,13 +130,13 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.translate(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::translation() const
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	auto translate = api.translate(timeCode());
 	return Ufe::Vector3d(translate[0], translate[1], translate[2]);
 }
@@ -149,7 +149,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	auto order = api.rotateOrder();
 	api.rotate(GfVec3f(x, y, z), order, timeCode());
 }
@@ -162,7 +162,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.scale(GfVec3f(x, y, z), timeCode());
 }
 
@@ -174,13 +174,13 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.rotatePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	auto value = api.rotatePivot(timeCode());
 	return Ufe::Vector3d(value[0], value[1], value[2]);
 }
@@ -193,13 +193,13 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
 
 void UsdTransform3d::scalePivotTranslate(double x, double y, double z)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	api.scalePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	auto value = api.scalePivot(timeCode());
 	return Ufe::Vector3d(value[0], value[1], value[2]);
 }
