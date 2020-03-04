@@ -37,8 +37,10 @@ requires = [
     'tbb' # TBB version is decided by mayaDevKit
 ]
 
+flatten_env_vars = ["arse"]
+
 variants = [
-    ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
+#    ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
     ['mayaDevKit-2020.0', 'usdBase-0.19.11']
 ]
 
@@ -47,8 +49,8 @@ help = [['API', '$BROWSER http://github.al.com.au/pages/documentation/AL_USDMaya
 def commands():
     prependenv('PATH', '{root}/bin')
     prependenv('PYTHONPATH', '{root}/lib/python')
-    prependenv('LD_LIBRARY_PATH', '{root}/lib')
-    prependenv('MAYA_PLUG_IN_PATH', '{root}/plugin')
+    prependenv('LD_LIBRARY_PATH', '{root}/plugin/al/lib')
+    prependenv('MAYA_PLUG_IN_PATH', '{root}/plugin/al/plugin')
     prependenv('MAYA_SCRIPT_PATH', '{root}/lib:{root}/share/usd/plugins/usdMaya/resources')
     prependenv('PXR_PLUGINPATH_NAME', '{root}/lib/usd:{root}/plugin')
     prependenv('CMAKE_MODULE_PATH', '{root}/cmake')

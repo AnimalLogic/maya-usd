@@ -19,7 +19,7 @@ requires = [
 ]
 
 variants = \
-    [['usdBase-0.19.7'],['usdBase-0.19.11']]
+    [['usdBase-0.19.11']]
 
 def commands():
     prependenv('LD_LIBRARY_PATH', '{root}/lib')

@@ -141,6 +141,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 option(SKIP_USDMAYA_TESTS "Skip test building" OFF)
 
 if(NOT SKIP_USDMAYA_TESTS)
+	MESSAGE("TESTING  MAYA_PLUG_IN_PATH $ENV{MAYA_PLUG_IN_PATH}")
     enable_testing()
 endif()
 
@@ -157,7 +158,8 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
-set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(INSTALL_DIR_SUFFIX plugin/al)
+set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX})
 
 # Build our plugs... non-standard as we're building from another source tree
 set(EVENTS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/utils)
@@ -166,7 +168,7 @@ set(MAYAUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/mayautils)
 set(USDMAYAUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/usdmayautils)
 set(MAYATEST_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/mayatest)
 
-set(INSTALL_DIR_SUFFIX .) #Autodesk use this in their INSTALL TARGET for plugins
+##set(INSTALL_DIR_SUFFIX .) #Autodesk use this in their INSTALL TARGET for plugins
 
 # pxrUsd translator uses this
 set(PROJECT_SOURCE_DIR ${MAYA_USD_AL_PLUGIN_DIR})
