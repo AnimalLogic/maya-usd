@@ -7,6 +7,7 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
+        MayaTransformAPI.cpp
         DebugCodes.cpp
         DiffCore.cpp
 )
@@ -47,6 +48,7 @@ set(headers
     DebugCodes.h
     DiffCore.h
     ForwardDeclares.h
+    MayaTransformAPI.h
     SIMD.h
 )
 
@@ -55,6 +57,8 @@ mayaUsd_promoteHeaderListWithSubdir(
         ${headers}
     BASE_PATH ${TARGET_NAME}
 )
+
+add_subdirectory(tests)
 
 # -----------------------------------------------------------------------------
 # install

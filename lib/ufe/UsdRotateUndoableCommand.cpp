@@ -16,7 +16,7 @@
 
 #include "UsdRotateUndoableCommand.h"
 #include "private/Utils.h"
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
@@ -29,7 +29,7 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdPrim& prim, const Uf
 	, fTimeCode(timeCode)
 	, fNoRotateOp(false)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	fPrevRotateValue = api.rotate(fTimeCode);
 }
 
@@ -45,7 +45,7 @@ UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(const UsdPrim& pr
 
 void UsdRotateUndoableCommand::undo()
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	const auto order = api.rotateOrder();
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::undo %s (%lf, %lf, %lf) [%d] @%lf\n", 
 		fPath.string().c_str(), fPrevRotateValue[0], fPrevRotateValue[1], fPrevRotateValue[2], int(order), fTimeCode.GetValue());
@@ -74,7 +74,7 @@ void UsdRotateUndoableCommand::perform()
 
 bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 {
-	AL::usd::utils::MayaTransformAPI api(fPrim);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
 	const auto order = api.rotateOrder();
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::rotate %s (%lf, %lf, %lf) [%d] @%lf\n", 
 		fPath.string().c_str(), x, y, z, int(order), fTimeCode.GetValue());
