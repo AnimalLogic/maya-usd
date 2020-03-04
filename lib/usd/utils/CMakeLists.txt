@@ -92,7 +92,7 @@ set(PY_INIT_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
 )
 
-# copy to build location for module tests
+# copy init files to build location for module tests
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} OUTPUT_FILE ${INPUT_FILE})
   execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${INPUT_FILE} ${OUTPUT_FILE})
@@ -139,7 +139,7 @@ set_target_properties(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
 
 add_subdirectory(tests)
 
-#install python inits
+#install python init files
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_INSTALL_PREFIX}/lib/python/${TARGET_NAME} OUTPUT_FILE ${INPUT_FILE})
   install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${INPUT_FILE} ${OUTPUT_FILE})")
