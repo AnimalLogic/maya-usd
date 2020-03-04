@@ -2,6 +2,9 @@ set(TARGET_NAME "mayaUsdUtils")
 
 add_library(${TARGET_NAME} SHARED)
 
+set(MAYAUSDUTILS_PYTHON_LIBRARY_NAME ${USDUTILS_LIBRARY_NAME}Python)
+set(MAYAUSDUTILS_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/mayaUsdUtils)
+
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -10,6 +13,8 @@ target_sources(${TARGET_NAME}
         MayaTransformAPI.cpp
         DebugCodes.cpp
         DiffCore.cpp
+        wrapMayaTransformAPI.cpp
+        module.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -58,8 +63,6 @@ mayaUsd_promoteHeaderListWithSubdir(
     BASE_PATH ${TARGET_NAME}
 )
 
-add_subdirectory(tests)
-
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
@@ -79,3 +82,55 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
 endif()
+
+list(APPEND mayausdutils_python_source
+  module.cpp
+  wrapMayaTransformAPI.cpp
+)
+
+add_library(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
+  SHARED
+    ${mayausdutils_python_source}
+)
+
+target_compile_definitions(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
+  PRIVATE
+    MFB_PACKAGE_NAME=mayaUsdUtils
+    MFB_ALT_PACKAGE_NAME=mayaUsdUtils
+    MFB_PACKAGE_MODULE=mayaUsdUtils
+)
+
+target_include_directories(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME} 
+    PUBLIC
+    ${UTILS_INCLUDE_LOCATION} 
+    ${MAYAUSDUTILS_INCLUDE_LOCATION} 
+    ${USD_INCLUDE_DIR}
+    )
+
+target_link_libraries(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
+  ${USDUTILS_LIBRARY_NAME}
+  ${python_LIBRARIES}
+  tf
+  gf
+  usd
+  usdGeom
+)
+
+set_target_properties(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
+  PROPERTIES
+    PREFIX "_"
+    SUFFIX ".so"
+    OUTPUT_NAME "mayaUsdUtils"
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_subdirectory(tests)
+
+
+# install python library
+install(TARGETS ${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
+  LIBRARY
+  DESTINATION ${MAYAUSDUTILS_PYTHON_LIBRARY_LOCATION}
+  RUNTIME
+  DESTINATION ${MAYAUSDUTILS_PYTHON_LIBRARY_LOCATION}
+)

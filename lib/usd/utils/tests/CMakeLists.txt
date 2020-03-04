@@ -1,8 +1,8 @@
 find_package(GTest REQUIRED)
 
-set(USDUTILS_TEST_EXECUTABLE_NAME AL_USDUtilsTests)
-set(USDUTILS_TEST_NAME GTest:AL_USDUtilsTests)
-set(USDUTILS_PYTHON_TEST_NAME Python:AL_USDUtilsTests)
+set(USDUTILS_TEST_EXECUTABLE_NAME MayaUsdUtilsTests)
+set(USDUTILS_TEST_NAME GTest:MayaUsdUtilsTests)
+set(USDUTILS_PYTHON_TEST_NAME Python:MayaUsdUtilsTests)
 
 add_definitions(
   -DAL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data"

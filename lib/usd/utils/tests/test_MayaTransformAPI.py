@@ -1,5 +1,5 @@
 
-from AL.usd.utils import MayaTransformAPI, RotationOrder
+from MayaUsdUtils import MayaTransformAPI, RotationOrder
 from pxr import Usd, Sdf, Gf, UsdGeom
 import unittest
 
