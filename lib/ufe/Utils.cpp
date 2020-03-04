@@ -101,7 +101,6 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 				prim = stage->GetPrimAtPath(SdfPath(pathText));
 			}
 		}
-
 	}
 	return prim;
 }

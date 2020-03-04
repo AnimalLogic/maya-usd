@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "MayaTransformAPI.h"
 
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/makePyConstructor.h>
@@ -28,7 +28,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapMayaTransformAPI()
 {
   {
-    typedef AL::usd::utils::RotationOrder This;
+    typedef MayaUsdUtils::RotationOrder This;
     enum_<This>("RotationOrder")
         .value("kXYZ", This::kXYZ)
         .value("kYZX", This::kYZX)
@@ -39,14 +39,14 @@ void wrapMayaTransformAPI()
   }
 
   {
-    typedef AL::usd::utils::MayaTransformAPI This;
+    typedef MayaUsdUtils::MayaTransformAPI This;
     class_<This>("MayaTransformAPI", no_init)
       .def(init<const UsdPrim&, bool>((arg("prim"), arg("convertMatrixToComponents"))))
       .def("scale", (void (This::*)(const GfVec3f&, const UsdTimeCode&)) &This::scale)
       .def("scale", (GfVec3f (This::*)(const UsdTimeCode&) const) &This::scale)
       .def("translate", (void (This::*)(const GfVec3d&, const UsdTimeCode&)) &This::translate)
       .def("translate", (GfVec3d (This::*)(const UsdTimeCode&) const) &This::translate)
-      .def("rotate", (void (This::*)(const GfVec3f&, AL::usd::utils::RotationOrder, const UsdTimeCode&)) &This::rotate)
+      .def("rotate", (void (This::*)(const GfVec3f&, MayaUsdUtils::RotationOrder, const UsdTimeCode&)) &This::rotate)
       .def("rotate", (GfVec3f (This::*)(const UsdTimeCode&) const) &This::rotate)
       .def("rotateAxis", (void (This::*)(const GfVec3f&, const UsdTimeCode&)) &This::rotateAxis)
       .def("rotateAxis", (GfVec3f (This::*)(const UsdTimeCode&) const) &This::rotateAxis)
