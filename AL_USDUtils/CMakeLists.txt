@@ -22,16 +22,18 @@ set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 set (MAYA_USD_WIP_REPO_DIR_REL ${CMAKE_CURRENT_SOURCE_DIR}/../../maya-usd)
-get_filename_component(MAYA_USD_WIP_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
+get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
 
 include(maya-usd-subproject)
+
+include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
 
 ####################################################################################################
 # General
 ####################################################################################################
-set(USDUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/usdutils)
+set(USDUTILS_INCLUDE_LOCATION ${MAYA_USD_SOURCE_DIR}/lib/usd/utils)
 
-add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/usdutils ${MAYA_USD_BUILD_DIR}/usdutils)
+add_subdirectory(${MAYA_USD_SOURCE_DIR}/lib/usd/utils ${MAYA_USD_BUILD_DIR}/usdutils)
 
 add_custom_target(all_tests
   ${CMAKE_CTEST_COMMAND} --output-on-failure

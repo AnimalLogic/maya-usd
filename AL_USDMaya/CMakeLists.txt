@@ -17,7 +17,7 @@ cmake_policy(SET CMP0026 OLD)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 set (MAYA_USD_WIP_REPO_DIR_REL ${CMAKE_CURRENT_SOURCE_DIR}/../../maya-usd)
-get_filename_component(MAYA_USD_WIP_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
+get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
 
 include(maya-usd-subproject)
 list(APPEND CMAKE_MODULE_PATH ${MAYA_USD_SOURCE_DIR}/cmake/modules)
@@ -50,7 +50,7 @@ configure_file(Version.h.in ${MAYA_USD_AL_PLUGIN_DIR}/lib/AL_USDMaya/AL/usdmaya/
 #Extract the USD_VERSION_NUM as used in the code from our USDBASE version
 string(SUBSTRING $ENV{REZ_USDBASE_VERSION} 1 -1 USD_VERSION_NUM_TMP)
 string(REPLACE "." "" USD_VERSION_NUM ${USD_VERSION_NUM_TMP})
-MESSAGE("USD_VERSION_NUM" + ${USD_VERSION_NUM})
+MESSAGE("USD_VERSION IS ${USD_VERSION_NUM}")
 
 ####################################################################################################
 # Boost

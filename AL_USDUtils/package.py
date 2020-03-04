@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 name = 'AL_USDUtils'
 
-version = '0.2.1'
+version = '1.0.0'
 
 private_build_requires = [
     'AL_CMakeLib',
