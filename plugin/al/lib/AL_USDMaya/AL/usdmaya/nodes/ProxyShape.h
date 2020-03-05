@@ -52,6 +52,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"
+#include "ufe/selection.h"
 
 UFE_NS_DEF {
     class Path;
@@ -125,7 +126,13 @@ private:
   MSelectionList m_newSelection;
   std::vector<std::pair<SdfPath, MObject>> m_insertedRefs;
   std::vector<std::pair<SdfPath, MObject>> m_removedRefs;
-  bool m_internal;
+#if defined(WANT_UFE_BUILD)
+  Ufe::Selection m_newUFESelection = Ufe::Selection();
+  Ufe::Selection m_previousUFESelection = Ufe::Selection();
+  bool m_selectRoot = false;
+  bool m_unselectRoot = false;
+#endif
+  bool m_internal = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -830,6 +837,7 @@ public:
   bool primHasExcludedParent(UsdPrim prim);
 
 private:
+
   /// \brief  constructs the USD imaging engine for this shape
   void constructGLImagingEngine();
 
@@ -1026,7 +1034,7 @@ public:
 
   void processChangedMetaData(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths);
   void removeMetaData(const SdfPathVector& removedPaths);
-
+  
   bool isPrimDirty(const UsdPrim& prim) override
   {
     const SdfPath path(prim.GetPath());
@@ -1045,6 +1053,10 @@ public:
   }
 
 private:
+
+  void notifyPreSelectionChanged() override;
+  void notifyPostSelectionChanged() override;
+
   SdfPathVector m_pathsOrdered;
   AL_USDMAYA_PUBLIC
   static std::vector<MObjectHandle> m_unloadedProxyShapes;

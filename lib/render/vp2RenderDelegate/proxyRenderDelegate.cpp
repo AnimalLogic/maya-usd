@@ -33,6 +33,7 @@
 #include "../../nodes/proxyShapeBase.h"
 #include "../../nodes/stageData.h"
 #include "../../utils/util.h"
+#include "../../ufe/Global.h"
 
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -53,6 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+
     //! Representation selector for shaded and textured viewport mode
     const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
 
@@ -544,13 +546,22 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShape->ufePath() + pathSegment);
+    Ufe::SceneItem::Ptr si = handler->createItem(_proxyShape->ufePath() + pathSegment);
     if (!si) {
-        TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
-        return false;
+        // If the createItem call failed, rather than just exiting, assume that it's possible the internal stages subject 
+        // just needs to be updated, and then try again. 
+        MayaUsd::ufe::refreshStages();
+        si = handler->createItem(_proxyShape->ufePath() + pathSegment);
+        if(!si)
+        {
+            TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
+            return false;
+        }
     }
-
+    if(_proxyShape)
+        _proxyShape->notifyPreSelectionChanged();
     auto globalSelection = Ufe::GlobalSelection::get();
+
 
     // If update for selection is enabled, we can query selection list adjustment
     // mode once per selection update to avoid any potential performance hit due
@@ -584,6 +595,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection.");
         break;
     }
+    if(_proxyShape)
+        _proxyShape->notifyPostSelectionChanged();
     return true;
 #else
     return false;
