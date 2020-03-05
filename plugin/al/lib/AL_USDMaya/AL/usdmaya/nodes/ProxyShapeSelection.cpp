@@ -996,6 +996,7 @@ void SelectionUndoHelper::doIt()
     {
       MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
     }
+    m_proxy->m_pleaseIgnoreSelection = false;
     if(!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"))
     {
       m_proxy->constructLockPrims();
@@ -1050,10 +1051,11 @@ void SelectionUndoHelper::doIt()
 
       /// UGH! This clears the UFE selection :(
       MGlobal::setActiveSelectionList(sl);
+
+      m_proxy->m_pleaseIgnoreSelection = false;
     }
   }
   #endif
-  m_proxy->m_pleaseIgnoreSelection = false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1225,7 +1227,6 @@ bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
 bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::doSelect\n");
-  m_selectedPaths.clear();
 
   auto stage = m_stage;
   if(!stage)

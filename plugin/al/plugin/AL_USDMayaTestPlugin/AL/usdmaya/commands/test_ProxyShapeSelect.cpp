@@ -245,6 +245,7 @@ TEST(ProxyShapeSelect, selectNode1)
   EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
   EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+
   EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
   EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
   EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
@@ -1682,8 +1683,7 @@ TEST(ProxyShapeSelect, pseudoRootSelect)
 
   // State 2: ltoe1 selected
   // make sure ltoe1 is contained in the selected paths (for hydra selection)
-  EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/")));
+  EXPECT_EQ(1u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
   EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
