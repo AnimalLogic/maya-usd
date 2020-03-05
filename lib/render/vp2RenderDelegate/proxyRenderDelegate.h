@@ -188,9 +188,6 @@ inline bool ProxyRenderDelegate::_isInitialized() {
     return (_sceneDelegate != nullptr);
 }
 
-
-extern UsdImagingDelegate* g_sceneDelegate;  //!< USD scene delegate
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

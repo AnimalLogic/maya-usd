@@ -52,8 +52,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdImagingDelegate* g_sceneDelegate = 0;  //!< USD scene delegate
-
 namespace
 {
 
@@ -282,7 +280,6 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
         _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
-        g_sceneDelegate = _sceneDelegate;
 
         _taskController = new HdxTaskController(_renderIndex,
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
@@ -551,6 +548,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     Ufe::SceneItem::Ptr si = handler->createItem(_proxyShape->ufePath() + pathSegment);
     if (!si) {
+        // If the createItem call failed, rather than just exiting, assume that it's possible the internal stages subject 
+        // just needs to be updated, and then try again. 
         MayaUsd::ufe::refreshStages();
         si = handler->createItem(_proxyShape->ufePath() + pathSegment);
         if(!si)

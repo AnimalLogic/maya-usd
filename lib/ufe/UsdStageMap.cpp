@@ -105,13 +105,6 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 	auto iter = fObjectToStage.find(proxyShape);
 	if (iter != std::end(fObjectToStage))
 	{
-		MFnDependencyNode fn(proxyShape.object());
-		MayaUsdProxyShapeBase* proxy = (MayaUsdProxyShapeBase*)fn.userNode();
-		if(proxy)
-		{
-			return proxy->getUsdStage();
-		}
-
 		return iter->second;
 	}
 	return nullptr;

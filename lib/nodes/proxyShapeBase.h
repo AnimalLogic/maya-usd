@@ -218,6 +218,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         Ufe::Path ufePath() const;
 #endif
 
+        // Used in order to trigger notifications of when the selection is about to change.
+        // Required for the AL plugin to notify GUI based tools of a selection event. 
         virtual void notifyPreSelectionChanged() {}
         virtual void notifyPostSelectionChanged() {}
 
