@@ -190,6 +190,7 @@ endif()
 add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/utils ${MAYA_USD_BUILD_DIR}/utils)
 if(NOT SKIP_USDMAYA_TESTS)
 	add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/mayatest ${MAYA_USD_BUILD_DIR}/mayatest)
+	set(MAYA_LIBRARY_DIR ${mayaDevKit_LIBRARY_DIRS})
 endif()
 
 add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/mayautils ${MAYA_USD_BUILD_DIR}/mayautils)
