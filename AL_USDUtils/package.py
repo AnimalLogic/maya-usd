@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 name = 'AL_USDUtils'
 
-version = '1.0.0'
+version = '1.0.1'
 
 private_build_requires = [
     'AL_CMakeLib',
@@ -19,7 +19,7 @@ requires = [
 ]
 
 variants = \
-    [['usdBase-0.19.11']]
+    [['usdBase-0.19.11'],['usdBase-0.20.2']]
 
 def commands():
     prependenv('LD_LIBRARY_PATH', '{root}/lib')
