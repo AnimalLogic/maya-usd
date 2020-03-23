@@ -143,7 +143,7 @@ For each PR we open in **ALInternal**, we should label as one (and only one) of:
 
 
 # FAQ
-## Why do this as a separate git repo?
+## Why are the build files a separate git repo to the source files?
 See https://www.al.com.au:8443/display/~eoinm/Options+for+dev+workflow+Transition+from+AL_USDMaya+to+maya-usd for background info
 
 ## Where are the docs?
