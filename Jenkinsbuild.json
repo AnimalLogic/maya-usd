@@ -10,7 +10,7 @@
             "stageName" : "AL_USDMaya",
             "packagePath" : "AL_USDMaya",
             "rezBuildOptions" : "--variants 0 -i -- -- -j8",
-            "rezTestOptions" : "--variants 1 -- --"
+            "rezTestOptions" : "--variants 0 -- --"
         },
         {
           "stageNumber" : 3,
