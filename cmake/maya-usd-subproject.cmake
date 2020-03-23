@@ -51,7 +51,8 @@ ELSE()
 	FetchContent_Declare(
 	  maya-usd
 	  GIT_REPOSITORY https://github.al.com.au/rnd/maya-usd.git
-	  GIT_TAG $ENV{MAYA_USD_GIT_TAG}
+	  ##GIT_TAG $ENV{MAYA_USD_GIT_TAG}
+	  GIT_TAG fixRezTests1  #Remove this when we've fixed preprocess()
 	)
 	FetchContent_Populate(maya-usd)
 	set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
