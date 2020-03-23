@@ -17,6 +17,7 @@ requires = [
 
 variants = [
   ['usdBase-0.19.11'],
+  ['usdBase-0.20.2'],
 ]
 
 def commands():

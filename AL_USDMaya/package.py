@@ -20,7 +20,7 @@ private_build_requires = [
 
 requires = [
     'usdImaging',
-    'AL_USDTransaction-0.2+',
+    'AL_USDTransaction-0.3.1+',
     'AL_USDUtils-1.0+',
     'glew-2.0',
     'googletest-1.8',
