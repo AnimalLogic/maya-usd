@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 name = 'AL_USDMaya'
 
-version = '1.0.0'
+version = '1.0.1'
 
 authors = ['eoinm','robb']
 
@@ -31,7 +31,6 @@ requires = [
     '~AL_USDCommonSchemas-0.4+<1', # For the SdfMetadata only
     'AL_boost-1.66',
     'AL_boost_python-1.66',
-    'usdMaya',
     '!AL_USDSchemas',
     'CentOS-7.4+<8',
     'tbb' # TBB version is decided by mayaDevKit
@@ -39,7 +38,9 @@ requires = [
 
 variants = [
     ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
-    ['mayaDevKit-2020.0', 'usdBase-0.19.11']
+    ['mayaDevKit-2019.0', 'usdBase-0.20.2'],
+    ['mayaDevKit-2020.0', 'usdBase-0.19.11'],
+    ['mayaDevKit-2020.0', 'usdBase-0.20.2']
 ]
 
 help = [['API', '$BROWSER http://github.al.com.au/pages/documentation/AL_USDMaya']]
