@@ -1,0 +1,21 @@
+{
+    "stages" : [
+        {
+            "stageNumber" : 1,
+            "stageName" : "AL_USDTransaction",
+            "packagePath" : "AL_USDTransaction"
+        },
+        {
+            "stageNumber" : 2,
+            "stageName" : "AL_USDMaya",
+            "packagePath" : "AL_USDMaya",
+            "rezBuildOptions" : "--variants 0 1 -i -- -- -j8",
+            "rezTestOptions" : "--variants 1 -- --"
+        },
+        {
+          "stageNumber" : 3,
+          "stageName" : "AL_USDUtils",
+          "packagePath" : "AL_USDUtils"
+        }
+    ]
+}
