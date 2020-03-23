@@ -14,7 +14,7 @@ private_build_requires = [
     'gcc-6.3.1',
     'AL_MTypeId-1.41+',
     'doxygen-1',
-    'AL_USDCommonSchemas-0.9+', # For the SdfMetadata only
+    '~AL_USDCommonSchemas-0.9+', # For the SdfMetadata only
     'AL_maya_startup-1+', # To get mayapy and make tests work
 ]
 
@@ -36,8 +36,6 @@ requires = [
     'CentOS-7.4+<8',
     'tbb' # TBB version is decided by mayaDevKit
 ]
-
-flatten_env_vars = ["arse"]
 
 variants = [
     ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
@@ -69,5 +67,7 @@ with scope('config') as config:
 
 def preprocess(this, data):
     #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
+
+    #Note that this code below is currently broken as of Mar 16/2020
     import os
     os.environ['MAYA_USD_GIT_TAG']= 'cfe1a19d21f1d1096e52e16adba5f127a5157074y'
