@@ -40,7 +40,7 @@ requires = [
 flatten_env_vars = ["arse"]
 
 variants = [
-#    ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
+    ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
     ['mayaDevKit-2020.0', 'usdBase-0.19.11']
 ]
 
