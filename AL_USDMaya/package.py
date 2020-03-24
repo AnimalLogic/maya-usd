@@ -48,8 +48,8 @@ help = [['API', '$BROWSER http://github.al.com.au/pages/documentation/AL_USDMaya
 def commands():
     prependenv('PATH', '{root}/bin')
     prependenv('PYTHONPATH', '{root}/lib/python')
-    prependenv('LD_LIBRARY_PATH', '{root}/lib')
-    prependenv('MAYA_PLUG_IN_PATH', '{root}/plugin')
+    prependenv('LD_LIBRARY_PATH', '{root}/plugin/al/lib')
+    prependenv('MAYA_PLUG_IN_PATH', '{root}/plugin/al/plugin')
     prependenv('MAYA_SCRIPT_PATH', '{root}/lib:{root}/share/usd/plugins/usdMaya/resources')
     prependenv('PXR_PLUGINPATH_NAME', '{root}/lib/usd:{root}/plugin')
     prependenv('CMAKE_MODULE_PATH', '{root}/cmake')
@@ -68,5 +68,6 @@ with scope('config') as config:
 
 def preprocess(this, data):
     #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
+    #@Note that this code below is currently broken as of Mar 16/2020
     import os
-    os.environ['MAYA_USD_GIT_TAG']= 'cfe1a19d21f1d1096e52e16adba5f127a5157074'
+    os.environ['MAYA_USD_GIT_TAG']= 'cfe1a19d21f1d1096e52e16adba5f127a5157074y'

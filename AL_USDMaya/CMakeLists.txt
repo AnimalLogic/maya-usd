@@ -140,6 +140,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 option(SKIP_USDMAYA_TESTS "Skip test building" OFF)
 
 if(NOT SKIP_USDMAYA_TESTS)
+	MESSAGE("TESTING  MAYA_PLUG_IN_PATH $ENV{MAYA_PLUG_IN_PATH}")
     enable_testing()
 endif()
 
@@ -156,7 +157,8 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
-set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(INSTALL_DIR_SUFFIX plugin/al)
+set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX})
 
 # Build our plugs... non-standard as we're building from another source tree
 set(EVENTS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/utils)
@@ -164,8 +166,6 @@ set(USDUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/usdutils)
 set(MAYAUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/mayautils)
 set(USDMAYAUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/usdmayautils)
 set(MAYATEST_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/mayatest)
-
-set(INSTALL_DIR_SUFFIX .) #Autodesk use this in their INSTALL TARGET for plugins
 
 # pxrUsd translator uses this
 set(PROJECT_SOURCE_DIR ${MAYA_USD_AL_PLUGIN_DIR})
@@ -187,6 +187,7 @@ endif()
 add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/utils ${MAYA_USD_BUILD_DIR}/utils)
 if(NOT SKIP_USDMAYA_TESTS)
 	add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/mayatest ${MAYA_USD_BUILD_DIR}/mayatest)
+	set(MAYA_LIBRARY_DIR ${mayaDevKit_LIBRARY_DIRS})
 endif()
 
 add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/mayautils ${MAYA_USD_BUILD_DIR}/mayautils)
@@ -198,8 +199,7 @@ add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/translators ${MAYA_USD_BUILD_DIR}/tra
 
 
 
-
-# The opensource build has our these custom SdfMetadata in the schema plugInfo.json:
+# The opensource build has these custom SdfMetadata in the schema plugInfo.json:
 
 #   - al_usdmaya_mergedTransform
 #   - al_usdmaya_selectability
