@@ -45,7 +45,7 @@ Note that all 3 plugins depend on a common library called "mayaUsd". This is cur
 We attempt to cover 3 workflows
 
 ### Working locally
-if you're working interactively, maya-usd-build expects to find a local clone of the maya-usd repo in a sibling directory of maya-usd-build, and will check one out if it doesn't find it. It defaults to the "dev" branch (or whatever the default is) but you can change it to whatever you want
+if you're working interactively, maya-usd-build expects to find a local clone of the maya-usd repo in a sibling directory of maya-usd-build, and will check one out if it doesn't find it. It defaults to the "dev" branch (or whatever the default is) but you can change it to whatever you want.. changing the branch of maya-usd-build does not change the branch of maya-usd
 
 When you build it will build the source files in that sibling maya-usd folder. 
 You work with, commit, push and generally manipulate the source files in that local maya-usd directory/git repository as you would normally.
@@ -60,7 +60,24 @@ When you rez-release/rez-unleash, we look for the local/sibling  git clone of ma
 
 Post release, we:
 + tag the sub repo (i.e maya-usd) in the same way we tag the repo we're releasing (i.e git tag "AL_USDMaya-MAJOR.MINOR.PATCH" commitID)
-+ add the commit id, and history to the package.py of the package we're releasing
++ add the commit id, and history to the package.py of the package we're releasing like this (snippet of package.py in the root of the released package)
+
+```
+revision = \
+    {'branch': 'master',
+     'commit': '684a0190c87a333d971a854e82dfeb9c2ede1880',
+     'fetch_url': 'https://github.al.com.au/rnd/maya-usd-build.git',
+     'push_url': 'https://github.al.com.au/rnd/maya-usd-build.git',
+     'tracking_branch': 'origin/master'}
+
+sub_repositories_revisions = \
+    {'../../maya-usd': {'branch': 'master',
+                        'commit': 'ef72f8fc21afdbb5f98897ec1e1780b78541bab7',
+                        'fetch_url': 'https://github.al.com.au/rnd/maya-usd.git',
+                        'push_url': 'https://github.al.com.au/rnd/maya-usd.git',
+                        'tracking_branch': 'origin/master'}}
+```
+
 
 
 ### Non-interactive use
