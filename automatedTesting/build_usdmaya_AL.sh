@@ -27,8 +27,6 @@ cd $TMP_DIR &&\
       --devkit-location $MAYA_DEVKIT_LOCATION \
       --maya-location $MAYA_LOCATION \
       .. 
-    export MAYA_MODULE_PATH=$MAYAUSD_INSTALL_LOCATION
-    export LD_LIBRARY_PATH=$MAYAUSD_INSTALL_LOCATION/plugin/al/lib:$MAYAUSD_INSTALL_LOCATION/lib:$LD_LIBRARY_PATH
     cd $TMP_DIR/build
     ctest -V -R "Test"	#Lucky pattern that happens to run only the AL tests
     cd ..
