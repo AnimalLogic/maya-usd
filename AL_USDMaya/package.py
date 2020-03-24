@@ -14,7 +14,7 @@ private_build_requires = [
     'gcc-6.3.1',
     'AL_MTypeId-1.41+',
     'doxygen-1',
-    '~AL_USDCommonSchemas-0.9+', # For the SdfMetadata only
+    'AL_USDCommonSchemas-0.9+', # For the SdfMetadata only
     'AL_maya_startup-1+', # To get mayapy and make tests work
 ]
 
@@ -28,7 +28,7 @@ requires = [
     'zlib-1.2',
     'cppunit-1.12+<2',
     'AL_CMakeLibGitHub-0.1.0+<1',
-    'AL_USDCommonSchemas-0.4+<1', # For the SdfMetadata only
+    '~AL_USDCommonSchemas-0.4+<1', # For the SdfMetadata only
     'AL_boost-1.66',
     'AL_boost_python-1.66',
     'usdMaya',
@@ -67,7 +67,6 @@ with scope('config') as config:
 
 def preprocess(this, data):
     #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
-
-    #Note that this code below is currently broken as of Mar 16/2020
+    #@Note that this code below is currently broken as of Mar 16/2020
     import os
     os.environ['MAYA_USD_GIT_TAG']= 'cfe1a19d21f1d1096e52e16adba5f127a5157074y'

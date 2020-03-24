@@ -168,8 +168,6 @@ set(MAYAUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/mayautils)
 set(USDMAYAUTILS_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/usdmayautils)
 set(MAYATEST_INCLUDE_LOCATION ${MAYA_USD_AL_PLUGIN_DIR}/mayatest)
 
-##set(INSTALL_DIR_SUFFIX .) #Autodesk use this in their INSTALL TARGET for plugins
-
 # pxrUsd translator uses this
 set(PROJECT_SOURCE_DIR ${MAYA_USD_AL_PLUGIN_DIR})
 # Build usdMaya pxr translator
@@ -202,8 +200,7 @@ add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/translators ${MAYA_USD_BUILD_DIR}/tra
 
 
 
-
-# The opensource build has our these custom SdfMetadata in the schema plugInfo.json:
+# The opensource build has these custom SdfMetadata in the schema plugInfo.json:
 
 #   - al_usdmaya_mergedTransform
 #   - al_usdmaya_selectability
