@@ -3,11 +3,12 @@
 #This file sets up the the various cmake vars, then calls the cmake files for the subprojects 
 
 #This is a modified version of the cmake file from usd/sdk/maya/CMakeLists.txt
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.13...3.17)
 
 #@todo @eoinm: Setting these was required to get the build to work with CMake 3.11 but I should fix the underlying problem 
 cmake_policy(SET CMP0079 OLD)
 cmake_policy(SET CMP0026 OLD)
+
 
 
 ####################################################################################################
@@ -20,7 +21,19 @@ set (MAYA_USD_WIP_REPO_DIR_REL ${CMAKE_CURRENT_SOURCE_DIR}/../../maya-usd)
 get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
 
 include(maya-usd-subproject)
-list(APPEND CMAKE_MODULE_PATH ${MAYA_USD_SOURCE_DIR}/cmake/modules)
+
+
+#################################################
+# General cmake setup
+#################################################
+#set cmake modules - ";" separated not ":"!
+list(APPEND CMAKE_MODULE_PATH
+    ${MAYA_USD_SOURCE_DIR}/cmake
+    ${MAYA_USD_SOURCE_DIR}/cmake/defaults
+    ${MAYA_USD_SOURCE_DIR}/cmake/modules
+)
+
+include(test)
 
 ####################################################################################################
 option(BUILD_MAYAUSD_LIBRARY "Build Core usdMaya library." ON) #This probably shouldnt be an option as the build will fail otherwise
@@ -99,13 +112,6 @@ add_definitions(-DLINUX)
 add_definitions("-DUSD_VERSION_NUM=${USD_VERSION_NUM}") 
 
 
-
-#set cmake modules - ";" separated not ":"!
-list(APPEND CMAKE_MODULE_PATH
-    ${MAYA_USD_SOURCE_DIR}/cmake
-    ${MAYA_USD_SOURCE_DIR}/cmake/defaults
-    ${MAYA_USD_SOURCE_DIR}/cmake/modules
-)
 
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
