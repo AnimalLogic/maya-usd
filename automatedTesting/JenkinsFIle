@@ -16,7 +16,7 @@ node ('dockerBig')
             def workspace = pwd()
             stage("Opensource maya-usd")
             {
-                sh "docker run --rm -e BUILD_PROCS=16 -v /data/jenkins/workspace/maya-usd:/tmp/usd-build/maya-usd -v /depts/rnd/dev/eoinm/projects/mayausddocker/mayausd_build:/tmp/usd-build/build_scripts sydharbor01.al.com.au/usd/usd/usd-docker/usd:19.11-centos7-maya2019 bash /tmp/usd-build/build_scripts/build_usdmaya_AL.sh"
+                sh "docker run --rm -e BUILD_PROCS=16 -v /data/jenkins/workspace/maya-usd:/tmp/usd-build/maya-usd -v /depts/rnd/dev/eoinm/projects/mayausddocker/mayausd_build:/tmp/usd-build/build_scripts sydharbor01.al.com.au/usd/usd/usd-docker/usd:19.11-centos7-maya2019:3 bash /tmp/usd-build/build_scripts/build_usdmaya_AL.sh"
             }
 
             algit.reportStatusToGitHub('SUCCESS', 'Docker build success', "Docker_build_and_tests")
