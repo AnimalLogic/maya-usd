@@ -33,7 +33,7 @@ list(APPEND CMAKE_MODULE_PATH
     ${MAYA_USD_SOURCE_DIR}/cmake/modules
 )
 
-include(test)
+include(test OPTIONAL) #it's not really optional, just doesn't exist until an Autodesk commit introduces it (one of the commits in https://github.al.com.au/rnd/maya-usd/pull/57/commits)
 
 ####################################################################################################
 option(BUILD_MAYAUSD_LIBRARY "Build Core usdMaya library." ON) #This probably shouldnt be an option as the build will fail otherwise
