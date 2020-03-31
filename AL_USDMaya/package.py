@@ -65,8 +65,7 @@ def commands():
 
 with scope('config') as config:
     config.sub_repositories = ['../../maya-usd']
-
-def preprocess(this, data):
+    
     #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
     import os
     os.environ['MAYA_USD_GIT_TAG']= 'cfe1a19d21f1d1096e52e16adba5f127a5157074'
