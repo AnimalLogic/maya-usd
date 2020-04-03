@@ -25,3 +25,14 @@ def commands():
     prependenv('LD_LIBRARY_PATH', '{root}/lib')
     prependenv('CMAKE_MODULE_PATH', '{root}/cmake')
     prependenv('PYTHONPATH', '{root}/lib/python')
+
+with scope('config') as config:
+    config.sub_repositories = ['../../maya-usd']
+    import os
+    '''
+    MAYA_USD_GI_TAG:
+    Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
+    Used to specify what branch/commit/tag of maya-usd to checkout in non-interactive mode
+    Leave empty to use default (master) HEAD
+    '''
+    os.environ['MAYA_USD_GIT_TAG']= ''

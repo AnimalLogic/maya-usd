@@ -65,8 +65,11 @@ def commands():
 
 with scope('config') as config:
     config.sub_repositories = ['../../maya-usd']
-    
-    #Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
-    #@Note that this code below is currently broken as of Mar 16/2020
     import os
-    os.environ['MAYA_USD_GIT_TAG']= 'cfe1a19d21f1d1096e52e16adba5f127a5157074y'
+    '''
+    MAYA_USD_GI_TAG:
+    Tag (Branch name, Commit ID or tag) see https://cmake.org/cmake/help/v3.11/module/FetchContent.html "GIT_TAG"
+    Used to specify what branch/commit/tag of maya-usd to checkout in non-interactive mode
+    Leave empty to use default (master) HEAD
+    '''
+    os.environ['MAYA_USD_GIT_TAG']= ''

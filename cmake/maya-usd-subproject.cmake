@@ -21,7 +21,7 @@ include(FetchContent)
 set(LOCAL_MODE 1) 
 set(NONINTERACTIVE_MODE 0) 
 IF(DEFINED ENV{BUILD_URL})
-    message("I think I'm in  Jenkins")
+    message("I think I'm in Jenkins")
     set(NONINTERACTIVE_MODE 1) 
     set(LOCAL_MODE 0) 
 ENDIF()
@@ -38,7 +38,7 @@ IF (LOCAL_MODE)
 		  maya-usd
 		  GIT_REPOSITORY 	https://github.al.com.au/rnd/maya-usd.git
 		  SOURCE_DIR 		${MAYA_USD_LOCAL_REPO_DIR} #@todo: Only override this if we're in interactive mode
-		  GIT_TAG           dev
+		  GIT_TAG $ENV{MAYA_USD_GIT_TAG}
 		)
 		FetchContent_Populate(maya-usd)
 	ENDIF()
