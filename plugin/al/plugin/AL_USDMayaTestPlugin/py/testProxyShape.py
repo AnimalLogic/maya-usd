@@ -151,27 +151,27 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
 
-        stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageA_file.close()
-        stageB_file.close()
+        self.stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        self.stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        self.stageA_file.close()
+        self.stageB_file.close()
 
         cube = cmds.polyCube(constructionHistory=False, name="cube")[0]
         sphere = cmds.polySphere(constructionHistory=False, name="cube")[0]
 
         cmds.select(cube, replace=True)
-        cmds.file(stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self.stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
 
         cmds.select(sphere, replace=True)
-        cmds.file(stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self.stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
 
         self._stageA.poly = cube
         self._stageB.poly = sphere
 
         cmds.file(force=True, new=True)
 
-        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageA_file.name)[0]
-        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageB_file.name)[0]
+        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self.stageA_file.name)[0]
+        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self.stageB_file.name)[0]
 
         self._stageA.proxy = AL.usdmaya.ProxyShape.getByName(self._stageA.proxyName)
         self._stageB.proxy = AL.usdmaya.ProxyShape.getByName(self._stageB.proxyName)
@@ -182,8 +182,6 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA.prim = self._stageA.stage.GetPrimAtPath("/{}".format(self._stageA.poly))
         self._stageB.prim = self._stageB.stage.GetPrimAtPath("/{}".format(self._stageB.poly))
 
-        os.remove(stageA_file.name)
-        os.remove(stageB_file.name)
 
     def tearDown(self):
         """New Maya scene, unload plugin, reset data."""
@@ -194,6 +192,9 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA = self.MayaUsdTestData()
         self._stageB = self.MayaUsdTestData()
 
+        os.remove(self.stageA_file.name)
+        os.remove(self.stageB_file.name)
+        
     def test_getMayaPathFromUsdPrim_success(self):
         """Maya scenes can contain multiple proxies. Query each proxy and test they return the correct Maya nodes."""
 
@@ -255,12 +256,10 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         """Saving and reopening a Maya scene with dynamic translated prims should work."""
 
         # Save
-        _file = tempfile.NamedTemporaryFile(delete=False, suffix=".ma")
-        with _file:
-            cmds.file(rename=_file.name)
-            cmds.file(save=True, force=True)
-            self.assertFalse(cmds.ls(assemblies=True))
+        _file = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
         _file.close()
+        cmds.file(rename=_file.name)
+        cmds.file(save=True, force=True)
 
         # Re-open
         cmds.file(_file.name, open=True, force=True)
@@ -289,11 +288,10 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         cmds.AL_usdmaya_ProxyShapeImportPrimPathAsMaya(self._stageA.proxyName, primPath=str(self._stageA.prim.GetPath()))
 
         # Save
-        _file = tempfile.NamedTemporaryFile(delete=False, suffix=".ma")
-        with _file:
-            cmds.file(rename=_file.name)
-            cmds.file(save=True, force=True)
+        _file = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
         _file.close()
+        cmds.file(rename=_file.name)
+        cmds.file(save=True, force=True)
 
         # Re-open
         cmds.file(_file.name, open=True, force=True)

@@ -147,9 +147,16 @@ set(mayaPluginPath
     "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
 )
 
+set(pxr_pluginpath_name 
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
+    "$ENV{PXR_PLUGINPATH_NAME}"  #needed by AL
+)
+
+
 separate_argument_list(path)
 separate_argument_list(pythonPath)
 separate_argument_list(mayaPluginPath)
+separate_argument_list(pxr_pluginpath_name)
 
 add_test(
     NAME ${TARGET_NAME}
@@ -166,13 +173,19 @@ set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT
     "PYTHONPATH=${pythonPath}"
     "PATH=${path}"
     "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
+    "PXR_PLUGINPATH_NAME=${pxr_pluginpath_name}"
     "MAYA_NO_STANDALONE_ATEXIT=1"
 )
 
 if(IS_LINUX)
+    set(ldLibraryPath
+        "${MAYA_LIBRARY_DIR}"
+        "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
+        "$ENV{LD_LIBRARY_PATH}"    #needed by AL
+    )
+    separate_argument_list(ldLibraryPath)
     set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-        "LD_LIBRARY_PATH=${MAYA_LIBRARY_DIR}:${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
+        "LD_LIBRARY_PATH=${ldLibraryPath}"
     )
 endif()
 

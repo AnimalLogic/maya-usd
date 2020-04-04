@@ -15,9 +15,16 @@ set(mayaPluginPath
     "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
 )
 
+set(pxr_pluginpath_name 
+    "${CMAKE_INSTALL_PREFIX}/lib/usd"
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"  #needed by AL
+    "$ENV{PXR_PLUGINPATH_NAME}"  #needed by AL
+)
+
 separate_argument_list(path)
 separate_argument_list(pythonPath)
 separate_argument_list(mayaPluginPath)
+separate_argument_list(pxr_pluginpath_name)
 
 add_test(
     NAME ${MAIN_TEST_NAME}
@@ -39,7 +46,7 @@ set_property(TEST ${MAIN_TEST_NAME} APPEND PROPERTY ENVIRONMENT
     "PYTHONPATH=${pythonPath}"
     "PATH=${path}"
     "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+    "PXR_PLUGINPATH_NAME=${pxr_pluginpath_name}"
     "MAYA_NO_STANDALONE_ATEXIT=1"
 )
 
@@ -59,6 +66,6 @@ set_property(TEST ${MODULE_ONLY_TEST_NAME} APPEND PROPERTY ENVIRONMENT
     "PYTHONPATH=${pythonPath}"
     "PATH=${path}"
     "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+    "PXR_PLUGINPATH_NAME=${pxr_pluginpath_name}"
     "MAYA_NO_STANDALONE_ATEXIT=1"
 )

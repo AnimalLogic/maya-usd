@@ -23,7 +23,7 @@ from maya import cmds
 
 from AL import usdmaya
 
-from pxr import Usd, UsdUtils, Tf
+from pxr import Usd, UsdUtils, Tf, Sdf
 
 class CubeGenerator(usdmaya.TranslatorBase):
     '''
@@ -252,6 +252,12 @@ class TestPythonTranslators(unittest.TestCase):
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
+        prim = stage.GetPrimAtPath('/root/peter01/rig')
+        
+        #Let's try and fail early if the Metadata isn't registered
+        self.assertFalse(isinstance(prim.GetMetadata("assettype"), Sdf.UnregisteredValue), 
+                         "assetype metadata is not found. Often indicates PXR_PLUGINPATH_NAME is incorrectly configured")
+        
 
         stageCache = UsdUtils.StageCache.Get()
         stageCache.Insert(stage)
@@ -459,7 +465,7 @@ class TestPythonTranslators(unittest.TestCase):
         
         usdmaya.TranslatorBase.registerTranslator(UpdateableTranslator(), 'test')
         
-        stage = Usd.Stage.Open("../test_data/translator_update_postimport.usda")
+        stage = Usd.Stage.Open("../test_data/translator_update_post_import.usda")
         stageCache = UsdUtils.StageCache.Get()
         stageCache.Insert(stage)
         stageId = stageCache.GetId(stage)
@@ -724,7 +730,6 @@ class TestPythonTranslatorsUniqueKey(unittest.TestCase):
         self.assertEqual(self.translator.updateCount, 0)
         self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
         self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
-
 
 class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
     """

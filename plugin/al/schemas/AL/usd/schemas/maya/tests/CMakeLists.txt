@@ -51,6 +51,7 @@ set(pythonPath
 set(pxr_pluginpath_name 
     "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
     "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
+    "$ENV{PXR_PLUGINPATH_NAME}"   #Needed by AL
 )
 
 set(mayaPluginPath 
