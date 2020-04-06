@@ -189,6 +189,8 @@ find_package(USD)
 
 include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
 
+#Note: this relies on PR in maya-usd.
+SET(ADDITIONAL_PXR_PLUGINPATH_NAME $ENV{PXR_PLUGINPATH_NAME})
 
 
 #@note: We could avoid all of this by just calling FetchContent_MakeAvailable() or similar when we fetch the repo
