@@ -15,7 +15,10 @@ cmake_policy(SET CMP0026 OLD)
 # Setup build to build from maya-usd repo
 ####################################################################################################
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
+#prepend this projects cmake path as we have a newer version of FindBoost that we want to override the one
+#that's installed with AL_boost_python 1.66 (which is the first one found when searching). We can remove
+#this once move to AL_boost_python 1.70, which doesn't contain a FindBoost 
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 set (MAYA_USD_WIP_REPO_DIR_REL ${CMAKE_CURRENT_SOURCE_DIR}/../../maya-usd)
 get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSOLUTE)
@@ -68,10 +71,12 @@ MESSAGE("USD_VERSION IS ${USD_VERSION_NUM}")
 # Boost
 ####################################################################################################
 
+
 set(BOOST_ROOT ${boost_ROOT})
 
 IF(DEFINED boost_NAMESPACE)
   add_definitions("-DBOOST_NAMESPACE=${boost_NAMESPACE}")
+  set(Boost_NAMESPACE ${boost_NAMESPACE}) #Used by newer versions of FindBoost
 ELSE()
   add_definitions("-DBOOST_NAMESPACE=boost")
 ENDIF()
@@ -87,6 +92,8 @@ ENDIF()
 IF(NOT DEFINED BOOST_INCLUDEDIR)
 	set(BOOST_INCLUDEDIR ${AL_boost_INCLUDE_DIRS})
 ENDIF()
+
+SET(Boost_DEBUG OFF) #Use this to debug FindBoost
 
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
