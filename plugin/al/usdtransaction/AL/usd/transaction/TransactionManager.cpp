@@ -69,25 +69,57 @@ void comparePrims(const SdfPrimSpecHandle& a, const SdfPrimSpecHandle& b, SdfPat
   assert(a && b);
   /// Compare children
   compareSpecViews(a->GetNameChildren(), b->GetNameChildren(), resynced, changed, comparePrims);
-  // Compare properties
+  /// Compare properties
   auto compareProps = [](const SdfPropertySpecHandle& a, const SdfPropertySpecHandle& b, SdfPathVector& output, SdfPathVector& extra)
   {
     const auto aFields = a->ListFields();
     const auto bFields = b->ListFields();
-    
-    if (aFields != bFields)
-      output.push_back(a->GetPath());
-    else
+    /// Compare field against expected value and update output on mismatch
+    auto compareField = [&](const TfToken& name, const VtValue& expected)
     {
-      /// Check field values
-      for (const auto& name : aFields)
+      if (b->GetField(name) != expected)
       {
-        if (a->GetField(name) != b->GetField(name))
+        output.push_back(a->GetPath());
+        return false;
+      }
+      return true;
+    };
+
+    if (aFields.size() <= bFields.size())
+    {
+      auto it = aFields.begin();
+      for (const auto& name : bFields)
+      {
+        /// When name matches compare field values
+        if (it != aFields.end() && name == *it)
+        {
+          if (!compareField(name, a->GetField(name)))
+            return;
+          ++it;
+        }
+        /// Special handling for some default values introduced
+        /// implicitly by SdfLayer::TransferContent method
+        else if (name == SdfFieldKeys->Custom)
+        {
+          if (!compareField(name, VtValue(false)))
+            return;
+        }
+        else if (name == SdfFieldKeys->Variability)
+        {
+          if (!compareField(name, VtValue(SdfVariabilityVarying)))
+            return;
+        }
+        /// Otherwise mark as mismatch
+        else
         {
           output.push_back(a->GetPath());
           return;
         }
       }
+    }
+    else
+    {
+      output.push_back(a->GetPath());
     }
   };
   compareSpecViews(a->GetProperties(), b->GetProperties(), changed, resynced, compareProps);
