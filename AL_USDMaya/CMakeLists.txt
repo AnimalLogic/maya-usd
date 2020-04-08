@@ -42,11 +42,13 @@ include(test OPTIONAL) #it's not really optional, just doesn't exist until an Au
 option(BUILD_MAYAUSD_LIBRARY "Build Core usdMaya library." ON) #This probably shouldnt be an option as the build will fail otherwise
 set(BUILD_USDMAYA_PXR_TRANSLATORS OFF CACHE BOOL "disable pixar shape translator in AL_USDMaya" )
 
+
 set(MAYA_Foundation_LIBRARY Foundation)
 set(MAYA_OpenMaya_LIBRARY OpenMaya)
 set(MAYA_OpenMayaAnim_LIBRARY OpenMayaAnim)
 set(MAYA_OpenMayaUI_LIBRARY OpenMayaUI)
 set(MAYA_OpenMayaRender_LIBRARY OpenMayaRender)
+set(MAYA_OpenMayaFX_LIBRARY OpenMayaFX)
     
 set(UFE_LIB_ROOT $ENV{REZ_MAYADEVKIT_ROOT}/maya/devkitBase/devkit/ufe)
 set(UFE_INCLUDE_ROOT $ENV{REZ_MAYADEVKIT_ROOT}/maya/devkitBase/devkit/ufe)
@@ -189,9 +191,8 @@ find_package(USD)
 
 include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
 
-#Note: this relies on PR in maya-usd.
+#Note: this relies on https://github.com/Autodesk/maya-usd/pull/409
 SET(ADDITIONAL_PXR_PLUGINPATH_NAME $ENV{PXR_PLUGINPATH_NAME})
-
 
 #@note: We could avoid all of this by just calling FetchContent_MakeAvailable() or similar when we fetch the repo
 # but for now we're not building everything (e.g pxr plugin) and need a bit more control??
@@ -200,9 +201,9 @@ if (BUILD_MAYAUSD_LIBRARY)
 endif()
 
 add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/utils ${MAYA_USD_BUILD_DIR}/utils)
+
 if(NOT SKIP_USDMAYA_TESTS)
 	add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/mayatest ${MAYA_USD_BUILD_DIR}/mayatest)
-	set(MAYA_LIBRARY_DIR ${mayaDevKit_LIBRARY_DIRS})
 endif()
 
 add_subdirectory(${MAYA_USD_AL_PLUGIN_DIR}/mayautils ${MAYA_USD_BUILD_DIR}/mayautils)
