@@ -152,7 +152,7 @@ const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNam
 const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
 
 MStatus 
-UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& rigNamespaceM)
+UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& mayaNamespaceM)
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
     const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
@@ -193,7 +193,7 @@ UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& 
         " -mergeNamespacesOnClash false"
         " -ignoreVersion"
         " -options \"v=0;\""
-        " -namespace \"") + rigNamespaceM +
+        " -namespace \"") + mayaNamespaceM +
         "\" \"" + mayaReferencePath + "\"";
 
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s execute \"%s\"\n",
@@ -332,24 +332,32 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Looking for attribute on \"%s\".\"%s\"\n", prim.GetTypeName().GetText(), m_namespaceName.GetText());
 
     // Get required namespace attribute from prim
-    std::string rigNamespace;
-    if (UsdAttribute rigNamespaceAttribute = prim.GetAttribute(m_namespaceName))
+    std::string mayaNamespace;
+    if (UsdAttribute namespaceAttribute = prim.GetAttribute(m_namespaceName))
     {
         TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Checking namespace on prim \"%s\".\n", prim.GetPath().GetText());
 
-        if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace))
+        //this will be invoked if the attribute exists but it's value is empty or of a different type
+        if (!namespaceAttribute.Get<std::string>(&mayaNamespace))
         {
-            TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Missing namespace on prim \"%s\". Will create one from prim path.\n", prim.GetPath().GetText());
+            TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Missing namespace value on prim \"%s\". Will create one from prim path.\n", prim.GetPath().GetText());
             // Creating default namespace from prim path. Converts /a/b/c to a_b_c.
-            rigNamespace = prim.GetPath().GetString();
-            std::replace(rigNamespace.begin() + 1, rigNamespace.end(), '/', '_');
+            mayaNamespace = prim.GetPath().GetString();
+            std::replace(mayaNamespace.begin() + 1, mayaNamespace.end(), '/', '_');
         }
+    }
+    else
+    {
+      TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Missing namespace attribute on prim \"%s\". Will create one from prim path.\n", prim.GetPath().GetText());
+      // Creating default namespace from prim path. Converts /a/b/c to a_b_c.
+      mayaNamespace = prim.GetPath().GetString();
+      std::replace(mayaNamespace.begin() + 1, mayaNamespace.end(), '/', '_');
     }
 
   MFnDagNode parentDag(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-  MString rigNamespaceM(rigNamespace.c_str(), rigNamespace.size());
+  MString mayaNamespaceM(mayaNamespace.c_str(), mayaNamespace.size());
 
   MObject refNode;
 
@@ -419,7 +427,7 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
     // bring in the reference or it may have been imported or removed directly in maya.
     if (refNode.isNull())
     {
-        return LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM);
+        return LoadMayaReference(prim, parent, mayaReferencePath, mayaNamespaceM);
     }
 
     if (status)
@@ -466,17 +474,17 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
                     MString s = MFileIO::loadReferenceByNode(refNode, &status);
                 }
 
-                if (!rigNamespace.empty())
+                if (!mayaNamespace.empty())
                 {
                     // check to see if the namespace has changed
                     MString refNamespace = fnReference.associatedNamespace(true);
                     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
                         prim.GetPath().GetText(),
                         refNamespace.asChar());
-                    if (refNamespace != rigNamespace.c_str())
+                    if (refNamespace != mayaNamespace.c_str())
                     {
                         command = "file -e -ns \"";
-                        command += rigNamespace.c_str();
+                        command += mayaNamespace.c_str();
                         command += "\" \"";
                         command += filepath;
                         command += "\"";
@@ -485,7 +493,7 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
                             command.asChar());
                         if (!MGlobal::executeCommand(command))
                         {
-                            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
+                            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + mayaNamespace.c_str() + ": ") + mayaReferencePath);
                         }
                     }
                 }

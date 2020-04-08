@@ -101,6 +101,7 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 
 TranslatorRefPtr TranslatorManufacture::get(const UsdPrim &prim)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::get %s\n",prim.GetPath().GetText());
   TranslatorRefPtr translator = TfNullPtr;
 
   //Try metadata first
@@ -109,6 +110,10 @@ TranslatorRefPtr TranslatorManufacture::get(const UsdPrim &prim)
   if (!assetType.empty())
   {
     translator = getTranslatorByAssetTypeMetadata(assetType);
+  }
+  else
+  {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::get - couldn't find assettype Metadata on prim %s\n",prim.GetPath().GetText());
   }
 
   //Then try schema - which tries C++ then python
@@ -162,6 +167,7 @@ TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken 
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::get(const MObject& mayaObject)");
   TranslatorRefPtr base;
   TranslatorManufacture::RefPtr derived;
   for(auto& it : m_translatorsMap)
@@ -193,6 +199,7 @@ TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
 TranslatorRefPtr TranslatorManufacture::getTranslatorFromId(const std::string& translatorId )
 {
   TranslatorRefPtr translator;
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorFromId for id %s\n", translatorId.c_str());
 
   if (translatorId.find(TranslatorManufacture::TranslatorPrefixAssetType.GetString(), 0) == 0)
   {
@@ -333,8 +340,10 @@ void TranslatorManufacture::deactivateAll()
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb, const TfToken& assetType)
 {
+  //If no assetType token is specified, the translator needs to tell us what the typed schema it translates is
   if(tb->getTranslatedType().IsUnknown() && assetType.IsEmpty())
   {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator failed to add translator for assetType %s, token is empty!\n", assetType.GetText());
     return false;
   }
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator\n");
@@ -371,11 +380,11 @@ TranslatorRefPtr TranslatorManufacture::getPythonTranslatorBySchemaType(const Tf
   {
     if((it->getRegistrationType()==TranslatorManufacture::TranslatorPrefixSchemaType) && (type == it->getTranslatedType()))
     {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType:: found a translator for type %s\n", type_name.GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType found a translator for type %s\n", type_name.GetText());
       return it;
     }
   }
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType:: :didn't find any translator::returning nothing");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType didn't find any translator::returning nothing");
   return 0;
 }
 

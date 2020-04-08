@@ -18,13 +18,16 @@
 
 import os
 import tempfile
+import shutil
 import unittest
 
 import AL
 
 import pxr
+from pxr import Usd, UsdUtils
 
 from maya import cmds
+from maya.api import OpenMaya as om2
 
 
 class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
@@ -148,27 +151,27 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
 
-        stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageA_file.close()
-        stageB_file.close()
+        self.stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        self.stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        self.stageA_file.close()
+        self.stageB_file.close()
 
         cube = cmds.polyCube(constructionHistory=False, name="cube")[0]
         sphere = cmds.polySphere(constructionHistory=False, name="cube")[0]
 
         cmds.select(cube, replace=True)
-        cmds.file(stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self.stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
 
         cmds.select(sphere, replace=True)
-        cmds.file(stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self.stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
 
         self._stageA.poly = cube
         self._stageB.poly = sphere
 
         cmds.file(force=True, new=True)
 
-        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageA_file.name)[0]
-        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageB_file.name)[0]
+        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self.stageA_file.name)[0]
+        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self.stageB_file.name)[0]
 
         self._stageA.proxy = AL.usdmaya.ProxyShape.getByName(self._stageA.proxyName)
         self._stageB.proxy = AL.usdmaya.ProxyShape.getByName(self._stageB.proxyName)
@@ -179,8 +182,6 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA.prim = self._stageA.stage.GetPrimAtPath("/{}".format(self._stageA.poly))
         self._stageB.prim = self._stageB.stage.GetPrimAtPath("/{}".format(self._stageB.poly))
 
-        os.remove(stageA_file.name)
-        os.remove(stageB_file.name)
 
     def tearDown(self):
         """New Maya scene, unload plugin, reset data."""
@@ -191,6 +192,9 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA = self.MayaUsdTestData()
         self._stageB = self.MayaUsdTestData()
 
+        os.remove(self.stageA_file.name)
+        os.remove(self.stageB_file.name)
+        
     def test_getMayaPathFromUsdPrim_success(self):
         """Maya scenes can contain multiple proxies. Query each proxy and test they return the correct Maya nodes."""
 
@@ -248,17 +252,14 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
-    @unittest.skip("Not working")
     def test_getMayaPathFromUsdPrim_reopenImport(self):
         """Saving and reopening a Maya scene with dynamic translated prims should work."""
 
         # Save
-        _file = tempfile.NamedTemporaryFile(delete=False, suffix=".ma")
-        with _file:
-            cmds.file(rename=_file.name)
-            cmds.file(save=True, force=True)
-            self.assertFalse(cmds.ls(assemblies=True))
+        _file = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
         _file.close()
+        cmds.file(rename=_file.name)
+        cmds.file(save=True, force=True)
 
         # Re-open
         cmds.file(_file.name, open=True, force=True)
@@ -281,18 +282,16 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         # Cleanup
         os.remove(_file.name)
 
-    @unittest.skip("Not working")
     def test_getMayaPathFromUsdPrim_reopenStaticImport(self):
         """Saving and reopening a Maya scene with static translated prims should work."""
 
         cmds.AL_usdmaya_ProxyShapeImportPrimPathAsMaya(self._stageA.proxyName, primPath=str(self._stageA.prim.GetPath()))
 
         # Save
-        _file = tempfile.NamedTemporaryFile(delete=False, suffix=".ma")
-        with _file:
-            cmds.file(rename=_file.name)
-            cmds.file(save=True, force=True)
+        _file = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
         _file.close()
+        cmds.file(rename=_file.name)
+        cmds.file(save=True, force=True)
 
         # Re-open
         cmds.file(_file.name, open=True, force=True)
@@ -314,12 +313,76 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         # Cleanup
         os.remove(_file.name)
-        
+
+
+class TestProxyShapeAnonymousLayer(unittest.TestCase):
+    workingDir = None
+    fileName = 'foo.ma'
+    SC = pxr.UsdUtils.StageCache.Get()
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.workingDir = tempfile.mkdtemp()
+        cmds.file(new=True, save=False, force=True)
+        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+        self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
+
+        with pxr.Usd.StageCacheContext(self.SC):
+            stage = pxr.Usd.Stage.CreateInMemory()
+            with pxr.Usd.EditContext(stage, pxr.Usd.EditTarget(stage.GetRootLayer())):
+                pxr.UsdGeom.Xform.Define(stage, '/root/GEO/sphere_hrc').AddTranslateOp().Set((0.0, 1.0, 0.0))
+                pxr.UsdGeom.Sphere.Define(stage, '/root/GEO/sphere_hrc/sphere').GetRadiusAttr().Set(5.0)
+
+        cmds.AL_usdmaya_ProxyShapeImport(
+            stageId=self.SC.GetId(stage).ToLongInt(),
+            name='anonymousShape'
+        )
+        cmds.file(rename=self.serialisationPath())
+        cmds.file(type='mayaAscii')
+        cmds.file(save=True)
+        cmds.file(new=True, save=False, force=True)
+        self.SC.Clear()
+
+    def tearDown(self):
+        if os.path.isdir(self.workingDir):
+            shutil.rmtree(self.workingDir)
+
+        self.SC.Clear()
+        unittest.TestCase.tearDown(self)
+
+    def serialisationPath(self):
+        return os.path.join(self.workingDir, self.fileName)
+
+    def test_anonymousLayerRoundTrip(self):
+        cmds.file(self.serialisationPath(), open=True, save=False, force=True)
+        proxyShape = AL.usdmaya.ProxyShape.getByName('anonymousShape')
+        self.assertIsNotNone(proxyShape)
+        stage = proxyShape.getUsdStage()
+        self.assertIsInstance(stage, pxr.Usd.Stage)
+
+        hrc = stage.GetPrimAtPath('/root/GEO/sphere_hrc')
+        self.assertTrue(hrc.IsValid())
+        self.assertTrue(hrc.IsDefined())
+        self.assertTrue(hrc.IsA(pxr.UsdGeom.Xform))
+        hrcXformableApi = pxr.UsdGeom.XformCommonAPI(hrc)
+        t, r, s, p, _ = hrcXformableApi.GetXformVectors(pxr.Usd.TimeCode.Default())
+        self.assertEqual(tuple(t), (0.0, 1.0, 0.0))
+        self.assertEqual(tuple(r), (0.0, 0.0, 0.0))
+        self.assertEqual(tuple(s), (1.0, 1.0, 1.0))
+        self.assertEqual(tuple(p), (0.0, 0.0, 0.0))
+
+        sphere = stage.GetPrimAtPath('/root/GEO/sphere_hrc/sphere')
+        self.assertTrue(sphere.IsValid())
+        self.assertTrue(sphere.IsDefined())
+        self.assertTrue(sphere.IsA(pxr.UsdGeom.Sphere))
+        self.assertEqual(pxr.UsdGeom.Sphere(sphere).GetRadiusAttr().Get(), 5.0)
+
 
 if __name__ == "__main__":
 
     tests = [unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetUsdPrimFromMayaPath),
-             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim)
+             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim),
+             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeAnonymousLayer),
               ]
     results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
     exitCode = int(not all([result.wasSuccessful() for result in results]))
