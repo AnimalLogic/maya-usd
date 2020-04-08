@@ -29,11 +29,7 @@ target_include_directories(${PXR_PACKAGE}
         "../../lib/AL_USDMaya"
 )
 
-if(UFE_FOUND)
-    add_definitions(-DWANT_UFE_BUILD=1)
-endif()
-
-MAYA_SET_PLUGIN_PROPERTIES(${PXR_PACKAGE})
+maya_set_plugin_properties(${PXR_PACKAGE})
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
