@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME}
         UsdHierarchyHandler.cpp
         UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
+        UsdScalePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
         UsdScaleUndoableCommand.cpp
         UsdSceneItem.cpp
