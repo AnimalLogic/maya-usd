@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "mayaUsdUtils/MayaTransformAPI.h"
+#include "MayaTransformAPI.h"
 
 namespace MayaUsdUtils {
 
