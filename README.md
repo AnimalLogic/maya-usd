@@ -53,10 +53,11 @@ You work with, commit, push and generally manipulate the source files in that lo
 You make changes to the build files in this repository (so a code review of a Production feature might include 2 PRs - one from maya-usd-build and one from maya-usd
 
 ### Releasing
-When you rez-release/rez-unleash, we look for the local/sibling  git clone of maya-usd as above, and as of rez 2.47.4.4, thesame validation checks are run on the subrepo as are run on the rez package repo.. i.e:
+When you rez-release/rez-unleash, we look for the local/sibling  git clone of maya-usd as above. The same validation checks are run on the subrepo as are run on the rez package repo.. i.e:
 + no untracked files
 + no uncommitted files
-+ releasing from a release branch etc
++ releasing from a release branch 
++ etc
 
 Post release, we:
 + tag the sub repo (i.e maya-usd) in the same way we tag the repo we're releasing (i.e git tag "AL_USDMaya-MAJOR.MINOR.PATCH" commitID)
@@ -89,7 +90,7 @@ Some labels for the various repos we interact with when pushing, pulling etc)
 1. https://github.com/autodesk/maya-usd **ADSKPublic**
 2. https://github.com/AnimalLogic/maya-usd **ALPublic**
 3. https://github.al.com.au/rnd/maya-usd **ALInternal**
-3. https://github.al.com.au/rnd/maya-usd-build **Build**
+3. https://github.al.com.au/rnd/maya-usd-build **ALRezBuild**
 
 Handy snippet for commonly used repos
 ```
@@ -101,29 +102,37 @@ git remote add LumaPublic https://github.com/LumaPictures/maya-usd/
 
 
 # Tests
-1. When a PR is opened or updated on  **ALInternal**, Jenkins will run some tests http://hudson:8081/hudson/job/maya-usd/ These tests use docker for a "vanilla" open source build that doesn't rely on any AL specific environment
+1. When a PR is opened or updated on  **ALInternal**, Jenkins will run the AL_USDMaya tests http://hudson:8081/hudson/job/maya-usd/ These tests use docker for a "vanilla" open source build that doesn't rely on any AL specific environment
 2. When the dev branch is changed, Jenkins will run the same tests - see http://hudson:8081/hudson/job/maya-usd-dev
-3. This repository **Build** should run tests using rez/AL environment when changes are made to the build intrastructure (and probably **ALInternal** - but this is @todo
+3. This repository **ALRezBuild** should run tests using rez/AL environment when changes are made to the build intrastructure (and probably **ALInternal** - this is WIP
 
 For more info on the docker tests, see [docker cookbook](https://www.al.com.au:8443/display/~eoinm/Docker+Cookbook+for+maya-usd+tests) for some info. Some of the files used in this process are here https://github.al.com.au/rnd/maya-usd-build/tree/develop/automatedTesting
 
 
 # Interacting with the Open source repositories
 
-## Pulling updates from ADSKPublic
+## Pulling updated dev branch from ADSKPublic
 pull in any changes we want updates ADSKPublic dev branch. This should just be a:
 ```git pull ADSKPublic dev```
 
-Before pushing the changes to **ALInternal** - make sure the SHAs of the HEAD commits are the same - I saw some cases where they weren't (not sure why) and it caused a bit of merge madness.
+Note: Do not merge any other branches into *dev* - this should be an exact copy of the ADSKPublic dev. Git pull is the only thing you should do here
 
-Note that before merging these to develop (or some other release branch)  be careful of things like:
+Before pushing updates to **ALInternal** - make sure the SHAs of the commits on both ends line up - I saw some cases where they weren't (not sure why) and it caused a bit of merge madness.
 
+## Integrating Autodesk changes into develop
+We never merge *dev* directly into *develop*. We:
++ Create an integration branch from develop (develop_devmerge_X is the convention, where X is the next iteration)
++ Create a pull request where you merge dev into this branch, see [example](https://github.al.com.au/rnd/maya-usd/pull/65)
++ Use this PR to check that the code builds and tests run (via jenkins - both maya-usd and maya-usd-build)
+
+Check if there are:
 + ABI/API breaking changes
 + changed dependencies on external libraries
 + changes to maya serialisation (Node attributes etc, MpxData etc)
-+ Reliance on Updated versions of USD 
++ Reliance on updated versions of USD or Maya
++ Changes to CMake files, file reorganisation, tests etc that might requires matching changes in maya-usd-build cmake
++ Behavioural changes that we will need to consider, document and test
 
-**For those reasons, it's probably a good idea to create a PR before merging those changes to develop**
 
 
 ## Pushing PRs to ADSKPublic
