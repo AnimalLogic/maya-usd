@@ -22,6 +22,7 @@
 #include "UsdScalePivotTranslateUndoableCommand.h"
 #include "mayaUsdUtils/MayaTransformAPI.h"
 #include "private/Utils.h"
+#include "Utils.h"
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
@@ -48,8 +49,7 @@ namespace {
 
 	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
-		UsdGeomXformCache xformCache;
-		xformCache.SetTime(time);
+		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetLocalToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
 		return xform;
@@ -57,8 +57,7 @@ namespace {
 
 	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
-		UsdGeomXformCache xformCache;
-		xformCache.SetTime(time);
+		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetParentToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
 		return xform;

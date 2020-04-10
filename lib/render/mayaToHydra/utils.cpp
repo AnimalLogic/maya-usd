@@ -34,9 +34,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
-    "MTOH_DEFAULT_RENDERER_PLUGIN";
-
 constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
 global proc {{override}}OptionBox() {
     string $windowName = "{{override}}OptionsWindow";
@@ -69,7 +66,8 @@ global proc {{override}}OptionBox() {
 
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
+           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>() ||
+           v.IsHolding<TfEnum>();
 }
 
 static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
@@ -198,30 +196,6 @@ const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
 
 const MtohRendererSettings& MtohGetRendererSettings() {
     return MtohInitializeRenderPlugins().second;
-}
-
-TfToken MtohGetDefaultRenderer() {
-    const MtohRendererDescriptionVector& plugins = MtohGetRendererDescriptions();
-    if (plugins.empty())
-        return {};
-
-    const auto* defaultRenderer = getenv(MTOH_DEFAULT_RENDERER_PLUGIN_NAME);
-    if (defaultRenderer == nullptr) {
-        // FIXME: Why have two of these ?
-        // In the case of MTOH_DEFAULT_RENDERER_PLUGIN_NAME, HD_DEFAULT_RENDERER
-        // will still be created once during UsdImagingGL initialization
-        // Give the UsdImagingGL env-variable a try ...
-        defaultRenderer = getenv("HD_DEFAULT_RENDERER");
-        if (defaultRenderer == nullptr)
-            return plugins.front().rendererName;
-    }
-
-    const TfToken defaultRendererToken(defaultRenderer);
-    auto it = std::find_if(plugins.begin(), plugins.end(),
-        [&](const MtohRendererDescription& desc) -> bool {
-            return desc.rendererName == defaultRendererToken;
-        });
-    return it == plugins.end() ? plugins.front().rendererName : defaultRendererToken;
 }
 
 
