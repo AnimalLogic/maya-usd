@@ -38,5 +38,8 @@ MStatus finalize();
 MAYAUSD_CORE_PUBLIC
 Ufe::Rtid getUsdRunTimeId();
 
+MAYAUSD_CORE_PUBLIC
+void refreshStages();
+
 } // namespace ufe
 } // namespace MayaUsd

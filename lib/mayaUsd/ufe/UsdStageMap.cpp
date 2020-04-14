@@ -19,6 +19,7 @@
 
 #include <maya/MFnDagNode.h>
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 
 namespace {
@@ -95,14 +96,17 @@ void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 {
 	auto proxyShape = proxyShapeHandle(path);
-	if (!proxyShape.isValid()) {
+	if (!proxyShape.isValid()) 
+	{
 		return nullptr;
 	}
 
 	// A stage is bound to a single Dag proxy shape.
 	auto iter = fObjectToStage.find(proxyShape);
 	if (iter != std::end(fObjectToStage))
+	{
 		return iter->second;
+	}
 	return nullptr;
 }
 

@@ -15,6 +15,7 @@
 //
 
 // glew needs to be included before any other OpenGL headers.
+#include <pxr/usd/sdf/types.h>
 #include <pxr/imaging/glf/glew.h>
 
 #include "batchRenderer.h"

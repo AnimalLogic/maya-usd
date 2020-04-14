@@ -93,9 +93,10 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
     // of each segment.  We know that USD's separator is '/' and Maya's
     // separator is '|', so use a map to get the corresponding UFE run-time ID.
     Ufe::Path path;
-    static std::map<char, Ufe::Rtid> sepToRtid = {
-        {'/', ufe::getUsdRunTimeId()}, {'|', 1}};
-    for (std::size_t i = 0; i < segmentStrings.size(); ++i) {
+    static std::map<char, Ufe::Rtid> sepToRtid = {{'/', ufe::getUsdRunTimeId()}, {'|', 1}};
+
+    for (std::size_t i = 0; i < segmentStrings.size(); ++i)
+    {
         const auto& segmentString = segmentStrings[i];
         char sep = segmentString[0];
         path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);

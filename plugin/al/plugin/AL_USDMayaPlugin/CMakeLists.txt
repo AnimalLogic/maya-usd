@@ -8,6 +8,7 @@ add_library(
 target_compile_definitions(${PXR_PACKAGE}
     PRIVATE
         AL_USDMAYA_PLUGIN_EXPORT
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 target_link_libraries(${PXR_PACKAGE}
