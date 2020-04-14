@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 name = 'AL_USDTransaction'
 
-version = '0.3.1'
+version = '0.3.2'
 
 private_build_requires = [
     'cmake-2.8+',
