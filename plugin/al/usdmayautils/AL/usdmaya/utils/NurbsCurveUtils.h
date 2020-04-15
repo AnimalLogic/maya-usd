@@ -38,6 +38,9 @@ AL_USDMAYA_UTILS_PUBLIC
 void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
 
 AL_USDMAYA_UTILS_PUBLIC
+void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
 void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr, UsdTimeCode time = UsdTimeCode::Default());
 
 AL_USDMAYA_UTILS_PUBLIC
@@ -99,6 +102,7 @@ enum DiffNurbsCurve
   kRanges = 1 << 3,
   kOrder = 1 << 4,
   kWidths = 1 << 5,
+  kCurveExtent = 1 << 6,
   kAllNurbsCurveComponents = 0xFFFFFFFF
 };
 
