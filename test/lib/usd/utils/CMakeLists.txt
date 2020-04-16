@@ -3,7 +3,6 @@ set(PYTHON_TARGET_NAME UsdUtilsTest)
 
 add_executable(${TARGET_NAME})
 
-message('--------------------------------------------------------------------------------- USD UTILS TESTS')
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -42,7 +41,7 @@ mayaUsd_add_test(${PYTHON_TARGET_NAME}
     ENV
         "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
         "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
-        "PYTHONPATH"=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH} 
+        "PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH}"
 )
 
 if (TARGET all_tests)
