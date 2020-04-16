@@ -36,15 +36,24 @@ mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
 
-mayaUsd_add_test(${PYTHON_TARGET_NAME}
-    PYTHON_MODULE ${PYTHON_TARGET_NAME}
-    ENV
-        "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
-        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
-        "PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH}"
-        "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
+list(APPEND test_script_files
+    test_MayaTransformAPI.py
 )
 
-if (TARGET all_tests)
-  add_dependencies(all_tests ${TARGET_NAME} ${PYTHON_TARGET_NAME})
-endif()
+# copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
+add_custom_target(${TARGET_NAME} ALL)
+
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY data)
+                             
+foreach(script ${test_script_files})
+    mayaUsd_get_unittest_target(target ${script})
+    mayaUsd_add_test(${target}
+        PYTHON_MODULE ${target}
+        ENV
+            "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
+    )
+
+    # Assign a ctest label to these tests for easy filtering.
+    set_tests_properties(${target} PROPERTIES LABELS ufe)
+endforeach()
