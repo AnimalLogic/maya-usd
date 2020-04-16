@@ -40,9 +40,6 @@ list(APPEND test_script_files
     test_MayaTransformAPI.py
 )
 
-# copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
-add_custom_target(${TARGET_NAME} ALL)
-
 mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY data)
                              
