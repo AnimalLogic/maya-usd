@@ -80,8 +80,6 @@ foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
-        ENV
-            "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
     )
 
     # Assign a ctest label to these tests for easy filtering.
