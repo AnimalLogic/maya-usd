@@ -1,4 +1,5 @@
-set(TARGET_NAME DiffCore)
+set(TARGET_NAME UsdUtils)
+set(PYTHON_TARGET_NAME UsdUtilsTest)
 
 add_executable(${TARGET_NAME})
 
