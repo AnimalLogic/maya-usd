@@ -54,6 +54,10 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE 
         GTest::GTest
         mayaUsdUtils
+        tf
+        sdf
+        ${Boost_PYTHON_LIBRARY}
+        ${python_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------
@@ -68,20 +72,22 @@ mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
 # -----------------------------------------------------------------------------
 # unit tests
 # -----------------------------------------------------------------------------
+
 mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
 
-list(APPEND test_script_files
-    test_MayaTransformAPI.py
-)
-                             
-foreach(script ${test_script_files})
-    mayaUsd_get_unittest_target(target ${script})
-    mayaUsd_add_test(${target}
-        PYTHON_MODULE ${target}
-    )
+# -----------------------------------------------------------------------------
+# python tests
+# -----------------------------------------------------------------------------
 
-    # Assign a ctest label to these tests for easy filtering.
-    set_tests_properties(${target} PROPERTIES LABELS ufe)
-endforeach()
+set(USDUTILS_PYTHON_TEST_NAME Python:MayaTransformAPI)
+add_test(
+  NAME ${USDUTILS_PYTHON_TEST_NAME}
+  COMMAND
+    python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(${USDUTILS_PYTHON_TEST_NAME}
+  PROPERTIES
+    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdutils:$ENV{PYTHONPATH} 
+)
