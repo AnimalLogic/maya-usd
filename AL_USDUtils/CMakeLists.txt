@@ -27,8 +27,20 @@ get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSO
 include(maya-usd-subproject)
 
 include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
-include(${MAYA_USD_SOURCE_DIR}/cmake/googletest.cmake)
-include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
+
+
+
+####################################################################################################
+# Boost
+####################################################################################################
+
+IF(NOT DEFINED BOOST_LIBRARY_DIRS)
+  IF(boost_LIBRARY_DIRS AND boost_python_LIBRARY_DIRS)
+      set(Boost_LIBRARY_DIR ${boost_LIBRARY_DIRS} ${boost_python_LIBRARY_DIRS})
+  ELSEIF(AL_boost_LIBRARY_DIRS AND AL_boost_python_LIBRARY_DIRS)
+      set(Boost_LIBRARY_DIR ${AL_boost_LIBRARY_DIRS} ${AL_boost_python_LIBRARY_DIRS})
+  ENDIF()
+ENDIF()
 
 ####################################################################################################
 # General
@@ -36,11 +48,20 @@ include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
 set(USDUTILS_INCLUDE_LOCATION ${MAYA_USD_SOURCE_DIR}/lib/usd/utils)
 
 add_subdirectory(${MAYA_USD_SOURCE_DIR}/lib/usd/utils ${MAYA_USD_BUILD_DIR}/usdutils)
-add_subdirectory(${MAYA_USD_SOURCE_DIR}/test/lib/usd/utils ${MAYA_USD_BUILD_DIR}/test)
 
+
+####################################################################################################
+# Test
+####################################################################################################
+
+include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
+include(${MAYA_USD_SOURCE_DIR}/cmake/googletest.cmake)
+fetch_googletest()
+add_subdirectory(${MAYA_USD_SOURCE_DIR}/test/lib/usd/utils ${MAYA_USD_BUILD_DIR}/test)
 add_custom_target(all_tests
   ${CMAKE_CTEST_COMMAND} --output-on-failure
 )
+
 
 ####################################################################################################
 # Install
