@@ -126,11 +126,12 @@ We never merge *dev* directly into *develop*. We:
 + Use this PR to check that the code builds and tests run (via jenkins - both maya-usd and maya-usd-build)
 
 Check if there are:
-+ ABI/API breaking changes
++ C++ ABI/API breaking changes
 + changed dependencies on external libraries
 + changes to maya serialisation (Node attributes etc, MpxData etc)
 + Reliance on updated versions of USD or Maya
-+ Changes to CMake files, file reorganisation, tests etc that might requires matching changes in maya-usd-build cmake
++ Changes to CMake files, file reorganisation, tests etc that might requires matching changes in maya-usd-build cmake files. For example if header files or tests are moved around this may require update
++ Changes to python module names/locations etc
 + Behavioural changes that we will need to consider, document and test
 
 
