@@ -28,7 +28,7 @@ cd $TMP_DIR &&\
       --maya-location $MAYA_LOCATION \
       .. 
     cd $TMP_DIR/build
-    ctest -V -R "Test"	#Lucky pattern that happens to run only the AL tests
+    ctest -V -R "DiffCore|MayaTransformAPI|Test"	#Pattern that happens to the AL related tests only (we should figure out a better convention scheme)
     cd ..
     rm -rf build
 
