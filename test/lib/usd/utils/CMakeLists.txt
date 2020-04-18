@@ -78,7 +78,7 @@ mayaUsd_add_test(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# python tests
+# python tests - using older approach as mayaUsd_add_test wants to use mayapy
 # -----------------------------------------------------------------------------
 
 set(USDUTILS_PYTHON_TEST_NAME Python:MayaTransformAPI)
