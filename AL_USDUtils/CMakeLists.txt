@@ -34,6 +34,15 @@ include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
 # Boost
 ####################################################################################################
 
+set(BOOST_ROOT ${boost_ROOT})
+
+IF(DEFINED boost_NAMESPACE)
+  add_definitions("-DBOOST_NAMESPACE=${boost_NAMESPACE}")
+  set(Boost_NAMESPACE ${boost_NAMESPACE}) #Used by newer versions of FindBoost
+ELSE()
+  add_definitions("-DBOOST_NAMESPACE=boost")
+ENDIF()
+
 IF(NOT DEFINED BOOST_LIBRARY_DIRS)
   IF(boost_LIBRARY_DIRS AND boost_python_LIBRARY_DIRS)
       set(Boost_LIBRARY_DIR ${boost_LIBRARY_DIRS} ${boost_python_LIBRARY_DIRS})
@@ -41,6 +50,21 @@ IF(NOT DEFINED BOOST_LIBRARY_DIRS)
       set(Boost_LIBRARY_DIR ${AL_boost_LIBRARY_DIRS} ${AL_boost_python_LIBRARY_DIRS})
   ENDIF()
 ENDIF()
+
+IF(NOT DEFINED BOOST_INCLUDEDIR)
+    set(BOOST_INCLUDEDIR ${AL_boost_INCLUDE_DIRS})
+ENDIF()
+
+SET(Boost_DEBUG OFF) #Use this to debug FindBoost
+
+# FindBoost is particularly buggy, and doesn't like custom boost locations.
+# Adding specific components forces calls to _Boost_find_library, which
+# is the rationale for listing them here.
+find_package(Boost COMPONENTS
+                python # initialises Boost_PYTHON_LIBRARY
+                thread # initialises Boost_THREAD_LIBRARY
+                REQUIRED
+)
 
 ####################################################################################################
 # General
@@ -57,6 +81,7 @@ add_subdirectory(${MAYA_USD_SOURCE_DIR}/lib/usd/utils ${MAYA_USD_BUILD_DIR}/usdu
 include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
 include(${MAYA_USD_SOURCE_DIR}/cmake/googletest.cmake)
 fetch_googletest()
+enable_testing()
 add_subdirectory(${MAYA_USD_SOURCE_DIR}/test/lib/usd/utils ${MAYA_USD_BUILD_DIR}/test)
 add_custom_target(all_tests
   ${CMAKE_CTEST_COMMAND} --output-on-failure
