@@ -33,6 +33,13 @@ include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
 ####################################################################################################
 # General
 ####################################################################################################
+
+# to get PYTHON_EXECUTABLE
+find_package(PythonInterp)
+set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+set(MAYA_PY_EXECUTABLE ${PYTHON_EXECUTABLE}) #Autdoesk are using maya_add_test macro to run these tests which is a bit wrong
+enable_testing()
+
 set(USDTRANSACTION_INCLUDE_LOCATION ${MAYA_USD_SOURCE_DIR}/plugin/al/usdtransaction)
 
 add_subdirectory(${MAYA_USD_SOURCE_DIR}/plugin/al/usdtransaction ${MAYA_USD_BUILD_DIR}/usdtransaction)
