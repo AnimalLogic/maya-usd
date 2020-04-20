@@ -18,13 +18,47 @@
 cmake_minimum_required(VERSION 3.11)
 include(FetchContent)
 
+# Use either the tag set in MAYA_USD_GIT_TAG env var, or default to develop
+SET (HAVE_INITIAL_MAYA_USD_TAG 0)
+SET (INITIAL_MAYA_USD_TAG "develop")   #default branch
+if (NOT ("$ENV{MAYA_USD_GIT_TAG}" STREQUAL ""))
+   SET (INITIAL_MAYA_USD_TAG $ENV{MAYA_USD_GIT_TAG})
+   SET (HAVE_INITIAL_MAYA_USD_TAG 1)
+endif()
+
+
 set(LOCAL_MODE 1) 
-set(NONINTERACTIVE_MODE 0) 
 IF(DEFINED ENV{BUILD_URL})
     message("I think I'm in Jenkins")
-    set(NONINTERACTIVE_MODE 1) 
     set(LOCAL_MODE 0) 
 ENDIF()
+
+
+# Tries to set the branch of maya-usd to the same branch name as maya-usd-build
+# if and only if:
+# A value has not been supplied for the env var MAYA_USD_GIT_TAG (can be set in the package.py or in the calling cmake)
+# The same branch name is not already set
+#
+# Note that it these 2 conditions are true, an attempt will be made to set the branch - this may fail if a branch of the same name 
+# does not exist 
+function(set_maya_usd_branch)
+    if (NOT ${HAVE_INITIAL_MAYA_USD_TAG})
+        execute_process(
+          COMMAND git rev-parse --abbrev-ref HEAD
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+          OUTPUT_VARIABLE MAYA_USD_GIT_BRANCH
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (NOT ${MAYA_USD_GIT_BRANCH} STREQUAL ${INITIAL_MAYA_USD_TAG})
+            MESSAGE("maya-usd-subproject: try and set maya-usd branch to ${MAYA_USD_GIT_BRANCH}")
+            execute_process(
+              COMMAND git checkout ${MAYA_USD_GIT_BRANCH}
+              WORKING_DIRECTORY ${MAYA_USD_LOCAL_REPO_DIR}
+            )
+        endif()
+    endif()
+endfunction()
+
 
 
 IF (LOCAL_MODE)
@@ -38,28 +72,28 @@ IF (LOCAL_MODE)
 		  maya-usd
 		  GIT_REPOSITORY 	https://github.al.com.au/rnd/maya-usd.git
 		  SOURCE_DIR 		${MAYA_USD_LOCAL_REPO_DIR} #@todo: Only override this if we're in interactive mode
-		  GIT_TAG $ENV{MAYA_USD_GIT_TAG}
+		  GIT_TAG ${INITIAL_MAYA_USD_TAG}
 		)
 		FetchContent_Populate(maya-usd)
+		set_maya_usd_branch()
 	ENDIF()
 	set (MAYA_USD_SOURCE_DIR ${MAYA_USD_LOCAL_REPO_DIR})
 	set (MAYA_USD_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 ELSE()
-	#@todo: I dont think this covers all cases when we would be building from the command line... we basically need to cover non-interactive shell cases
-	message("Jenkins Mode: let's clone repo using tag $ENV{MAYA_USD_GIT_TAG}")
+	message("maya-usd-subproject: Jenkins/CI Mode: let's clone repo using tag ${INITIAL_MAYA_USD_TAG}")
 	set(FETCHCONTENT_QUIET off)
 	FetchContent_Declare(
 	  maya-usd
 	  GIT_REPOSITORY https://github.al.com.au/rnd/maya-usd.git
-	  GIT_TAG $ENV{MAYA_USD_GIT_TAG} #@note broken pending fix to https://github.al.com.au/rnd/maya-usd-build/issues/28 
+	  GIT_TAG ${INITIAL_MAYA_USD_TAG} 
 	)
 	FetchContent_Populate(maya-usd)
 	set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
 	set (MAYA_USD_BUILD_DIR ${maya-usd_BINARY_DIR})
 	#@todo having to set this feels wrong... The CMAKE_BINARY_DIR is being set to the root of the build tree, not to what's needed for the sub-build
 	set(INSTALL_DIR_SUFFIX _deps/maya-usd-build)
+	set_maya_usd_branch()
 ENDIF() 
-
 
 SET(MAYA_USD_AL_PLUGIN_DIR "${MAYA_USD_SOURCE_DIR}/plugin/al")
 

@@ -45,7 +45,14 @@ Note that all 3 plugins depend on a common library called "mayaUsd". This is cur
 We attempt to cover 3 workflows
 
 ### Working locally
-if you're working interactively, maya-usd-build expects to find a local clone of the maya-usd repo in a sibling directory of maya-usd-build, and will check one out if it doesn't find it. It defaults to the "dev" branch (or whatever the default is) but you can change it to whatever you want.. changing the branch of maya-usd-build does not change the branch of maya-usd
+if you're working interactively, maya-usd-build expects to find a local clone of the maya-usd repo in a sibling directory of maya-usd-build, and will check one out if it doesn't find it. 
+
+What branch does it checkout of maya-usd?
+1. If you specify a MAYA_USD_GIT_TAG in your package py (or in your environment) that will be used
+2. Failing this, it will set the branch to develop
+2. Then, it will try and set the same branch name as the one you're using for maya-usd-build 
+
+Note that once a copy of maya-usd is checked out, nothing will attempt to change it's branch again.
 
 When you build it will build the source files in that sibling maya-usd folder. 
 You work with, commit, push and generally manipulate the source files in that local maya-usd directory/git repository as you would normally.
@@ -79,10 +86,14 @@ sub_repositories_revisions = \
                         'tracking_branch': 'origin/master'}}
 ```
 
+when Releasing:
++ Make sure OSS (maya-usd) and AL (maya-usd-build) tests run
++ Update the CHANGELOG.md - there is one for each Rez package
++ todo: get jenkins pipeline running to test dependencies
 
 
 ### Non-interactive use
-For non-interactive use (e.g Jenkins) we need to think more about how it should work - i.e how do we drive the checkout of a particular commit or branch from the build repo? (e.g when running unit tests on AL)
+For non-interactive use (e.g Jenkins) the same branch checkout rules apply - see "What branch does it checkout of maya-usd?" above
 
 # Repositories
 
