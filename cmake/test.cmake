@@ -180,7 +180,7 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
     list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    if (IS_LINUX and NOT CMAKE_SKIP_RPATH)
+    if (IS_LINUX AND CMAKE_SKIP_RPATH)
         list(APPEND mayaUsd_varname_LD_LIBRARY_PATH
              "$ENV{LD_LIBRARY_PATH}")
         list(APPEND mayaUsd_varname_LD_LIBRARY_PATH
