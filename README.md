@@ -86,6 +86,10 @@ sub_repositories_revisions = \
                         'tracking_branch': 'origin/master'}}
 ```
 
+when Releasing:
++ Make sure OSS (maya-usd) and AL (maya-usd-build) tests run
++ Update the CHANGELOG.md - there is one for each Rez package
++ todo: get jenkins pipeline running to test dependencies
 
 
 ### Non-interactive use
