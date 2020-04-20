@@ -27,6 +27,15 @@ IF(DEFINED ENV{BUILD_URL})
 ENDIF()
 
 
+execute_process(
+  COMMAND git rev-parse --abbrev-ref HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+MESSAGE("=================================GIT_BRANCH GIT_BRANCH ${GIT_BRANCH}")
+
+
 IF (LOCAL_MODE)
 	IF (EXISTS ${MAYA_USD_LOCAL_REPO_DIR})
 		message("Local Mode: found local maya-usd install. Using maya-usd from ${MAYA_USD_LOCAL_REPO_DIR}")
