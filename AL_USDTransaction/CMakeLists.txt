@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PYTHON_LIBRARIES ${python_LIBRARIES})
 
+set (CMAKE_SKIP_RPATH TRUE)
 ####################################################################################################
 # Setup build to build from maya-usd repo
 ####################################################################################################
