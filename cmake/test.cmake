@@ -32,7 +32,7 @@ endfunction()
 #                            MAYA_PLUG_IN_PATH
 #                            MAYA_SCRIPT_PATH
 #                            PXR_PLUGINPATH_NAME
-                             LD_LIBRARY_PATH
+#                            LD_LIBRARY_PATH
 #                        Note that the format of these name/value pairs should
 #                        be the same as that used with
 #                        `set_property(TEST test_name APPEND PROPERTY ENVIRONMENT ...)`
@@ -180,7 +180,7 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
     list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    if (IS_LINUX)
+    if (IS_LINUX and NOT CMAKE_SKIP_RPATH)
         list(APPEND mayaUsd_varname_LD_LIBRARY_PATH
              "$ENV{LD_LIBRARY_PATH}")
         list(APPEND mayaUsd_varname_LD_LIBRARY_PATH
