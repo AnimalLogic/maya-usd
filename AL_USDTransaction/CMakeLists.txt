@@ -27,10 +27,19 @@ get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSO
 include(maya-usd-subproject)
 
 include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
+include(${MAYA_USD_SOURCE_DIR}/cmake/googletest.cmake)
+include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
 
 ####################################################################################################
 # General
 ####################################################################################################
+
+# to get PYTHON_EXECUTABLE
+find_package(PythonInterp)
+set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+set(MAYA_PY_EXECUTABLE ${PYTHON_EXECUTABLE}) #Autdoesk are using maya_add_test macro to run these tests which is a bit wrong
+enable_testing()
+
 set(USDTRANSACTION_INCLUDE_LOCATION ${MAYA_USD_SOURCE_DIR}/plugin/al/usdtransaction)
 
 add_subdirectory(${MAYA_USD_SOURCE_DIR}/plugin/al/usdtransaction ${MAYA_USD_BUILD_DIR}/usdtransaction)
