@@ -87,7 +87,7 @@ sub_repositories_revisions = \
 ```
 
 when Releasing:
-+ Make sure OSS (maya-usd) and AL (maya-usd-build) tests run
++ Make sure OSS (http://hudson:8081/hudson/job/maya-usd/) and AL (http://hudson:8081/hudson/job/maya-usd-build/job/develop/) tests running (the maya-usd tests only run on a PR (@todo: fix) so you might have to create one to get them to run
 + Update the CHANGELOG.md - there is one for each Rez package
 + todo: get jenkins pipeline running to test dependencies
 
