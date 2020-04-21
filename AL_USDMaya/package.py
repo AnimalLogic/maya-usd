@@ -47,9 +47,8 @@ help = [['API', '$BROWSER http://github.al.com.au/pages/documentation/AL_USDMaya
 
 def commands():
     prependenv('PATH', '{root}/bin')
-    prependenv('PYTHONPATH', '{root}/plugin/al/lib/python')
-    prependenv('PYTHONPATH', '{root}/lib/python')
-    prependenv('LD_LIBRARY_PATH', '{root}/plugin/al/lib')
+    prependenv('PYTHONPATH', '{root}/lib/python:{root}/plugin/al/lib/python')
+    prependenv('LD_LIBRARY_PATH', '{root}/lib:{root}/plugin/al/lib')
     prependenv('MAYA_PLUG_IN_PATH', '{root}/plugin/al/plugin')
     prependenv('MAYA_SCRIPT_PATH', '{root}/lib:{root}/share/usd/plugins/usdMaya/resources')
     prependenv('PXR_PLUGINPATH_NAME', '{root}/lib/usd:{root}/plugin')
