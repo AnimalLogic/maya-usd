@@ -119,7 +119,7 @@ endif()
 add_definitions("-DAL_MAYA_ENABLE_SIMD=1")
 add_definitions(-DLINUX)
 add_definitions("-DUSD_VERSION_NUM=${USD_VERSION_NUM}") 
-
+set (CMAKE_SKIP_RPATH TRUE)
 
 
 # to get PYTHON_EXECUTABLE
