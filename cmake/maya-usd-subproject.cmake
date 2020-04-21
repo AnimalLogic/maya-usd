@@ -12,7 +12,7 @@
 #
 #  MAYA_USD_BUILD_DIR           - path to the maya-usd build tree
 #  MAYA_USD_SOURCE_DIR          - path to the maya-usd source tree
-#  MAYA_USD_AL_PLUGIN_DIR    	- path to the AL Plugin within the maya-usd source tree
+#  MAYA_USD_AL_PLUGIN_DIR       - path to the AL Plugin within the maya-usd source tree
 
 
 cmake_minimum_required(VERSION 3.11)
@@ -62,37 +62,45 @@ endfunction()
 
 
 IF (LOCAL_MODE)
-	IF (EXISTS ${MAYA_USD_LOCAL_REPO_DIR})
-		message("Local Mode: found local maya-usd install. Using maya-usd from ${MAYA_USD_LOCAL_REPO_DIR}")
-	ELSE()
-		message("Local Mode: didn't found local maya-usd install..let's git clone to ${MAYA_USD_WIP_REPO_DIR}")
-		set(FETCHCONTENT_QUIET off)
-		file(MAKE_DIRECTORY ${MAYA_USD_LOCAL_REPO_DIR})
-		FetchContent_Declare(
-		  maya-usd
-		  GIT_REPOSITORY 	https://github.al.com.au/rnd/maya-usd.git
-		  SOURCE_DIR 		${MAYA_USD_LOCAL_REPO_DIR} #@todo: Only override this if we're in interactive mode
-		  GIT_TAG ${INITIAL_MAYA_USD_TAG}
-		)
-		FetchContent_Populate(maya-usd)
-		set_maya_usd_branch()
-	ENDIF()
-	set (MAYA_USD_SOURCE_DIR ${MAYA_USD_LOCAL_REPO_DIR})
-	set (MAYA_USD_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    IF (EXISTS ${MAYA_USD_LOCAL_REPO_DIR})
+        message("Local Mode: found local maya-usd install. Using maya-usd from ${MAYA_USD_LOCAL_REPO_DIR}")
+    ELSE()
+        message("Local Mode: didn't found local maya-usd install..let's git clone to ${MAYA_USD_WIP_REPO_DIR}")
+        set(FETCHCONTENT_QUIET off)
+        file(MAKE_DIRECTORY ${MAYA_USD_LOCAL_REPO_DIR})
+        FetchContent_Declare(
+          maya-usd
+          GIT_REPOSITORY    https://github.al.com.au/rnd/maya-usd.git
+          SOURCE_DIR        ${MAYA_USD_LOCAL_REPO_DIR} #@todo: Only override this if we're in interactive mode
+          GIT_TAG ${INITIAL_MAYA_USD_TAG}
+        )
+        FetchContent_Populate(maya-usd)
+        set_maya_usd_branch()
+    ENDIF()
+    set (MAYA_USD_SOURCE_DIR ${MAYA_USD_LOCAL_REPO_DIR})
+    set (MAYA_USD_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 ELSE()
-	message("maya-usd-subproject: Jenkins/CI Mode: let's clone repo using tag ${INITIAL_MAYA_USD_TAG}")
-	set(FETCHCONTENT_QUIET off)
-	FetchContent_Declare(
-	  maya-usd
-	  GIT_REPOSITORY https://github.al.com.au/rnd/maya-usd.git
-	  GIT_TAG ${INITIAL_MAYA_USD_TAG} 
-	)
-	FetchContent_Populate(maya-usd)
-	set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
-	set (MAYA_USD_BUILD_DIR ${maya-usd_BINARY_DIR})
-	#@todo having to set this feels wrong... The CMAKE_BINARY_DIR is being set to the root of the build tree, not to what's needed for the sub-build
-	set(INSTALL_DIR_SUFFIX _deps/maya-usd-build)
-	set_maya_usd_branch()
+    message("maya-usd-subproject: Jenkins/CI Mode: let's clone repo using tag ${INITIAL_MAYA_USD_TAG}")
+    set(FETCHCONTENT_QUIET off)
+    FetchContent_Declare(
+      maya-usd
+      GIT_REPOSITORY https://github.al.com.au/rnd/maya-usd.git
+      GIT_TAG ${INITIAL_MAYA_USD_TAG} 
+    )
+    FetchContent_Populate(maya-usd)
+    set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
+    set (MAYA_USD_BUILD_DIR ${maya-usd_BINARY_DIR})
+    #@todo having to set this feels wrong... The CMAKE_BINARY_DIR is being set to the root of the build tree, not to what's needed for the sub-build
+    set(INSTALL_DIR_SUFFIX _deps/maya-usd-build)
+    #Jenkins sets the env var "BRANCH_NAME" - but checks out a specific commit not a branch AFAIK, so the set_maya_usd_branch
+    #function doesn't work. @todo: generalise to work in non-interactive but non-Jenkins case
+    if (NOT ${HAVE_INITIAL_MAYA_USD_TAG} AND (NOT $ENV{BRANCH_NAME} STREQUAL ${INITIAL_MAYA_USD_TAG}))
+        MESSAGE("maya-usd-subproject: try and set maya-usd branch to $ENV{BRANCH_NAME}")
+        execute_process(
+          COMMAND git checkout $ENV{BRANCH_NAME}
+          WORKING_DIRECTORY ${MAYA_USD_SOURCE_DIR}
+        )
+    endif()
 ENDIF() 
 
 SET(MAYA_USD_AL_PLUGIN_DIR "${MAYA_USD_SOURCE_DIR}/plugin/al")
