@@ -93,7 +93,13 @@ when Releasing:
 
 
 ### Non-interactive use
-For non-interactive use (e.g Jenkins) the same branch checkout rules apply - see "What branch does it checkout of maya-usd?" above
+For non-interactive use (e.g Jenkins) the same branch checkout rules apply - see "What branch does it checkout of maya-usd?" above.
+One difference is you can't manually modify the checked out branch like you can in interactive mode. 
+Therefore, if the rules above result in checking out a branch of maya-usd rather than a specific commit (only possible via MAYA_USD_GIT_TAG) the HEAD of that branch at the time the repository is checked out will be used.
+We do print out the commit in use in the log:
+```
+maya-usd-subproject: MAYA_USD commit/SHA is XXXX  
+```
 
 # Repositories
 

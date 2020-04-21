@@ -108,3 +108,14 @@ SET(MAYA_USD_AL_PLUGIN_DIR "${MAYA_USD_SOURCE_DIR}/plugin/al")
 MESSAGE("maya-usd-subproject: MAYA_USD_BUILD_DIR is ${MAYA_USD_BUILD_DIR}")
 MESSAGE("maya-usd-subproject: MAYA_USD_SOURCE_DIR is ${MAYA_USD_SOURCE_DIR}")
 MESSAGE("maya-usd-subproject: MAYA_USD_AL_PLUGIN_DIR is ${MAYA_USD_AL_PLUGIN_DIR}")
+
+execute_process(
+          COMMAND git rev-parse HEAD
+          WORKING_DIRECTORY ${MAYA_USD_SOURCE_DIR}
+          OUTPUT_VARIABLE MAYA_USD_SHA
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+MESSAGE("maya-usd-subproject: MAYA_USD commit/SHA is ${MAYA_USD_SHA}")
+
+
+
