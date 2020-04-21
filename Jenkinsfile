@@ -8,5 +8,6 @@ config.reuseArtifacts = true
 config.nodeLabel = 'CentOS-7&&!restricted&&HeavyTests'
 config.globalLogLevel = 'Debug'
 config.useRezTest = false
+config.sendEmail = true
 
 runALPipeline config
