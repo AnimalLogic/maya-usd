@@ -1,5 +1,5 @@
 macro(fetch_googletest)
-
+    
     if (NOT GTEST_FOUND)
         # First see if we can find a gtest that was downloaded and built.
         if (NOT GOOGLETEST_BUILD_ROOT)

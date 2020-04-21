@@ -1,7 +1,9 @@
+#include <mayaUsdUtils/MayaTransformAPI.h>
+
+#include <pxr/usd/usdGeom/xform.h>
+
 #include <gtest/gtest.h>
 #include <fstream>
-#include "../MayaTransformAPI.h"
-#include <pxr/usd/usdGeom/xform.h>
 
 const char* const fullXformDef = 
 R"(#
