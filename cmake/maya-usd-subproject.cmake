@@ -63,9 +63,9 @@ endfunction()
 
 IF (LOCAL_MODE)
     IF (EXISTS ${MAYA_USD_LOCAL_REPO_DIR})
-        message("Local Mode: found local maya-usd install. Using maya-usd from ${MAYA_USD_LOCAL_REPO_DIR}")
+        message("maya-usd-subproject: Local Mode: found local maya-usd install. Using maya-usd from ${MAYA_USD_LOCAL_REPO_DIR}")
     ELSE()
-        message("Local Mode: didn't found local maya-usd install..let's git clone to ${MAYA_USD_WIP_REPO_DIR}")
+        message("maya-usd-subproject: Local Mode: didn't found local maya-usd install..let's git clone to ${MAYA_USD_WIP_REPO_DIR}")
         set(FETCHCONTENT_QUIET off)
         file(MAKE_DIRECTORY ${MAYA_USD_LOCAL_REPO_DIR})
         FetchContent_Declare(
@@ -87,11 +87,16 @@ ELSE()
       GIT_REPOSITORY https://github.al.com.au/rnd/maya-usd.git
       GIT_TAG ${INITIAL_MAYA_USD_TAG} 
     )
-    FetchContent_Populate(maya-usd)
-    set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
-    set (MAYA_USD_BUILD_DIR ${maya-usd_BINARY_DIR})
-    #@todo having to set this feels wrong... The CMAKE_BINARY_DIR is being set to the root of the build tree, not to what's needed for the sub-build
-    set(INSTALL_DIR_SUFFIX _deps/maya-usd-build)
+    
+    if (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/_deps/maya-usd-src)
+        message("maya-usd-subproject: Jenkins Mode: found existing local maya-usd src")
+    ELSE()
+        FetchContent_Populate(maya-usd)
+        set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
+        set (MAYA_USD_BUILD_DIR ${maya-usd_BINARY_DIR})
+        #@todo having to set this feels wrong... The CMAKE_BINARY_DIR is being set to the root of the build tree, not to what's needed for the sub-build
+        set(INSTALL_DIR_SUFFIX _deps/maya-usd-build)
+    ENDIF()
     #Jenkins sets the env var "BRANCH_NAME" - but checks out a specific commit not a branch AFAIK, so the set_maya_usd_branch
     #function doesn't work. @todo: generalise to work in non-interactive but non-Jenkins case
     if (NOT ${HAVE_INITIAL_MAYA_USD_TAG} AND (NOT $ENV{BRANCH_NAME} STREQUAL ${INITIAL_MAYA_USD_TAG}))
