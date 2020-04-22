@@ -90,6 +90,8 @@ ELSE()
     
     if (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/_deps/maya-usd-src)
         message("maya-usd-subproject: Jenkins Mode: found existing local maya-usd src")
+        set (MAYA_USD_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/maya-usd-src)
+        set (MAYA_USD_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/maya-usd-build)
     ELSE()
         FetchContent_Populate(maya-usd)
         set (MAYA_USD_SOURCE_DIR ${maya-usd_SOURCE_DIR})
@@ -114,6 +116,7 @@ MESSAGE("maya-usd-subproject: MAYA_USD_BUILD_DIR is ${MAYA_USD_BUILD_DIR}")
 MESSAGE("maya-usd-subproject: MAYA_USD_SOURCE_DIR is ${MAYA_USD_SOURCE_DIR}")
 MESSAGE("maya-usd-subproject: MAYA_USD_AL_PLUGIN_DIR is ${MAYA_USD_AL_PLUGIN_DIR}")
 
+#print name of current branch for debugging purposes
 execute_process(
           COMMAND git rev-parse HEAD
           WORKING_DIRECTORY ${MAYA_USD_SOURCE_DIR}
