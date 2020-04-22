@@ -36,6 +36,8 @@ list(APPEND CMAKE_MODULE_PATH
     ${MAYA_USD_SOURCE_DIR}/cmake/modules
 )
 
+include(${MAYA_USD_SOURCE_DIR}/cmake/compiler_config.cmake)
+
 include(test OPTIONAL) #it's not really optional, just doesn't exist until an Autodesk commit introduces it (one of the commits in https://github.al.com.au/rnd/maya-usd/pull/57/commits)
 
 ####################################################################################################
@@ -128,7 +130,6 @@ set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
 
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include(CXXDefaults)
 
 add_definitions(${_PXR_CXX_DEFINITIONS})
 

@@ -27,9 +27,11 @@ get_filename_component(MAYA_USD_LOCAL_REPO_DIR ${MAYA_USD_WIP_REPO_DIR_REL} ABSO
 
 include(maya-usd-subproject)
 
+include(${MAYA_USD_SOURCE_DIR}/cmake/compiler_config.cmake)
 include(${MAYA_USD_SOURCE_DIR}/cmake/utils.cmake)
 include(${MAYA_USD_SOURCE_DIR}/cmake/googletest.cmake)
 include(${MAYA_USD_SOURCE_DIR}/cmake/test.cmake)
+
 
 ####################################################################################################
 # General
