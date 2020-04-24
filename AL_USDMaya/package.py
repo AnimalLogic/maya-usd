@@ -38,9 +38,9 @@ requires = [
 
 variants = [
     ['mayaDevKit-2019.0', 'usdBase-0.19.11'],
-    ['mayaDevKit-2019.0', 'usdBase-0.20.2'],
-    ['mayaDevKit-2020.0', 'usdBase-0.19.11'],
-    ['mayaDevKit-2020.0', 'usdBase-0.20.2']
+   # ['mayaDevKit-2019.0', 'usdBase-0.20.2'],
+   # ['mayaDevKit-2020.0', 'usdBase-0.19.11'],
+   # ['mayaDevKit-2020.0', 'usdBase-0.20.2']
 ]
 
 help = [['API', '$BROWSER http://github.al.com.au/pages/documentation/AL_USDMaya']]

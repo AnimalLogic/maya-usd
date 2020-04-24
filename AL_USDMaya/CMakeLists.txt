@@ -122,6 +122,8 @@ add_definitions("-DAL_MAYA_ENABLE_SIMD=1")
 add_definitions(-DLINUX)
 add_definitions("-DUSD_VERSION_NUM=${USD_VERSION_NUM}") 
 set (CMAKE_SKIP_RPATH TRUE)
+#With this off, the AL_USDMaya Plugin gets treated as a static lib, and install rules for LIBRARY don't apply
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 
 
 # to get PYTHON_EXECUTABLE
@@ -290,6 +292,5 @@ install(FILES ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake
 add_custom_target(all_tests
     ${CMAKE_CTEST_COMMAND} --output-on-failure
 )
-
 
 rez_install_files(mel/${MAYA_MAJOR_VERSION}/al_usdmaya_autoload.mel RELATIVE mel/${MAYA_MAJOR_VERSION} DESTINATION mel)
