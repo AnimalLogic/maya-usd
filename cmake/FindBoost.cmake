@@ -548,7 +548,9 @@ macro(_Boost_ADJUST_LIB_VARS basename)
       # single-config generators, set optimized and debug libraries
       get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
       if(_isMultiConfig OR CMAKE_BUILD_TYPE)
-        set(Boost_${basename}_LIBRARY optimized ${Boost_${basename}_LIBRARY_RELEASE} debug ${Boost_${basename}_LIBRARY_DEBUG})
+        set(Boost_${basename}_LIBRARY ${Boost_${basename}_LIBRARY_RELEASE} )
+        #@eoinm: commented out line below replaced with line above - results in path for boost::thread lib containing "optimised" 
+        #set(Boost_${basename}_LIBRARY optimized ${Boost_${basename}_LIBRARY_RELEASE} debug ${Boost_${basename}_LIBRARY_DEBUG})
       else()
         # For single-config generators where CMAKE_BUILD_TYPE has no value,
         # just use the release libraries
