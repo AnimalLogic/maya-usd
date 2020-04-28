@@ -1005,7 +1005,7 @@ void ProxyShape::processChangedObjects(const SdfPathVector& resyncedPaths, const
   if(isLockPrimFeatureActive())
   {
     processChangedMetaData(resyncedPaths, changedOnlyPaths);
-  }
+  }  
 
   // These paths are subtree-roots representing entire subtrees that may have
   // changed. In this case, we must dump all cached data below these points
