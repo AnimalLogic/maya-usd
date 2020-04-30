@@ -26,18 +26,12 @@ endif()
 if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     set(Boost_USE_DEBUG_PYTHON ON)
 endif()
-find_package(Boost COMPONENTS filesystem system REQUIRED)
+find_package(Boost COMPONENTS filesystem REQUIRED)
 
 # -----------------------------------------------------------------------------
-# compiler configuration
+# compile definitions
 # -----------------------------------------------------------------------------
-target_compile_definitions(${PROJECT_NAME}
-    PUBLIC
-        USD_VERSION_NUM=${USD_VERSION_NUM}
-        PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+target_compile_definitions(${PROJECT_NAME} 
     PRIVATE
         MAYAUSD_MACROS_EXPORT
         MAYAUSD_CORE_EXPORT
@@ -46,27 +40,14 @@ target_compile_definitions(${PROJECT_NAME}
         MFB_PACKAGE_MODULE="${PROJECT_NAME}"
         $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
-        $<$<BOOL:${IS_LINUX}>:LINUX>
-        $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
-        $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
 )
-
-if(DEFINED UFE_PREVIEW_VERSION_NUM)
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-            UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}
-    )
-endif()
 
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(UFE_FOUND AND MSVC)
-    target_compile_options(${PROJECT_NAME}
-        PUBLIC
-            /wd4251
-    )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+    string(REPLACE " " ";" REPLACED_FLAGS ${CMAKE_CXX_FLAGS})
+    target_compile_options(${PROJECT_NAME} INTERFACE ${REPLACED_FLAGS})
 endif()
-
-mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
 # include directories
