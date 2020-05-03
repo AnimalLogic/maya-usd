@@ -1796,15 +1796,12 @@ void ProxyShape::deserialiseTransformRefs()
           const uint32_t refCounts = tstrs[4].asUnsigned();
           SdfPath path(tstrs[1].asChar());
           m_requiredPaths.emplace(path, TransformReference(node, transformNode, required, selected, refCounts));          
-          if(transformNode)
+          UsdPrim prim = usdStage()->GetPrimAtPath(path);
+          if (usdStage()->GetPrimAtPath(path).IsValid())
           {
-            UsdPrim prim = usdStage()->GetPrimAtPath(path);
-            if (usdStage()->GetPrimAtPath(path).IsValid())
-            {
-              recordUsdPrimToMayaPath(prim, node );
-            }
+            recordUsdPrimToMayaPath(prim, node );
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added %s TransformReference: %s\n", transformNode? "AL_usdmaya_Transform":"", path.GetText());
           }
-          TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added %s TransformReference: %s\n", transformNode? "AL_usdmaya_Transform":"", path.GetText());
         }
       }
     }
