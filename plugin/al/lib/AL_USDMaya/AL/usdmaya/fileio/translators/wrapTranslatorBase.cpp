@@ -199,7 +199,7 @@ public:
 
     std::string name(dagPath.fullPathName().asChar());
 
-    //pass a dagPath name and dictionary of params to the python methgo
+    //pass a dagPath name and dictionary of params to the python method
     if (Override o = GetOverride("exportObject"))
     {
       return std::function<UsdPrim (UsdStageRefPtr, const char*, SdfPath, boost::python::dict)>(TfPyCall<UsdPrim>(o))(stage, name.c_str(), usdPath, pyParams);
