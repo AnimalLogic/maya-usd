@@ -180,6 +180,7 @@ public:
     MFnDependencyNode fn(obj);
     std::string name(fn.name().asChar());
 
+    //pass a string to the python method instead of a dependency node
     if (Override o = GetOverride("canExport"))
     {
       return std::function<ExportFlag (const char*)>(TfPyCall<ExportFlag>(o))(name.c_str());
@@ -197,6 +198,8 @@ public:
     pyParams["m_maxFrame"] = params.m_maxFrame;
 
     std::string name(dagPath.fullPathName().asChar());
+
+    //pass a dagPath name and dictionary of params to the python methgo
     if (Override o = GetOverride("exportObject"))
     {
       return std::function<UsdPrim (UsdStageRefPtr, const char*, SdfPath, boost::python::dict)>(TfPyCall<UsdPrim>(o))(stage, name.c_str(), usdPath, pyParams);
