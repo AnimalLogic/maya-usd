@@ -46,6 +46,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifndef UFE_VISIBILITY_HACK
+# if defined(WANT_UFE_BUILD) && !defined(UFE_V2_FEATURES_AVAILABLE)
+#  define  UFE_VISIBILITY_HACK 1
+# else
+#  define  UFE_VISIBILITY_HACK 0
+# endif
+#endif
+
 class HdRenderDelegate;
 class HdRenderIndex;
 class HdRprimCollection;
@@ -127,6 +135,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     HdVP2SelectionStatus GetPrimSelectionStatus(const SdfPath& path) const;
 
+    #if UFE_VISIBILITY_HACK
+    MAYAUSD_CORE_PUBLIC 
+    void SyncAll();
+    #endif
+
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
@@ -185,6 +198,14 @@ private:
 inline bool ProxyRenderDelegate::_isInitialized() {
     return (_sceneDelegate != nullptr);
 }
+
+#if defined(WANT_UFE_BUILD) && !defined(UFE_V2_FEATURES_AVAILABLE)
+/// Temporary dirty hack to handle visibility in UFE prior to UFE v2
+/// If a visibility attribute on a UsdPrim changes, if UFE is enabled and V2 is not available,
+/// sync all of the UsdSceneDelegates. Having synced all the delegates, refresh the viewport.
+MAYAUSD_CORE_PUBLIC
+void SyncAllDelegates();
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

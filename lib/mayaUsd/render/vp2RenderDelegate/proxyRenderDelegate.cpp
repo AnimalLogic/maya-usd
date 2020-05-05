@@ -54,6 +54,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+    #if UFE_VISIBILITY_HACK
+    std::vector<ProxyRenderDelegate*> g_renderDelegates;
+    #endif
 
     //! Representation selector for shaded and textured viewport mode
     const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
@@ -194,11 +197,15 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 : MHWRender::MPxSubSceneOverride(obj)
 {
+    #if UFE_VISIBILITY_HACK
+    g_renderDelegates.push_back(this);
+    #endif
     MDagPath::getAPathTo(obj, _proxyDagPath);
 
     const MFnDependencyNode fnDepNode(obj);
     _proxyShape = static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode());
 }
+
 
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate() {
@@ -206,6 +213,14 @@ ProxyRenderDelegate::~ProxyRenderDelegate() {
     delete _taskController;
     delete _renderIndex;
     delete _renderDelegate;
+
+    #if UFE_VISIBILITY_HACK
+    auto it = std::find(g_renderDelegates.begin(), g_renderDelegates.end(), this);
+    if(it != g_renderDelegates.end())
+    {
+        g_renderDelegates.erase(it);
+    }
+    #endif
 
 #if !defined(WANT_UFE_BUILD)
     if (_mayaSelectionCallbackId != 0) {
@@ -350,7 +365,7 @@ bool ProxyRenderDelegate::_Populate() {
                 _renderIndex->RemoveRprim(indexPath);
             }
         }
-        
+
         _sceneDelegate->Populate(_usdStage->GetPseudoRoot(),excludePrimPaths);
         
         _isPopulated = true;
@@ -366,10 +381,8 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     if (!_proxyShape || !_sceneDelegate) {
         return;
     }
-
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L1, "UpdateSceneDelegate");
-
     {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetTime");
@@ -498,7 +511,6 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // Give access to current time and subscene container to the rest of render delegate world via render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
     param->BeginUpdate(container, _sceneDelegate->GetTime());
-
     if (_Populate()) {
         _UpdateSceneDelegate();
         _Execute(frameContext);
@@ -740,5 +752,22 @@ const MColor& ProxyRenderDelegate::GetWireframeColor() const
 {
     return _wireframeColor;
 }
+
+#if UFE_VISIBILITY_HACK
+void ProxyRenderDelegate::SyncAll()
+{
+    if(_sceneDelegate)
+       _sceneDelegate->SyncAll(true);
+}
+
+void SyncAllDelegates()
+{
+    for(auto ptr : pxr::g_renderDelegates)
+    {
+        ptr->SyncAll();
+    }
+    MGlobal::executeCommand("refresh");
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

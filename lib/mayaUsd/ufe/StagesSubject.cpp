@@ -45,6 +45,21 @@
 #include <unordered_map>
 #endif
 
+#ifndef UFE_VISIBILITY_HACK
+# if defined(WANT_UFE_BUILD) && !defined(UFE_V2_FEATURES_AVAILABLE)
+#  define  UFE_VISIBILITY_HACK 1
+# else
+#  define  UFE_VISIBILITY_HACK 0
+# endif
+#endif
+
+
+#if UFE_VISIBILITY_HACK
+PXR_NAMESPACE_OPEN_SCOPE
+extern void SyncAllDelegates();
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {
 
@@ -238,6 +253,10 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		}
 	}
 
+	#if UFE_VISIBILITY_HACK
+	bool cleanDelegates = false;
+	#endif
+
 	for (const auto& changedPath : notice.GetChangedInfoOnlyPaths())
 	{
 		auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
@@ -265,6 +284,12 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			Ufe::Object3d::notify(vis);
 		}
 #endif
+#elif UFE_VISIBILITY_HACK
+		// Send a special message when visibility has changed.
+		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
+		{
+			cleanDelegates = true;
+		}
 #endif
 
 		// We need to determine if the change is a Transform3d change.
@@ -275,6 +300,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			Ufe::Transform3d::notify(ufePath);
 		}
 	}
+
+	#if UFE_VISIBILITY_HACK
+	if(cleanDelegates)
+	{
+		pxr::SyncAllDelegates();
+	}
+	#endif
 }
 
 void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
