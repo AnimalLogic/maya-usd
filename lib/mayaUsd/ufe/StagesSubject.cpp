@@ -286,7 +286,8 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 #endif
 #elif UFE_VISIBILITY_HACK
 		// Send a special message when visibility has changed.
-		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
+		if (changedPath.GetNameToken() == UsdGeomTokens->visibility ||
+		    changedPath.GetNameToken() == UsdGeomTokens->purpose)
 		{
 			cleanDelegates = true;
 		}

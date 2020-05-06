@@ -32,6 +32,7 @@
 #include <pxr/imaging/hd/task.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <mayaUsd/base/api.h>
 
@@ -61,6 +62,18 @@ class UsdImagingDelegate;
 class MayaUsdProxyShapeBase;
 class HdxTaskController;
 class MayaUsdProxyShapeBase;
+
+class ProxyUsdImagingDelegate : public UsdImagingDelegate
+{
+public:
+
+    ProxyUsdImagingDelegate (MayaUsdProxyShapeBase* n, HdRenderIndex *parentIndex, SdfPath const &delegateID)
+      : UsdImagingDelegate(parentIndex, delegateID), _proxyShape(n) {}
+    MayaUsdProxyShapeBase*  _proxyShape{ nullptr };
+
+
+    TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
+};
 
 /*! \brief  Enumerations for selection status
 */

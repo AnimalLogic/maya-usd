@@ -193,6 +193,12 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
                 bool* drawGuidePurpose);
 
         MAYAUSD_CORE_PUBLIC
+        bool GetDrawPurposeToggles(
+                bool* drawRenderPurpose,
+                bool* drawProxyPurpose,
+                bool* drawGuidePurpose);
+
+        MAYAUSD_CORE_PUBLIC
         MStatus setDependentsDirty(
                 const MPlug& plug,
                 MPlugArray& plugArray) override;

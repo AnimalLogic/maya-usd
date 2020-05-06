@@ -908,6 +908,23 @@ MayaUsdProxyShapeBase::_GetDrawPurposeToggles(
 }
 
 bool
+MayaUsdProxyShapeBase::GetDrawPurposeToggles(
+        bool* drawRenderPurpose,
+        bool* drawProxyPurpose,
+        bool* drawGuidePurpose)
+{
+    MDataBlock dataBlock = forceCache();
+
+    _GetDrawPurposeToggles(
+        dataBlock,
+        drawRenderPurpose,
+        drawProxyPurpose,
+        drawGuidePurpose);
+
+    return true;
+}
+
+bool
 MayaUsdProxyShapeBase::GetAllRenderAttributes(
         UsdPrim* usdPrimOut,
         SdfPathVector* excludePrimPathsOut,
