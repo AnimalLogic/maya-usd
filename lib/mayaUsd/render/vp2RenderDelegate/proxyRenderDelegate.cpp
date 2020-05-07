@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
@@ -24,7 +25,6 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
-#include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
@@ -54,6 +54,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+    #if UFE_VISIBILITY_HACK
+    std::vector<ProxyRenderDelegate*> g_renderDelegates;
+    #endif
 
     //! Representation selector for shaded and textured viewport mode
     const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
@@ -194,11 +197,15 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 : MHWRender::MPxSubSceneOverride(obj)
 {
+    #if UFE_VISIBILITY_HACK
+    g_renderDelegates.push_back(this);
+    #endif
     MDagPath::getAPathTo(obj, _proxyDagPath);
 
     const MFnDependencyNode fnDepNode(obj);
     _proxyShape = static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode());
 }
+
 
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate() {
@@ -206,6 +213,14 @@ ProxyRenderDelegate::~ProxyRenderDelegate() {
     delete _taskController;
     delete _renderIndex;
     delete _renderDelegate;
+
+    #if UFE_VISIBILITY_HACK
+    auto it = std::find(g_renderDelegates.begin(), g_renderDelegates.end(), this);
+    if(it != g_renderDelegates.end())
+    {
+        g_renderDelegates.erase(it);
+    }
+    #endif
 
 #if !defined(WANT_UFE_BUILD)
     if (_mayaSelectionCallbackId != 0) {
@@ -279,7 +294,7 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         const SdfPath delegateID =
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
-        _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
+        _sceneDelegate = new ProxyUsdImagingDelegate(_proxyShape, _renderIndex, delegateID);
 
         _taskController = new HdxTaskController(_renderIndex,
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
@@ -339,7 +354,7 @@ bool ProxyRenderDelegate::_Populate() {
             const SdfPath delegateID =
                 SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
-            _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);   
+            _sceneDelegate = new ProxyUsdImagingDelegate(_proxyShape, _renderIndex, delegateID);   
         }
 
         // It might have been already populated, clear it if so.
@@ -350,7 +365,7 @@ bool ProxyRenderDelegate::_Populate() {
                 _renderIndex->RemoveRprim(indexPath);
             }
         }
-        
+
         _sceneDelegate->Populate(_usdStage->GetPseudoRoot(),excludePrimPaths);
         
         _isPopulated = true;
@@ -366,10 +381,8 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     if (!_proxyShape || !_sceneDelegate) {
         return;
     }
-
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L1, "UpdateSceneDelegate");
-
     {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetTime");
@@ -498,7 +511,6 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // Give access to current time and subscene container to the rest of render delegate world via render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
     param->BeginUpdate(container, _sceneDelegate->GetTime());
-
     if (_Populate()) {
         _UpdateSceneDelegate();
         _Execute(frameContext);
@@ -739,6 +751,51 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
 const MColor& ProxyRenderDelegate::GetWireframeColor() const
 {
     return _wireframeColor;
+}
+
+#if UFE_VISIBILITY_HACK
+void ProxyRenderDelegate::SyncAll()
+{
+    if(_sceneDelegate)
+       _sceneDelegate->SyncAll(true);
+}
+
+void SyncAllDelegates()
+{
+    for(auto ptr : pxr::g_renderDelegates)
+    {
+        ptr->SyncAll();
+    }
+    M3dView::scheduleRefreshAllViews();
+}
+#endif
+
+
+TfTokenVector 
+ProxyUsdImagingDelegate::GetTaskRenderTags(SdfPath const& taskId) 
+{
+    std::cout << "GetTaskRenderTaaaaaaaaaaaaaaaaaaaaaaaaaaags : " << taskId.GetText() << std::endl;
+    TfTokenVector tokens = UsdImagingDelegate::GetTaskRenderTags(taskId);
+    if(_proxyShape)
+    {
+        bool drawRenderPurpose, drawGuidePurpose, drawProxyPurpose;
+        _proxyShape->GetDrawPurposeToggles(&drawRenderPurpose, &drawProxyPurpose, &drawGuidePurpose);
+        if (drawRenderPurpose) {
+            tokens.push_back(UsdGeomTokens->render);
+        }
+        if (drawProxyPurpose) {
+            tokens.push_back(UsdGeomTokens->proxy);
+        }
+        if (drawGuidePurpose) {
+            tokens.push_back(UsdGeomTokens->guide);
+        }
+    }
+    // While the empty vector can mean no filtering and let all tags
+    // pass.  If any task has a non-empty render tags, the empty tags
+    // means that the task isn't interested in any prims at all.
+    // So the empty set use for no filtering should be limited
+    // to tests.
+    return tokens;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
