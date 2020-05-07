@@ -36,7 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand : public Ufe::ScaleUndoableCom
 public:
 	typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
 
-	UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 	~UsdScaleUndoableCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -46,7 +46,7 @@ public:
 	UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
 
 	//! Create a UsdScaleUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdScaleUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	static UsdScaleUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 
 	// Ufe::ScaleUndoableCommand overrides
 	void undo() override;
@@ -58,10 +58,9 @@ private:
 
 private:
 	UsdPrim fPrim;
-	UsdAttribute fScaleAttrib;
 	GfVec3f fPrevScaleValue;
 	Ufe::Path fPath;
-	bool fNoScaleOp;
+	UsdTimeCode fTimeCode;
 }; // UsdScaleUndoableCommand
 
 } // namespace ufe

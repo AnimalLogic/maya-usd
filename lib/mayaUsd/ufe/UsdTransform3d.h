@@ -21,6 +21,7 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -47,6 +48,9 @@ public:
 	static UsdTransform3d::Ptr create();
 
 	void setItem(const UsdSceneItem::Ptr& item);
+
+	UsdTimeCode timeCode() const;
+	MayaUsdProxyShapeBase* proxy() const;
 
 	// Ufe::Transform3d overrides
 	const Ufe::Path& path() const override;

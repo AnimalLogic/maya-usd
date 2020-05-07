@@ -14,6 +14,7 @@ target_sources(${PROJECT_NAME}
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
         UsdScaleUndoableCommand.cpp
+        UsdScalePivotTranslateUndoableCommand.cpp
         UsdSceneItem.cpp
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
