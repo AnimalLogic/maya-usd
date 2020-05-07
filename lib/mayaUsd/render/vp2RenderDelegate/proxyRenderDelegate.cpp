@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
@@ -765,7 +766,7 @@ void SyncAllDelegates()
     {
         ptr->SyncAll();
     }
-    MGlobal::executeCommand("refresh");
+    M3dView::scheduleRefreshAllViews();
 }
 #endif
 
