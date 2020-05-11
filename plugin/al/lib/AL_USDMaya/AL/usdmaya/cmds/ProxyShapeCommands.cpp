@@ -1554,7 +1554,7 @@ MStatus TranslatePrim::redoIt()
   }
 
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
-  m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp);
+  m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp); //this ultimately calls import and teardown
   
   // construct locks and selectability for imported prims
   if(m_proxy->isLockPrimFeatureActive())
@@ -1588,8 +1588,8 @@ MStatus TranslatePrim::redoIt()
         TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt '%s' resolves to an invalid prim\n", path.GetText());
       }
     }
-    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(m_proxy, updatePrims);
-    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(m_proxy, updatePrims);
+    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(m_proxy, updatePrims); //This looks like it calls both import and update - but we're only passing a list of updateable paths
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(m_proxy, updatePrims); //calls post Import?
   }
 
   return MStatus::kSuccess;
