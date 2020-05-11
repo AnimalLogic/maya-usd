@@ -274,7 +274,7 @@ class SimpleNodeCreationTranslatorWithUpdate(SimpleNodeCreationTranslator):
         shape = self.context().getProxyShape()
         mobjects = self.getMObjects(prim)
         for m in mobjects:
-            cmds.setAttr(m + ".mealtype", mealNameVal, type="string")
+            cmds.setAttr(m + ".mealtype", mealNameVal + "_update", type="string")
         return True
 
 
@@ -533,7 +533,7 @@ class TestPythonTranslators(unittest.TestCase):
         cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
         
         
-    def test_import_and_update_via_translateprim(self):
+    def test_import_and_update_via_resync(self):
         '''
         test that updateable translators update and non-updateable ones teardown/import when called via TranslatePrim
         '''
@@ -566,18 +566,18 @@ class TestPythonTranslators(unittest.TestCase):
         attr.Set("gyoza")
         
         
-        #translatePrim
+        #resync the scene
         rootPrim = prim = stage.GetPrimAtPath('/root')
-        cmds.AL_usdmaya_TranslatePrim(p=shapeName, tp=rootPrim.GetPath(), ip=rootPrim.GetPath(), up=rootPrim.GetPath(), r=True)
+        cmds.AL_usdmaya_ProxyShapeResync(p=shapeName, pp=rootPrim.GetPath());
      
         
-        #check maya attribute names again
+        #check maya attribute names again @todo: add an _updated to end of string!
         mayaPathA = shape.getMayaPathFromUsdPrim(primA)
         mealA_attr = cmds.geAttr(mayaPathA = ".mealtype")
         mayaPathB = shape.getMayaPathFromUsdPrim(primB)
         mealB_attr = cmds.geAttr(mayaPathB = ".mealtype")
         self.assertTrue(mealA_attr="kofta")
-        self.assertTrue(mealB_attr="gyoza")
+        self.assertTrue(mealB_attr="gyoza_update")
        
         
         
