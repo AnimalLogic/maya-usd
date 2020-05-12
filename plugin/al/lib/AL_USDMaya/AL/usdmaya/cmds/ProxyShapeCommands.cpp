@@ -893,7 +893,7 @@ MStatus ProxyShapeResync::doIt(const MArgList& args)
 
 MStatus ProxyShapeResync::redoIt()
 {
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::redoIt\n");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::redoIt start\n");
   if(m_resyncPrimPath == SdfPath::EmptyPath())
   {
     MGlobal::displayError("ProxyShapeResync: PrimPath is empty. ");
@@ -902,7 +902,7 @@ MStatus ProxyShapeResync::redoIt()
 
   m_shapeNode->resync(m_resyncPrimPath);
   //m_shapeNode->primChangedAtPath(m_resyncPrimPath);
-
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::redoIt end\n");
   return MStatus::kSuccess;
 }
 

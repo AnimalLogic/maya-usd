@@ -240,13 +240,10 @@ class SimpleNodeCreationTranslator(usdmaya.TranslatorBase):
         return True
 
     def importObject(self, prim, theParent=None):
-        print "IMPORT SimpleNodeCreationTranslator", prim
         mealNameVal = prim.GetAttribute("mealtype").Get()
-        node = cmds.createNode("transform", parent=theParent)
-        cmds.select(node)
+        cmds.select(theParent)
         cmds.addAttr(longName="mealtype", dataType="string")
         cmds.setAttr(".mealtype", mealNameVal, type="string")
-        self.insertItem(prim, node)
         return True
 
     def postImport(self, prim):
@@ -255,9 +252,7 @@ class SimpleNodeCreationTranslator(usdmaya.TranslatorBase):
     def preTearDown(self, prim):
         return True
 
-    def tearDown(self, path):
-        self.removeItems(path)
-        print "TEARDOWN", path     
+    def tearDown(self, path):  
         return True
 
 class SimpleNodeCreationTranslatorWithUpdate(SimpleNodeCreationTranslator):
@@ -269,12 +264,10 @@ class SimpleNodeCreationTranslatorWithUpdate(SimpleNodeCreationTranslator):
         return True
 
     def update(self, prim):
-        print "update SimpleNodeCreationTranslatorWithUpdate",prim
-        mealNameVal = prim.GetAttribute("mealtype").Get()
         shape = self.context().getProxyShape()
-        mobjects = self.getMObjects(prim)
-        for m in mobjects:
-            cmds.setAttr(m + ".mealtype", mealNameVal + "_update", type="string")
+        mayaPath = shape.getMayaPathFromUsdPrim(prim)
+        mealNameVal = prim.GetAttribute("mealtype").Get()
+        cmds.setAttr(mayaPath + ".mealtype", mealNameVal + "_update", type="string")
         return True
 
 
@@ -537,15 +530,17 @@ class TestPythonTranslators(unittest.TestCase):
         '''
         test that updateable translators update and non-updateable ones teardown/import when called via TranslatePrim
         '''
-        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslator(), 'Indian')
-        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslatorWithUpdate(), 'Japanese')
+        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslator(), 'indian')
+        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslatorWithUpdate(), 'japanese')
         
         stage = Usd.Stage.Open("../test_data/translate_meal.usda")
+        
         stageCache = UsdUtils.StageCache.Get()
         stageCache.Insert(stage)
         stageId = stageCache.GetId(stage)
         shapeName = 'updateProxyShape'
         cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
+        shape = usdmaya.ProxyShape.getByName('updateProxyShape')
         
         primA = stage.GetPrimAtPath("/root/Indian")
         primB = stage.GetPrimAtPath("/root/Japanese")
@@ -553,11 +548,11 @@ class TestPythonTranslators(unittest.TestCase):
         
         #check maya attribute names
         mayaPathA = shape.getMayaPathFromUsdPrim(primA)
-        mealA_attr = cmds.geAttr(mayaPathA = ".mealtype")
+        mealA_attr = cmds.getAttr(mayaPathA + ".mealtype")
         mayaPathB = shape.getMayaPathFromUsdPrim(primB)
-        mealB_attr = cmds.geAttr(mayaPathB = ".mealtype")
-        self.assertTrue(mealA_attr="udon")
-        self.assertTrue(mealB_attr="vindaloo")
+        mealB_attr = cmds.getAttr(mayaPathB + ".mealtype")
+        self.assertTrue(mealA_attr=="vindaloo")
+        self.assertTrue(mealB_attr=="udon")
         
         #update USD
         attr = primA.GetAttribute("mealtype")
@@ -565,20 +560,18 @@ class TestPythonTranslators(unittest.TestCase):
         attr = primB.GetAttribute("mealtype")
         attr.Set("gyoza")
         
-        
         #resync the scene
-        rootPrim = prim = stage.GetPrimAtPath('/root')
+        rootPrim = stage.GetPrimAtPath('/root')
         cmds.AL_usdmaya_ProxyShapeResync(p=shapeName, pp=rootPrim.GetPath());
-     
         
         #check maya attribute names again @todo: add an _updated to end of string!
         mayaPathA = shape.getMayaPathFromUsdPrim(primA)
-        mealA_attr = cmds.geAttr(mayaPathA = ".mealtype")
+        mealA_attr = cmds.getAttr(mayaPathA + ".mealtype")
         mayaPathB = shape.getMayaPathFromUsdPrim(primB)
-        mealB_attr = cmds.geAttr(mayaPathB = ".mealtype")
-        self.assertTrue(mealA_attr="kofta")
-        self.assertTrue(mealB_attr="gyoza_update")
-       
+        mealB_attr = cmds.getAttr(mayaPathB + ".mealtype")
+        
+        self.assertTrue(mealA_attr=="kofta")
+        self.assertTrue(mealB_attr=="gyoza_update")  
         
         
 
