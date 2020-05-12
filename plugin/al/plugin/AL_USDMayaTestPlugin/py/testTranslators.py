@@ -260,9 +260,6 @@ class SimpleNodeCreationTranslatorWithUpdate(SimpleNodeCreationTranslator):
     def supportsUpdate(self):
         return True
 
-    def importableByDefault(self):
-        return True
-
     def update(self, prim):
         shape = self.context().getProxyShape()
         mayaPath = shape.getMayaPathFromUsdPrim(prim)

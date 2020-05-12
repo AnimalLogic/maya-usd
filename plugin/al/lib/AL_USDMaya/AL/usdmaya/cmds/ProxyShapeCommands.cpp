@@ -901,7 +901,7 @@ MStatus ProxyShapeResync::redoIt()
   }
 
   m_shapeNode->resync(m_resyncPrimPath);
-  //m_shapeNode->primChangedAtPath(m_resyncPrimPath);
+
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::redoIt end\n");
   return MStatus::kSuccess;
 }
@@ -1555,7 +1555,7 @@ MStatus TranslatePrim::redoIt()
   }
 
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
-  m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp); //this ultimately calls import and teardown
+  m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp); //this calls import and teardown
   
   // construct locks and selectability for imported prims
   if(m_proxy->isLockPrimFeatureActive())
@@ -1589,8 +1589,8 @@ MStatus TranslatePrim::redoIt()
         TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt '%s' resolves to an invalid prim\n", path.GetText());
       }
     }
-    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(m_proxy, updatePrims); //This looks like it calls both import and update - but we're only passing a list of updateable paths
-    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(m_proxy, updatePrims); //calls post Import?
+    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(m_proxy, updatePrims);
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(m_proxy, updatePrims);
   }
 
   return MStatus::kSuccess;
@@ -1929,15 +1929,10 @@ AL_usdmaya_InternalProxyShapeSelect Overview:
 //----------------------------------------------------------------------------------------------------------------------
 const char* const ProxyShapeResync::g_helpText = R"(
 AL_usdmaya_ProxyShapeResync Overview:
-    used to inform AL_USDMaya that at the provided prim path and it's descendants, that the Maya scene at that point may be affected by some upcoming changes. 
+    used to inform AL_USDMaya that at the provided prim path and it's descendants, some changes to the USD Scene may have taken place,
+    and the maya scene should be resynced. In practice, translator teardown/import/update functionality will be called similar to 
+    what would happen if a variant switch, active state change or other USD scene change were detected 
     
-    After calling this command, clients are expected to make modifications to the stage and as a side effect will trigger a USDNotice call in AL_USDMaya 
-    which will update corresponding Maya nodes that live at or under the specified primpath; any other maintenance such as updating of internal caches will also be done. 
-
-    The provided prim path and it's descendants of  known schema type will have the AL::usdmaya::fileio::translators::TranslatorAbstract::preTearDown method called on each schema's translator
-    It's then up to the user to perform updates to the USD scene at or below that point in the hierarchy
-    On calling stage.Reload(),the relevant USDNotice will be triggered and and apply any changes and updates to the Maya scene.
-
     AL_usdmaya_ProxyShapeResync -p "ProxyShape1" -pp "/some/prim/path"
 
 )";
