@@ -25,6 +25,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
@@ -294,7 +295,7 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         const SdfPath delegateID =
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
-        _sceneDelegate = new ProxyUsdImagingDelegate(_proxyShape, _renderIndex, delegateID);
+        _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
 
         _taskController = new HdxTaskController(_renderIndex,
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
@@ -354,7 +355,7 @@ bool ProxyRenderDelegate::_Populate() {
             const SdfPath delegateID =
                 SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
-            _sceneDelegate = new ProxyUsdImagingDelegate(_proxyShape, _renderIndex, delegateID);   
+            _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);   
         }
 
         // It might have been already populated, clear it if so.
@@ -769,33 +770,5 @@ void SyncAllDelegates()
     M3dView::scheduleRefreshAllViews();
 }
 #endif
-
-
-TfTokenVector 
-ProxyUsdImagingDelegate::GetTaskRenderTags(SdfPath const& taskId) 
-{
-    std::cout << "GetTaskRenderTaaaaaaaaaaaaaaaaaaaaaaaaaaags : " << taskId.GetText() << std::endl;
-    TfTokenVector tokens = UsdImagingDelegate::GetTaskRenderTags(taskId);
-    if(_proxyShape)
-    {
-        bool drawRenderPurpose, drawGuidePurpose, drawProxyPurpose;
-        _proxyShape->GetDrawPurposeToggles(&drawRenderPurpose, &drawProxyPurpose, &drawGuidePurpose);
-        if (drawRenderPurpose) {
-            tokens.push_back(UsdGeomTokens->render);
-        }
-        if (drawProxyPurpose) {
-            tokens.push_back(UsdGeomTokens->proxy);
-        }
-        if (drawGuidePurpose) {
-            tokens.push_back(UsdGeomTokens->guide);
-        }
-    }
-    // While the empty vector can mean no filtering and let all tags
-    // pass.  If any task has a non-empty render tags, the empty tags
-    // means that the task isn't interested in any prims at all.
-    // So the empty set use for no filtering should be limited
-    // to tests.
-    return tokens;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
