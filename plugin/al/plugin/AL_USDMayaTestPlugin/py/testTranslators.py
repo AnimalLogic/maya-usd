@@ -220,6 +220,60 @@ class UpdateableTranslator(usdmaya.TranslatorBase):
 
     def exportObject(self, stage, path, usdPath, params):
         return
+    
+    
+class SimpleNodeCreationTranslator(usdmaya.TranslatorBase):
+
+    def initialize(self):
+        return True
+
+    def getTranslatedType(self):
+        return Tf.Type.Unknown
+
+    def needsTransformParent(self):
+        return True
+
+    def supportsUpdate(self):
+        return False
+
+    def importableByDefault(self):
+        return True
+
+    def importObject(self, prim, theParent=None):
+        mealNameVal = prim.GetAttribute("mealtype").Get()
+        cmds.select(theParent)
+        cmds.addAttr(longName="mealtype", dataType="string")
+        cmds.setAttr(".mealtype", mealNameVal, type="string")
+        return True
+
+    def postImport(self, prim):
+        return True
+
+    def preTearDown(self, prim):
+        return True
+
+    def tearDown(self, path):  
+        return True
+
+class SimpleNodeCreationTranslatorWithUpdate(SimpleNodeCreationTranslator):
+
+    def supportsUpdate(self):
+        return True
+
+    def update(self, prim):
+        shape = self.context().getProxyShape()
+        mayaPath = shape.getMayaPathFromUsdPrim(prim)
+        mealNameVal = prim.GetAttribute("mealtype").Get()
+        cmds.setAttr(mayaPath + ".mealtype", mealNameVal + "_update", type="string")
+        return True
+
+class SimpleNodeCreationTranslatorWithUpdateAndUniqueCheck(SimpleNodeCreationTranslatorWithUpdate):
+
+    def generateUniqueKey(self, prim):
+        mealName = prim.GetAttribute("mealtype")
+        mealNameVal = mealName.Get() if mealName.IsValid() else ''
+        return hashlib.md5(mealNameVal).hexdigest()
+        
 
 class TestPythonTranslators(unittest.TestCase):
     
@@ -472,6 +526,66 @@ class TestPythonTranslators(unittest.TestCase):
         stageId = stageCache.GetId(stage)
         shapeName = 'updateProxyShape'
         cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
+    
+    
+    def openStageSyncAndAssert(self):
+        stage = Usd.Stage.Open("../test_data/translate_meal.usda")
+        
+        stageCache = UsdUtils.StageCache.Get()
+        stageCache.Insert(stage)
+        stageId = stageCache.GetId(stage)
+        shapeName = 'updateProxyShape'
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
+        shape = usdmaya.ProxyShape.getByName('updateProxyShape')
+        
+        primA = stage.GetPrimAtPath("/root/Indian")
+        primB = stage.GetPrimAtPath("/root/Japanese")
+        
+        
+        #check maya attribute names
+        mayaPathA = shape.getMayaPathFromUsdPrim(primA)
+        mealA_attr = cmds.getAttr(mayaPathA + ".mealtype")
+        mayaPathB = shape.getMayaPathFromUsdPrim(primB)
+        mealB_attr = cmds.getAttr(mayaPathB + ".mealtype")
+        self.assertTrue(mealA_attr=="vindaloo")
+        self.assertTrue(mealB_attr=="udon")
+        
+        #update USD
+        attr = primA.GetAttribute("mealtype")
+        attr.Set("kofta")
+        attr = primB.GetAttribute("mealtype")
+        attr.Set("gyoza")
+        
+        #resync the scene
+        rootPrim = stage.GetPrimAtPath('/root')
+        cmds.AL_usdmaya_ProxyShapeResync(p=shapeName, pp=rootPrim.GetPath());
+        
+        #check maya attribute names again @todo: add an _updated to end of string!
+        mayaPathA = shape.getMayaPathFromUsdPrim(primA)
+        mealA_attr = cmds.getAttr(mayaPathA + ".mealtype")
+        mayaPathB = shape.getMayaPathFromUsdPrim(primB)
+        mealB_attr = cmds.getAttr(mayaPathB + ".mealtype")
+        
+        self.assertTrue(mealA_attr=="kofta")
+        self.assertTrue(mealB_attr=="gyoza_update")  
+        
+    def test_import_and_update_via_resync(self):
+        '''
+        test that updateable translators update and non-updateable ones teardown/import when called via TranslatePrim
+        '''
+        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslator(), 'indian')
+        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslatorWithUpdate(), 'japanese')
+        
+        self.openStageSyncAndAssert()  
+        
+    def test_import_and_update_with_uniquekey_via_resync(self):
+        '''
+        test that updateable translators update and non-updateable ones teardown/import when called via TranslatePrim
+        '''
+        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslator(), 'indian')
+        usdmaya.TranslatorBase.registerTranslator(SimpleNodeCreationTranslatorWithUpdateAndUniqueCheck(), 'japanese')
+        
+        self.openStageSyncAndAssert() 
 
 
 class TestTranslatorUniqueKey(usdmaya.TranslatorBase):

@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Scope "root" () {
+
+    def "Japanese" (
+       assettype="japanese"
+    )
+    {
+        string mealtype="udon"
+    }
+    def "Indian" (
+       assettype="indian"
+    )
+    {
+        string mealtype="vindaloo"
+    }
+    
+      
+}

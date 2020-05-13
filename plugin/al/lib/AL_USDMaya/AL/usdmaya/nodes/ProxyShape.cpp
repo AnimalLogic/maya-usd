@@ -718,12 +718,18 @@ void ProxyShape::resync(const SdfPath& primPath)
   // locking and selectability functionality has been added to onObjectsChanged(). I would want to call the logic in
   // that method to handle this resyncing but it would need to be refactored.
 
+
+
   SdfPathVector existingSchemaPrims;
+
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::resync begin:\n%s\n", primPath.GetText());
 
   // populates list of prims from prim mapping that will change under the path to resync.
   onPrePrimChanged(primPath, existingSchemaPrims);
 
   onPrimResync(primPath, existingSchemaPrims);
+
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::resync end:\n%s\n", primPath.GetText());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
