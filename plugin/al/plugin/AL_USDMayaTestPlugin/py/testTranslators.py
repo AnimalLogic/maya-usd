@@ -19,6 +19,7 @@
 import os
 import unittest
 import tempfile
+import hashlib
 
 from maya import cmds
 
