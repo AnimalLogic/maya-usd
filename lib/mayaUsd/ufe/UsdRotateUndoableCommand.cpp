@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,50 +24,51 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
-	: Ufe::RotateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fTimeCode(timeCode)
-	, fNoRotateOp(false)
+TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
+
+UsdRotateUndoableCommand::UsdRotateUndoableCommand(
+    const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode)
+	: Ufe::RotateUndoableCommand(item),
+      UsdTRSUndoableCommandBase(item, x, y, z, timeCode)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	fPrevRotateValue = api.rotate(fTimeCode);
 }
 
 UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
+UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode)
 {
-	return std::make_shared<UsdRotateUndoableCommand>(prim, ufePath, item, timeCode);
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(
+        item, x, y, z, timeCode);
+    cmd->initialize();
+    return cmd;
 }
 
 void UsdRotateUndoableCommand::undo()
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	const auto order = api.rotateOrder();
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::undo %s (%lf, %lf, %lf) [%d] @%lf\n", 
-		fPath.string().c_str(), fPrevRotateValue[0], fPrevRotateValue[1], fPrevRotateValue[2], int(order), fTimeCode.GetValue());
-
-	api.rotate(M_PI * fPrevRotateValue / 180.0f, order, fTimeCode);
-
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+  	UsdTRSUndoableCommandBase::undoImp();
 }
 
 void UsdRotateUndoableCommand::redo()
 {
-	perform();
+    redoImp();
 }
 
-void UsdRotateUndoableCommand::perform()
+void UsdRotateUndoableCommand::addEmptyAttribute()
 {
-	// No-op, use rotate to move the object
-	// The Maya rotate command directly invokes our rotate() method in its
-	// redoIt(), which is invoked both for the inital rotate and the redo.
+    performImp(0, 0, 0);	// Add an empty rotate
+}
+
+void UsdRotateUndoableCommand::performImp(double x, double y, double z)
+{
+	MayaUsdUtils::MayaTransformAPI api(prim());
+	const auto order = api.rotateOrder();
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::undo %s (%lf, %lf, %lf) [%d] @%lf\n", 
+		path().string().c_str(), x, y, z, int(order), timeCode().GetValue());
+
+	api.rotate(float(M_PI) * GfVec3f(x, y, z) / 180.0f, order, timeCode());
 }
 
 //------------------------------------------------------------------------------
@@ -76,11 +77,7 @@ void UsdRotateUndoableCommand::perform()
 
 bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	const auto order = api.rotateOrder();
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::rotate %s (%lf, %lf, %lf) [%d] @%lf\n", 
-		fPath.string().c_str(), x, y, z, int(order), fTimeCode.GetValue());
-	api.rotate(M_PI * GfVec3f(x, y, z) / 180.0f, order, fTimeCode);
+	perform(x, y, z);
 	return true;
 }
 

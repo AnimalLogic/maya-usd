@@ -85,7 +85,8 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         # Select prim, Maya node(s) created, query path
         cmds.AL_usdmaya_ProxyShapeSelect(proxy=self._proxyName, primPath="/{}".format(self._sphere))
         prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(self._sphere)
-        self.assertTrue(prim.IsValid())
+    	if not os.getenv('VP2_RENDER_DELEGATE_PROXY'):
+            self.assertTrue(prim.IsValid())
 
     def test_getUsdPrimFromMayaPath_invalidPrim(self):
         """Dag paths msut exist and be associated with a prim to return a valid prim."""
@@ -119,10 +120,13 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereShortName)
         self.assertFalse(prim.IsValid())
 
-        # Query long name? Success!
-        _sphereLongName = cmds.ls(self._sphere, type="AL_usdmaya_Transform")[0]
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereLongName)
-        self.assertTrue(prim.IsValid())
+    	if not os.getenv('VP2_RENDER_DELEGATE_PROXY'):
+            # Query long name? Success!
+            _sphereLongName = cmds.ls(self._sphere, type="AL_usdmaya_Transform")[0]
+            prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereLongName)
+            self.assertTrue(prim.IsValid())
+        else:
+            print('VP2_RENDER_DELEGATE enabled, ignoring old api check')
 
 class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
     """Test cases for member function: AL.usdmaya.ProxyShape().getMayaPathFromUsdPrim"""
@@ -199,26 +203,29 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
     def test_getMayaPathFromUsdPrim_success(self):
         """Maya scenes can contain multiple proxies. Query each proxy and test they return the correct Maya nodes."""
 
-        # These are dynamic prims, so select them to bring into Maya
-        cmds.select(clear=True)
-        cmds.AL_usdmaya_ProxyShapeSelect(self._stageA.proxyName, replace=True, primPath=str(self._stageA.prim.GetPath()))
-        cmds.AL_usdmaya_ProxyShapeSelect(self._stageB.proxyName, append=True, primPath=str(self._stageB.prim.GetPath()))
+    	if not os.getenv('VP2_RENDER_DELEGATE_PROXY'):
+            # These are dynamic prims, so select them to bring into Maya
+            cmds.select(clear=True)
+            cmds.AL_usdmaya_ProxyShapeSelect(self._stageA.proxyName, replace=True, primPath=str(self._stageA.prim.GetPath()))
+            cmds.AL_usdmaya_ProxyShapeSelect(self._stageB.proxyName, append=True, primPath=str(self._stageB.prim.GetPath()))
 
-        # Created Maya node names will match the originals
-        self.assertTrue(cmds.objExists(self._stageA.poly))
-        self.assertTrue(cmds.objExists(self._stageB.poly))
+            # Created Maya node names will match the originals
+            self.assertTrue(cmds.objExists(self._stageA.poly))
+            self.assertTrue(cmds.objExists(self._stageB.poly))
 
-        # Fetch the Maya node paths that represent each stage's prims
-        resultA = self._stageA.proxy.getMayaPathFromUsdPrim(self._stageA.prim)
-        resultB = self._stageB.proxy.getMayaPathFromUsdPrim(self._stageB.prim)
+            # Fetch the Maya node paths that represent each stage's prims
+            resultA = self._stageA.proxy.getMayaPathFromUsdPrim(self._stageA.prim)
+            resultB = self._stageB.proxy.getMayaPathFromUsdPrim(self._stageB.prim)
 
-        # Expand to long names
-        expectedA = cmds.ls(self._stageA.poly, long=True)[0]
-        expectedB = cmds.ls(self._stageB.poly, long=True)[0]
+            # Expand to long names
+            expectedA = cmds.ls(self._stageA.poly, long=True)[0]
+            expectedB = cmds.ls(self._stageB.poly, long=True)[0]
 
-        # The paths should match!
-        self.assertEqual(resultA, expectedA)
-        self.assertEqual(resultB, expectedB)
+            # The paths should match!
+            self.assertEqual(resultA, expectedA)
+            self.assertEqual(resultB, expectedB)
+        else:
+            print('VP2_RENDER_DELEGATE_PROXY enabled, skipping legacy test')
 
     def test_getMayaPathFromUsdPrim_failure(self):
         """Query a proxy with an invalid prim."""
@@ -251,7 +258,8 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         result = self._stageA.proxy.getMayaPathFromUsdPrim(self._stageA.prim)
         expected = cmds.ls(self._stageA.poly, long=True)[0]
 
-        self.assertEqual(result, expected)
+    	if not os.getenv('VP2_RENDER_DELEGATE_PROXY'):
+            self.assertEqual(result, expected)
 
     def test_getMayaPathFromUsdPrim_reopenImport(self):
         """Saving and reopening a Maya scene with dynamic translated prims should work."""
@@ -274,11 +282,14 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         _stageC.prim = _stageC.stage.GetPrimAtPath("/{}".format(_stageC.poly))
 
         # Test
-        cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
-        self.assertTrue(cmds.objExists(_stageC.poly))
-        result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
-        expected = cmds.ls(_stageC.poly, long=True)[0]
-        self.assertEqual(result, expected)
+    	if not os.getenv('VP2_RENDER_DELEGATE_PROXY'):
+            cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
+            self.assertTrue(cmds.objExists(_stageC.poly))
+            result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
+            expected = cmds.ls(_stageC.poly, long=True)[0]
+            self.assertEqual(result, expected)
+        else:
+            print('VP2_RENDER_DELEGATE_PROXY enabled, skipping legacy test')
 
         # Cleanup
         os.remove(_file.name)
@@ -306,11 +317,14 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         _stageC.prim = _stageC.stage.GetPrimAtPath("/{}".format(_stageC.poly))
 
         # Test
-        cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
-        self.assertTrue(cmds.objExists(_stageC.poly))
-        result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
-        expected = cmds.ls(_stageC.poly, long=True)[0]
-        self.assertEqual(result, expected)
+    	if not os.getenv('VP2_RENDER_DELEGATE_PROXY'):
+            cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
+            self.assertTrue(cmds.objExists(_stageC.poly))
+            result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
+            expected = cmds.ls(_stageC.poly, long=True)[0]
+            self.assertEqual(result, expected)
+        else:
+            print('VP2_RENDER_DELEGATE_PROXY enabled, skipping legacy test')
 
         # Cleanup
         os.remove(_file.name)
