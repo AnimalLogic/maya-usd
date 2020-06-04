@@ -24,48 +24,52 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdScaleUndoableCommand::UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
-	: Ufe::ScaleUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fTimeCode(timeCode)
-	, fNoScaleOp(false)
-{
-	MayaUsdUtils::MayaTransformAPI api(prim);
-	fPrevScaleValue = api.scale(fTimeCode);
-}
+TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
+
+UsdScaleUndoableCommand::UsdScaleUndoableCommand(
+    const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
+) : Ufe::ScaleUndoableCommand(item),
+    UsdTRSUndoableCommandBase(item, x, y, z, timeCode)
+{}
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
+UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
+)
 {
-	return std::make_shared<UsdScaleUndoableCommand>(prim, ufePath, item, timeCode);
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
+        item, x, y, z, timeCode);
+    cmd->initialize();
+    return cmd;
+
 }
 
 void UsdScaleUndoableCommand::undo()
 {
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScaleUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n",
-		fPath.string().c_str(), fPrevScaleValue[0], fPrevScaleValue[1], fPrevScaleValue[2], fTimeCode.GetValue());
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.scale(fPrevScaleValue, fTimeCode);
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+    undoImp();
 }
 
 void UsdScaleUndoableCommand::redo()
 {
-	perform();
+	redoImp();
 }
 
-void UsdScaleUndoableCommand::perform()
+void UsdScaleUndoableCommand::addEmptyAttribute()
 {
-	// No-op, use scale to scale the object.
-	// The Maya scale command directly invokes our scale() method in its
-	// redoIt(), which is invoked both for the inital scale and the redo.
+    performImp(1, 1, 1);	// Add a neutral scale
 }
+
+void UsdScaleUndoableCommand::performImp(double x, double y, double z)
+{
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScaleUndoableCommand::performImp %s (%lf, %lf, %lf) @%lf\n",
+		path().string().c_str(), x, y, z, timeCode().GetValue());
+	MayaUsdUtils::MayaTransformAPI api(prim());
+	api.scale(GfVec3f(x, y, z), timeCode());
+}
+
 
 //------------------------------------------------------------------------------
 // Ufe::ScaleUndoableCommand overrides
@@ -73,10 +77,7 @@ void UsdScaleUndoableCommand::perform()
 
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
 {
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScaleUndoableCommand::scale %s (%lf, %lf, %lf) @%lf\n", 
-		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.scale(GfVec3f(x, y, z), fTimeCode);
+	perform(x, y, z);
 	return true;
 }
 

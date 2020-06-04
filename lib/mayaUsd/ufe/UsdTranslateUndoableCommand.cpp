@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,57 +16,56 @@
 #include "UsdTranslateUndoableCommand.h"
 
 #include "private/Utils.h"
-
 #include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/ufe/Utils.h>
+
 #include <mayaUsdUtils/MayaTransformAPI.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
-	: Ufe::TranslateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fTimeCode(timeCode)
-	, fNoTranslateOp(false)
-{
-	MayaUsdUtils::MayaTransformAPI api(prim);
-	fPrevTranslateValue = api.translate(fTimeCode);
-}
+TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
+
+UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
+    const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
+) : Ufe::TranslateUndoableCommand(item),
+    UsdTRSUndoableCommandBase(item, x, y, z, timeCode)
+{}
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
+UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
+)
 {
-	return std::make_shared<UsdTranslateUndoableCommand>(prim, ufePath, item, timeCode);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
+        item, x, y, z, timeCode);
+    cmd->initialize();
+    return cmd;
 }
 
 void UsdTranslateUndoableCommand::undo()
 {
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n", 
-		fPath.string().c_str(), fPrevTranslateValue[0], fPrevTranslateValue[1], fPrevTranslateValue[2], fTimeCode.GetValue());
-	
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.translate(fPrevTranslateValue, fTimeCode);
-
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+    undoImp();
 }
 
 void UsdTranslateUndoableCommand::redo()
 {
-	perform();
+    redoImp();
 }
 
-void UsdTranslateUndoableCommand::perform()
+void UsdTranslateUndoableCommand::addEmptyAttribute()
 {
-	// No-op, use translate to move the object.
-	// The Maya move command directly invokes our translate() method in its
-	// redoIt(), which is invoked both for the inital move and the redo.
+    performImp(0, 0, 0);    // Add an empty translate
+}
+
+void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
+{
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::performImp %s (%lf, %lf, %lf) @%lf\n",
+		path().string().c_str(), x, y, z, timeCode().GetValue());
+	MayaUsdUtils::MayaTransformAPI api(prim());
+	api.translate(GfVec3d(x, y, z), timeCode());
 }
 
 //------------------------------------------------------------------------------
@@ -75,11 +74,8 @@ void UsdTranslateUndoableCommand::perform()
 
 bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n",
-		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.translate(GfVec3d(x, y, z), fTimeCode);
-	return true;
+    perform(x, y, z);
+    return true;
 }
 
 } // namespace ufe

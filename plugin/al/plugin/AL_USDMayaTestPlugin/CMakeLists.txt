@@ -63,12 +63,16 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         AL_USDMAYA_UNITTEST
         AL_USDMAYATEST_PLUGIN_EXPORT
         AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
@@ -136,6 +140,7 @@ mayaUsd_add_test(${TARGET_NAME}
     PYTHON_COMMAND "${pycode}"
     ENV
         "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

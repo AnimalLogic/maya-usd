@@ -19,6 +19,7 @@ target_sources(${PROJECT_NAME}
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
+        UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
         UsdTransform3dHandler.cpp
         UsdTranslateUndoableCommand.cpp
@@ -26,6 +27,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoDuplicateCommand.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
+        moduleDeps.cpp
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -37,12 +39,19 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
             UsdUndoCreateGroupCommand.cpp
+            UsdUndoInsertChildCommand.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdContextOps.cpp
                 UsdContextOpsHandler.cpp
+        )
+    endif()
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2015)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                ProxyShapeContextOpsHandler.cpp
         )
     endif()
 endif()
@@ -63,6 +72,7 @@ set(headers
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
     UsdStageMap.h
+    UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
     UsdTransform3dHandler.h
     UsdTranslateUndoableCommand.h
@@ -75,6 +85,7 @@ set(headers
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND headers
+        ProxyShapeContextOpsHandler.h
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h
@@ -83,6 +94,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdUndoCreateGroupCommand.h
+        UsdUndoInsertChildCommand.h
     )
 endif()
 
@@ -98,6 +110,8 @@ install(FILES ${headers}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ufe
 )
 
+set(UFE_PYTHON_MODULE_NAME ufe)
+
 # -----------------------------------------------------------------------------
 # subdirectories
 # -----------------------------------------------------------------------------
@@ -109,9 +123,9 @@ add_subdirectory(private)
 # UFE Python Bindings
 if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
-    set(UFE_PYTHON_TARGET_NAME ufe_d)
+    set(UFE_PYTHON_TARGET_NAME "_${UFE_PYTHON_MODULE_NAME}_d")
 else()
-    set(UFE_PYTHON_TARGET_NAME ufe)
+    set(UFE_PYTHON_TARGET_NAME "_${UFE_PYTHON_MODULE_NAME}")
 endif()
 
 add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
@@ -121,18 +135,22 @@ add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${UFE_PYTHON_TARGET_NAME} 
     PRIVATE
+        module.cpp
         wrapUtils.cpp
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
-        MFB_PACKAGE_NAME=${PROJECT_NAME}
-        MFB_ALT_PACKAGE_NAME=${PROJECT_NAME}
-        MFB_PACKAGE_MODULE=ufe
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        MFB_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+        MFB_ALT_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+        MFB_PACKAGE_MODULE="${PROJECT_NAME}.${UFE_PYTHON_MODULE_NAME}"
 )
+
+mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries
@@ -152,9 +170,9 @@ set_python_module_property(${UFE_PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
-    mayaUsd_add_rpath(rpath "../..")
+    mayaUsd_add_rpath(rpath "../../..")
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+        mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     endif()
     mayaUsd_install_rpath(rpath ${UFE_PYTHON_TARGET_NAME})
 endif()
@@ -164,12 +182,16 @@ endif()
 # -----------------------------------------------------------------------------
 install(TARGETS ${UFE_PYTHON_TARGET_NAME}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME}
     RUNTIME
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME}
+)
+
+install(FILES __init__.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME}
 )
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_TARGET_NAME}> 
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME} OPTIONAL)
 endif()

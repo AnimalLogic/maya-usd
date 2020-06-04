@@ -15,16 +15,22 @@ target_sources(${TARGET_NAME}
         DiffCore.cpp
         wrapMayaTransformAPI.cpp
         module.cpp
+        util.cpp
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYA_USD_UTILS_EXPORT
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
- 
+
+mayaUsd_compile_config(${TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
@@ -43,6 +49,7 @@ target_link_libraries(${TARGET_NAME}
         gf
         usd
         usdGeom
+        sdf
 )
 
 # -----------------------------------------------------------------------------
@@ -56,6 +63,7 @@ set(headers
     ForwardDeclares.h
     MayaTransformAPI.h
     SIMD.h
+    util.h
 )
 
 mayaUsd_promoteHeaderList( 

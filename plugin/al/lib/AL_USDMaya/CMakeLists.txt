@@ -161,13 +161,13 @@ add_library(${LIBRARY_NAME}
         ${AL_usdmaya_nodes_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${LIBRARY_NAME})
 
 target_compile_definitions(${LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
@@ -181,18 +181,6 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
     $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
-
-set(Boost_LINK_LIBRARIES
-    ${Boost_PYTHON_LIBRARY}
-    ${Boost_THREAD_LIBRARY}
-)
-if(WIN32)
-    list(APPEND Boost_LINK_LIBRARIES
-        ${Boost_CHRONO_LIBRARY}
-        ${Boost_DATE_TIME_LIBRARY}
-    )
-endif()
-
 
 target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
@@ -212,7 +200,12 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    ${Boost_LINK_LIBRARIES}
+    Boost::python
+    $<IF:$<BOOL:${IS_WINDOWS}>,Boost::thread,${Boost_THREAD_LIBRARY}>
+    $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
+    $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
+    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
+    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::system>
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
@@ -263,13 +256,13 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         MFB_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_PACKAGE_MODULE=usdmaya

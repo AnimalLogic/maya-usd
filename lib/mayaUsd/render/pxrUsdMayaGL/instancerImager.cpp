@@ -100,7 +100,8 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
             std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
                     entry.adapterVp2;
             if (!adapter) {
-                adapter.reset(CreateInstancerShapeAdapter());
+                adapter.reset(
+                    CreateInstancerShapeAdapter(/* isViewport2 = */ true));
             }
 
             if (adapter->Sync(
@@ -115,7 +116,8 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
             std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
                     entry.adapterLegacy;
             if (!adapter) {
-                adapter.reset(CreateInstancerShapeAdapter());
+                adapter.reset(
+                    CreateInstancerShapeAdapter(/* isViewport2 = */ false));
             }
 
             if (adapter->Sync(
@@ -441,12 +443,12 @@ void UsdMayaGL_InstancerImager::SetInstancerShapeAdapterFactory(
 }
 
 UsdMayaGL_InstancerShapeAdapter*
-UsdMayaGL_InstancerImager::CreateInstancerShapeAdapter()
+UsdMayaGL_InstancerImager::CreateInstancerShapeAdapter(bool isViewport2)
 {
     if (!_instancerShapeAdapterFactory) {
-        return new UsdMayaGL_InstancerShapeAdapter();
+        return new UsdMayaGL_InstancerShapeAdapter(isViewport2);
     }
-    return _instancerShapeAdapterFactory();
+    return _instancerShapeAdapterFactory(isViewport2);
 }
 
 UsdMayaGL_InstancerImager::_InstancerEntry::~_InstancerEntry()
