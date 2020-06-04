@@ -272,6 +272,7 @@ void ProxyShape::translatePrimsIntoMaya(
   {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya excluded geometry has been modified, reconstructing imaging engine \n");
     constructExcludedPrims(); //if excluded prims changed, this will call constructGLImagingEngine
+    constructGLImagingEngine();
   }
 }
 //----------------------------------------------------------------------------------------------------------------------
