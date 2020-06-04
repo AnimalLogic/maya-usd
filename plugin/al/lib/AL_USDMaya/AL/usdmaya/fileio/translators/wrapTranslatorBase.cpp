@@ -179,13 +179,32 @@ public:
   { 
     MFnDependencyNode fn(obj);
     std::string name(fn.name().asChar());
-    return this->CallVirtual<ExportFlag>("canExport", &This::canExport)(obj);
+
+    //pass a string to the python method instead of a dependency node
+    if (Override o = GetOverride("canExport"))
+    {
+      return std::function<ExportFlag (const char*)>(TfPyCall<ExportFlag>(o))(name.c_str());
+    }
+    return ExportFlag::kNotSupported;
   }
 
   UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const AL::usdmaya::fileio::ExporterParams& params) override
   {
+
+    //note: an incomplete list, add as needed
+    boost::python::dict pyParams;
+    pyParams["dynamicAttributes"] = params.m_dynamicAttributes;
+    pyParams["m_minFrame"] = params.m_minFrame;
+    pyParams["m_maxFrame"] = params.m_maxFrame;
+
     std::string name(dagPath.fullPathName().asChar());
-    return this->CallVirtual<UsdPrim>("exportObject", &This::exportObject)(stage, dagPath, usdPath, params);
+
+    //pass a dagPath name and dictionary of params to the python method
+    if (Override o = GetOverride("exportObject"))
+    {
+      return std::function<UsdPrim (UsdStageRefPtr, const char*, SdfPath, boost::python::dict)>(TfPyCall<UsdPrim>(o))(stage, name.c_str(), usdPath, pyParams);
+    }
+    return UsdPrim();
   }
 
   static void registerTranslator(refptr_t plugin, const TfToken& assetType=TfToken())
