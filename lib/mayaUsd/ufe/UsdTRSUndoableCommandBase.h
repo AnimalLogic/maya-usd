@@ -83,6 +83,8 @@ protected:
     // return the time code used when setting the TRS value
     const UsdTimeCode& timeCode() const { return fTimeCode; }
 
+    void setPrevValue(const V& v) { fPrevValue = v; }
+
 private:
 
     // Overridden from Ufe::Observer

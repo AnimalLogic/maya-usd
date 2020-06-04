@@ -54,6 +54,8 @@ public:
 
 protected:
 
+  GfVec3d evaluatePrevValue() const;
+
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
 	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdTranslateUndoableCommand() override;

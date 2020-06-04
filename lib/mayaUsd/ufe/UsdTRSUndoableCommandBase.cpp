@@ -27,26 +27,12 @@ template<class V>
 UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(
     const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
 ) : fItem(item), fNewValue(x, y, z), fTimeCode(timeCode)
-{}
+{
+}
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::initialize()
 {
-    if (cannotInit()) {
-        return;
-    }
-
-    // If prim does not have the attribute, add it.
-    if (!prim().HasAttribute(attributeName()))
-    {
-        fOpAdded = true;
-        addEmptyAttribute();
-    }
-
-    // See
-    // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
-    // for explanation of this->shared_from_this() in templated class.
-    attribute().Get(&fPrevValue);
     Ufe::Scene::instance().addObjectPathChangeObserver(this->shared_from_this());
 }
 
@@ -66,7 +52,7 @@ void UsdTRSUndoableCommandBase<V>::operator()(
 template<class V>
 void UsdTRSUndoableCommandBase<V>::undoImp()
 {
-    attribute().Set(fPrevValue);
+    perform(fPrevValue[0], fPrevValue[1], fPrevValue[2]);
     // Todo : We would want to remove the xformOp
     // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
@@ -74,14 +60,6 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
-    // We must go through conversion to the common transform API by calling
-    // perform(), otherwise we get "Empty typeName" USD assertions for rotate
-    // and scale.  Once that is done, we can simply set the attribute directly.
-    if (fDoneOnce) {
-        attribute().Set(fNewValue);
-        return;
-    }
-
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
 }
 

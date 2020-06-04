@@ -30,10 +30,17 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
 ) : Ufe::ScaleUndoableCommand(item),
     UsdTRSUndoableCommandBase(item, x, y, z, timeCode)
-{}
+{
+	setPrevValue(evaluatePrevValue());
+}
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 {}
+
+GfVec3f UsdScaleUndoableCommand::evaluatePrevValue() const
+{
+    return MayaUsdUtils::MayaTransformAPI(prim()).scale(timeCode());
+}
 
 /*static*/
 UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
@@ -59,7 +66,6 @@ void UsdScaleUndoableCommand::redo()
 
 void UsdScaleUndoableCommand::addEmptyAttribute()
 {
-    performImp(1, 1, 1);	// Add a neutral scale
 }
 
 void UsdScaleUndoableCommand::performImp(double x, double y, double z)

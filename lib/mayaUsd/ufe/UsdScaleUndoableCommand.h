@@ -53,6 +53,9 @@ public:
 
 protected:
 
+  GfVec3f evaluatePrevValue() const;
+
+
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
 	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdScaleUndoableCommand() override;

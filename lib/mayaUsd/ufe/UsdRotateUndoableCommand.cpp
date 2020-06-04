@@ -31,6 +31,7 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
 	: Ufe::RotateUndoableCommand(item),
       UsdTRSUndoableCommandBase(item, x, y, z, timeCode)
 {
+	setPrevValue(evaluatePrevValue());
 }
 
 UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
@@ -58,7 +59,6 @@ void UsdRotateUndoableCommand::redo()
 
 void UsdRotateUndoableCommand::addEmptyAttribute()
 {
-    performImp(0, 0, 0);	// Add an empty rotate
 }
 
 void UsdRotateUndoableCommand::performImp(double x, double y, double z)
@@ -70,6 +70,12 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 
 	api.rotate(float(M_PI) * GfVec3f(x, y, z) / 180.0f, order, timeCode());
 }
+
+GfVec3f UsdRotateUndoableCommand::evaluatePrevValue() const
+{
+    return (180.0f / float(M_PI)) * MayaUsdUtils::MayaTransformAPI(prim()).rotate(timeCode());
+}
+
 
 //------------------------------------------------------------------------------
 // Ufe::RotateUndoableCommand overrides

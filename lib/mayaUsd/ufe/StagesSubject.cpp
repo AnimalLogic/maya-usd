@@ -188,7 +188,6 @@ void StagesSubject::afterOpen()
 	std::for_each(std::begin(fStageListeners), std::end(fStageListeners),
 		[](StageListenerMap::value_type element) { TfNotice::Revoke(element.second); } );
 	fStageListeners.clear();
-	std::cout << "afterOpen " << fStageListeners.size() << std::endl;
 
 	// Set up our stage to proxy shape UFE path (and reverse)
 	// mapping.  We do this with the following steps:

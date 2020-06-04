@@ -29,7 +29,14 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
     const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode
 ) : Ufe::TranslateUndoableCommand(item),
     UsdTRSUndoableCommandBase(item, x, y, z, timeCode)
-{}
+{
+	setPrevValue(evaluatePrevValue());
+}
+
+GfVec3d UsdTranslateUndoableCommand::evaluatePrevValue() const
+{
+    return MayaUsdUtils::MayaTransformAPI(prim()).translate(timeCode());
+}
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 {}
@@ -57,7 +64,6 @@ void UsdTranslateUndoableCommand::redo()
 
 void UsdTranslateUndoableCommand::addEmptyAttribute()
 {
-    performImp(0, 0, 0);    // Add an empty translate
 }
 
 void UsdTranslateUndoableCommand::performImp(double x, double y, double z)

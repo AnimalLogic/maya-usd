@@ -56,6 +56,9 @@ public:
 
 protected:
 
+  GfVec3f evaluatePrevValue() const;
+
+
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
 	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdRotateUndoableCommand() override;
