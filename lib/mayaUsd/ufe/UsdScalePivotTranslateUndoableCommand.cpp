@@ -49,7 +49,12 @@ void UsdScalePivotTranslateUndoableCommand::undo()
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScalePivotTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n", 
 		fPath.string().c_str(), fPrevPivotValue[0], fPrevPivotValue[1], fPrevPivotValue[2], fTimeCode.GetValue());
 	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.scalePivot(GfVec3f(fPrevPivotValue), fTimeCode);
+	const GfVec3f newScalePivot = fPrevPivotValue;
+	const GfVec3f oldScalePivot = api.scalePivot(fTimeCode);
+	if(!GfIsClose(newScalePivot, oldScalePivot, 1e-5f))
+	{
+		api.scalePivot(newScalePivot, fTimeCode);
+	}
 
 	// Todo : We would want to remove the xformOp
 	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
@@ -71,7 +76,12 @@ bool UsdScalePivotTranslateUndoableCommand::translate(double x, double y, double
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotatePivotTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n", 
 		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
 	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.scalePivot(GfVec3f(x, y, z), fTimeCode);
+	const GfVec3f newScalePivot = GfVec3f(x, y, z);
+	const GfVec3f oldScalePivot = api.scalePivot(fTimeCode);
+	if(!GfIsClose(newScalePivot, oldScalePivot, 1e-5f))
+	{
+		api.scalePivot(newScalePivot, fTimeCode);
+	}
 	return true;
 }
 

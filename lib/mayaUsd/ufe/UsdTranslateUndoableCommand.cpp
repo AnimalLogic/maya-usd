@@ -71,7 +71,12 @@ void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::performImp %s (%lf, %lf, %lf) @%lf\n",
 		path().string().c_str(), x, y, z, timeCode().GetValue());
 	MayaUsdUtils::MayaTransformAPI api(prim());
-	api.translate(GfVec3d(x, y, z), timeCode());
+	const GfVec3d newTranslate = GfVec3d(x, y, z);
+	const GfVec3d oldTranslate = api.translate(timeCode());
+	if(!GfIsClose(newTranslate, oldTranslate, 1e-5))
+	{
+		api.translate(newTranslate, timeCode());
+	}
 }
 
 //------------------------------------------------------------------------------

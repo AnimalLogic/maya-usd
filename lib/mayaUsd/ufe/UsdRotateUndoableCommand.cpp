@@ -67,8 +67,12 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 	const auto order = api.rotateOrder();
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::undo %s (%lf, %lf, %lf) [%d] @%lf\n", 
 		path().string().c_str(), x, y, z, int(order), timeCode().GetValue());
-
-	api.rotate(float(M_PI) * GfVec3f(x, y, z) / 180.0f, order, timeCode());
+	const GfVec3f newRotate = GfVec3f(x, y, z) * float(M_PI / 180.0f);
+	const GfVec3f oldRotate = api.rotate(timeCode());
+	if(!GfIsClose(newRotate, oldRotate, 1e-5))
+	{
+		api.rotate(newRotate, order, timeCode());
+	}
 }
 
 GfVec3f UsdRotateUndoableCommand::evaluatePrevValue() const

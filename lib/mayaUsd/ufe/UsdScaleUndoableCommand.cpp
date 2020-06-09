@@ -73,7 +73,12 @@ void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScaleUndoableCommand::performImp %s (%lf, %lf, %lf) @%lf\n",
 		path().string().c_str(), x, y, z, timeCode().GetValue());
 	MayaUsdUtils::MayaTransformAPI api(prim());
-	api.scale(GfVec3f(x, y, z), timeCode());
+	const GfVec3f newScale = GfVec3f(x, y, z);
+	const GfVec3f oldScale = api.scale(timeCode());
+	if(!GfIsClose(newScale, oldScale, 1e-5f))
+	{
+		api.scale(newScale, timeCode());
+	}
 }
 
 
