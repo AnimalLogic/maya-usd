@@ -21,11 +21,11 @@
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/maya/utils/Utils.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MArgList.h"
-#include "maya/MDagPathArray.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MSyntax.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MArgList.h>
+#include <maya/MDagPathArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MSyntax.h>
 
 #include <ufe/observableSelection.h>
 #include <ufe/globalSelection.h>

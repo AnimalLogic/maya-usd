@@ -199,6 +199,12 @@ finally:
              "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
     endif()
 
+    if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
+        # If the environment contains a PYTHONHOME, also set the path to
+        # that folder so that we can find the python DLLs.
+        list(APPEND mayaUsd_varname_PATH $ENV{PYTHONHOME})
+    endif()
+
     # inherit PATH and PYTHONPATH from ENV to get USD entries
     # these should come last (esp PYTHONPATH, in case another module is overriding
     # with pkgutil)

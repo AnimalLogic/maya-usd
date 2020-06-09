@@ -17,16 +17,16 @@
 
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
-#include "maya/MFnTransform.h"
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MFileIO.h"
-#include "maya/MStringArray.h"
+#include <maya/MFnTransform.h>
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFileIO.h>
+#include <maya/MStringArray.h>
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "mayaUsd/nodes/proxyShapePlugin.h"
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>
