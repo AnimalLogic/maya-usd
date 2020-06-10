@@ -360,6 +360,13 @@ void ProxyShape::constructGLImagingEngine()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::onNodePreRemoval(MObject& obj, void* ptr)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::onNodePreRemoval\n");
+  MayaUsdProxyStageInvalidateNotice(*static_cast<ProxyShape*>(ptr)).Send();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs)
 {
   // I thought that, if your ProxyDrawOverride is set to not always be dirty,
@@ -517,6 +524,7 @@ ProxyShape::~ProxyShape()
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
   triggerEvent("PreDestroyProxyShape");
   MEventMessage::removeCallback(m_onSelectionChanged);
+  MEventMessage::removeCallback(m_onNodePreRemoval);
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
@@ -1446,6 +1454,8 @@ void ProxyShape::loadStage()
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
+  MObject node = thisMObject();
+  m_onNodePreRemoval = MNodeMessage::addNodePreRemovalCallback(node, onNodePreRemoval, this);
 
   ParentClass::postConstructor();
 
