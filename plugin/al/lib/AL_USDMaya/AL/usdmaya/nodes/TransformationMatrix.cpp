@@ -120,6 +120,9 @@ TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::setPrim(const UsdPrim& prim, Scope* transformNode)
 {
+  if(prim == m_prim)
+    return;
+
   m_enableUsdWriteback = false;
   if(prim.IsValid())
   {
