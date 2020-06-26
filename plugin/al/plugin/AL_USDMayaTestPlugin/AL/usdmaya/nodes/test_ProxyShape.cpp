@@ -21,6 +21,8 @@
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
+#include "mayaUsd/listeners/proxyShapeNotice.h"
+
 #include <maya/MFnTransform.h>
 #include <maya/MSelectionList.h>
 #include <maya/MGlobal.h>
@@ -1323,6 +1325,42 @@ TEST(ProxyShape, duplication)
 
   // Its stage must not be null.
   EXPECT_NE(dupProxy->getUsdStage(), nullptr);
+
+  // Clear out the scene to avoid crashing in proxy shape code during idle
+  // redraw.
+  MFileIO::newFile(true);
+}
+
+// Simple instrumented class to intercept proxy stage notices
+struct TestStagesSubject : public TfWeakBase
+{
+  TestStagesSubject()
+  {
+    TfWeakPtr<TestStagesSubject> me(this);
+    TfNotice::Register(me, &TestStagesSubject::onStageInvalidate);
+  }
+  void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice)
+  {
+    onStageInvalidateCalls++;
+  }
+  size_t onStageInvalidateCalls = 0;
+};
+
+// removal sends invalidation notice
+TEST(ProxyShape, removalSendsInvalidateNotice)
+{
+
+  TestStagesSubject subject;
+  MFileIO::newFile(true);
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  auto onStageInvalidateCalls = subject.onStageInvalidateCalls;
+  
+  // Remove proxy shape node
+  MGlobal::deleteNode(shape);
+  EXPECT_EQ(subject.onStageInvalidateCalls, onStageInvalidateCalls+1);
 
   // Clear out the scene to avoid crashing in proxy shape code during idle
   // redraw.

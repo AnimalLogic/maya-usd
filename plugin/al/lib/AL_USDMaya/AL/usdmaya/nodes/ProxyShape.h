@@ -846,6 +846,7 @@ private:
   void destroyGLImagingEngine();
 
   static void onSelectionChanged(void* ptr);
+  static void onNodePreRemoval(MObject& obj, void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);
   void removeTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
   void insertTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
@@ -1096,6 +1097,7 @@ private:
   TfNotice::Key m_transactionNoticeKey;
 
   MCallbackId m_onSelectionChanged = 0;
+  MCallbackId m_onNodePreRemoval = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
   proxy::LockManager m_lockManager;
