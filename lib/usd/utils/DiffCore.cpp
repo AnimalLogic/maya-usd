@@ -1395,7 +1395,7 @@ bool compareArrayFloat3DtoDouble4D(
     return false;
   }
 #ifdef __AVX2__
-  const f128 eps4 = splatf4f(eps);
+  const f128 eps4 = splat4f(eps);
   for (size_t i = 0; i < count3d; ++i)
   {
     const f128 float3d = loadmask3f(input3d + i * 3, 3);
@@ -1414,8 +1414,8 @@ bool compareArrayFloat3DtoDouble4D(
         std::abs(input3d[i + 2] - input4d[j + 2]) > eps)
       return false;
   }
-  return true;
 #endif
+  return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

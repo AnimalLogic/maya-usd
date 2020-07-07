@@ -10,6 +10,7 @@ set(MAYAUSDUTILS_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/${TA
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
+        TransformOpTools.cpp
         MayaTransformAPI.cpp
         DebugCodes.cpp
         DiffCore.cpp
@@ -63,6 +64,7 @@ set(headers
     ForwardDeclares.h
     MayaTransformAPI.h
     SIMD.h
+    TransformOpTools.h
     util.h
 )
 

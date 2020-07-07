@@ -6,7 +6,10 @@ set(gnu_clang_flags
     -Wall
     $<$<BOOL:${BUILD_STRICT_MODE}>:-Werror>
     # optimization
-    -msse3
+    -march=skylake
+    -mavx2
+    -mfma
+    -mf16c
     # disable warnings
     -Wno-deprecated
     -Wno-deprecated-declarations

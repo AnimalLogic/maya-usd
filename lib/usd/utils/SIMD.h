@@ -150,6 +150,8 @@ AL_DLL_HIDDEN inline i128 andnot4i(const i128 a, const i128 b) { return _mm_andn
 
 AL_DLL_HIDDEN inline f128 mul4f(const f128 a, const f128 b) { return _mm_mul_ps(a, b); }
 AL_DLL_HIDDEN inline d128 mul2d(const d128 a, const d128 b) { return _mm_mul_pd(a, b); }
+AL_DLL_HIDDEN inline f128 div4f(const f128 a, const f128 b) { return _mm_div_ps(a, b); }
+AL_DLL_HIDDEN inline d128 div2d(const d128 a, const d128 b) { return _mm_div_pd(a, b); }
 
 AL_DLL_HIDDEN inline f128 add4f(const f128 a, const f128 b) { return _mm_add_ps(a, b); }
 AL_DLL_HIDDEN inline i128 add4i(const i128 a, const i128 b) { return _mm_add_epi32(a, b); }
@@ -294,6 +296,7 @@ AL_DLL_HIDDEN inline f256 permutevar8x32f(const f256 a, const i256 b) { return _
 AL_DLL_HIDDEN inline f256 unpacklo8f(const f256 a, const f256 b) { return _mm256_unpacklo_ps(a, b); }
 AL_DLL_HIDDEN inline f256 unpackhi8f(const f256 a, const f256 b) { return _mm256_unpackhi_ps(a, b); }
 
+
 # define extract4f(reg, index) _mm256_extractf128_ps(reg, index)
 # define extract256i64(reg, index) _mm256_extract_epi64(reg, index)
 
@@ -373,13 +376,12 @@ inline i256 loadmask3i64(const void* const ptr, const size_t count)
 
 #ifdef __F16C__
 # ifdef __AVX__
-inline f256 cvtph8(const i128 a) { return _mm256_cvtph_ps(a); }
-inline i128 cvtph8(const f256 a) { return _mm256_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
-# else
-inline f128 cvtph4(const i128 a) { return _mm_cvtph_ps(a); }
-inline i128 cvtph4(const f128 a) { return _mm_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
 # endif
 #endif
+inline f256 cvtph8(const i128 a) { return _mm256_cvtph_ps(a); }
+inline i128 cvtph8(const f256 a) { return _mm256_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
+inline f128 cvtph4(const i128 a) { return _mm_cvtph_ps(a); }
+inline i128 cvtph4(const f128 a) { return _mm_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
 
 
 #ifdef __AVX__
@@ -414,6 +416,29 @@ inline f128 loadmask3f(const void* const ptr, size_t count)
   return _mm_load_ps((const float*)p);
 }
 #endif
+
+#define xor4d _mm256_xor_pd
+#define fmadd4d _mm256_fmadd_pd
+#define fmsub4d _mm256_fmsub_pd
+#define fnmadd4d _mm256_fnmadd_pd
+#define fnmsub4d _mm256_fnmsub_pd
+
+template<bool x, bool y, bool z, bool w>
+inline d256 select4d(const d256 a, const d256 b)
+{
+  return _mm256_blend_pd(b, a, x | (y << 1) | (z << 2) | (w << 3));
+}
+
+template<int X, int Y, int Z, int W>
+inline d256 permute4d(const d256 a)
+{
+    return _mm256_permute4x64_pd(a, X | (Y << 2) | (Z << 4) | (W << 6));
+}
+
+inline d256 round4d(const d256 x)
+{
+  return _mm256_round_pd(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+}
 
 } // MayaUsdUtils
 
