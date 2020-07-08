@@ -514,21 +514,24 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
     {
     case UsdGeomXformOp::PrecisionDouble:
       {
-        xformOp.Set(*(GfVec3d*)&temp, _timeCode);
+        void* ptr = &temp;
+        xformOp.Set(*(GfVec3d*)ptr, _timeCode);
       }
       break;
 
     case UsdGeomXformOp::PrecisionFloat:
       {
         f128 v = cvt4d_to_4f(temp);
-        xformOp.Set(*(GfVec3f*)&v, _timeCode);
+        void* ptr = &v;
+        xformOp.Set(*(GfVec3f*)ptr, _timeCode);
       }
       break;
 
     case UsdGeomXformOp::PrecisionHalf:
       {
         i128 v = cvtph4(cvt4d_to_4f(temp));
-        xformOp.Set(*(GfVec3h*)&v, _timeCode);
+        void* ptr = &v;
+        xformOp.Set(*(GfVec3h*)ptr, _timeCode);
       }
       break;
     }
@@ -638,14 +641,16 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
     case UsdGeomXformOp::PrecisionFloat:
       {
         f128 v = cvt4d_to_4f(temp);
-        xformOp.Set(*(GfVec3f*)&v, _timeCode);
+        void* ptr = &v;
+        xformOp.Set(*(GfVec3f*)ptr, _timeCode);
       }
       break;
 
     case UsdGeomXformOp::PrecisionHalf:
       {
         i128 v = cvtph4(cvt4d_to_4f(temp));
-        xformOp.Set(*(GfVec3h*)&v, _timeCode);
+        void* ptr = &v;
+        xformOp.Set(*(GfVec3h*)ptr, _timeCode);
       }
       break;
     }
@@ -1125,7 +1130,8 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 original = zero4i();
           xformOp.Get((GfQuath*)&original, _timeCode);
           original = cvtph4(cvt4d_to_4f(multiplyQuat(cvt4f_to_4d(cvtph4(original)), temp)));
-          xformOp.Set(*(GfQuath*)&original, _timeCode);
+          void* ptr = &original;
+          xformOp.Set(*(GfQuath*)ptr, _timeCode);
         }
         break;
       }
