@@ -46,7 +46,6 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
-#if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"
 #include "ufe/selection.h"
 
@@ -54,7 +53,6 @@ UFE_NS_DEF {
     class Path;
     class PathSegment;
 }
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -122,12 +120,10 @@ private:
   MSelectionList m_newSelection;
   std::vector<std::pair<SdfPath, MObject>> m_insertedRefs;
   std::vector<std::pair<SdfPath, MObject>> m_removedRefs;
-#if defined(WANT_UFE_BUILD)
   Ufe::Selection m_newUFESelection = Ufe::Selection();
   Ufe::Selection m_previousUFESelection = Ufe::Selection();
   bool m_selectRoot = false;
   bool m_unselectRoot = false;
-#endif
   bool m_internal = false;
 };
 
@@ -361,7 +357,6 @@ public:
   /// Inject m_stage and m_path members into DG as a data attribute.
   AL_INHERIT_ATTRIBUTE(outStageData);
 
-
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Public Utils
   //--------------------------------------------------------------------------------------------------------------------
@@ -377,14 +372,15 @@ public:
   
   /// \brief  provides access to the UsdStage that this proxy shape is currently representing
   /// \return the proxy shape
-  UsdStageRefPtr usdStage() const
-    { return m_stage; }
+  AL_USDMAYA_PUBLIC
+  UsdStageRefPtr usdStage() const;
 
   /// \brief  gets hold of the attributes on this node that control the rendering in some way
   /// \param  attribs the returned set of render attributes
   /// \param  frameContext the frame context for rendering
   /// \param  dagPath the dag path of the node being rendered
   /// \return true if the attribs could be retrieved (i.e. is the stage is valid)
+  AL_USDMAYA_PUBLIC
   bool getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRender::MFrameContext& frameContext, const MDagPath& dagPath);
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -415,26 +411,14 @@ public:
   /// \brief  returns true if the path is required for an imported schema prim
   /// \param  path the path to query
   /// \return true if the path represents a prim that is required.
-  inline bool isRequiredPath(const SdfPath& path) const
-    { return m_requiredPaths.find(path) != m_requiredPaths.end(); }
+  AL_USDMAYA_PUBLIC
+  bool isRequiredPath(const SdfPath& path) const;
 
   /// \brief  returns the MObject of the maya transform for requested path (or MObject::kNullObj)
   /// \param  path the usd prim path to look up
   /// \return the MObject for the parent transform to the path specified
-  inline MObject findRequiredPath(const SdfPath& path) const
-    {
-      const auto it = m_requiredPaths.find(path);
-      if(it != m_requiredPaths.end())
-      {
-        const MObject& object = it->second.node();
-        const MObjectHandle handle(object);
-        if(handle.isValid() && handle.isAlive())
-        {
-            return object;
-        }
-      }
-      return MObject::kNullObj;
-    }
+  AL_USDMAYA_PUBLIC
+  MObject findRequiredPath(const SdfPath& path) const;
 
   /// \brief  traverses the UsdStage looking for the prims that are going to be handled by custom transformer
   ///         plug-ins.
@@ -530,8 +514,8 @@ public:
   void printRefCounts() const;
 
   /// \brief  destroys all internal transform references
-  void destroyTransformReferences()
-    { m_requiredPaths.clear(); }
+  AL_USDMAYA_PUBLIC
+  void destroyTransformReferences();
 
   /// \brief  Internal method. Used to filter out a set of paths into groups that need to be created, deleted, or updating.
   /// \param  previousPrims the previous list of prims underneath a prim in the process of a variant change
@@ -555,16 +539,7 @@ public:
   /// \param  required the returned required reference count
   /// \param  refCount the returned refCount reference count
   AL_USDMAYA_PUBLIC
-  void getCounts(SdfPath path, uint32_t& selected, uint32_t& required, uint32_t& refCount)
-  {
-    auto it = m_requiredPaths.find(path);
-    if(it != m_requiredPaths.end())
-    {
-      selected = it->second.selected();
-      required = it->second.required();
-      refCount = it->second.refCount();
-    }
-  }
+  void getCounts(SdfPath path, uint32_t& selected, uint32_t& required, uint32_t& refCount);
 
   /// \brief  Tests to see if a given MObject is currently selected in the proxy shape. If the specified MObject is
   ///         selected, then the path will be filled with the corresponding usd prim path.
@@ -572,22 +547,7 @@ public:
   /// \param  path the returned prim path (if the node is found)
   /// \return true if the maya node is currently selected
   AL_USDMAYA_PUBLIC
-  bool isSelectedMObject(MObject obj, SdfPath& path)
-  {
-    for(auto it : m_requiredPaths)
-    {
-      if(obj == it.second.node())
-      {
-        path = it.first;
-        if(m_selectedPaths.count(it.first) > 0)
-        {
-          return true;
-        }
-        break;
-      }
-    }
-    return false;
-  }
+  bool isSelectedMObject(MObject obj, SdfPath& path);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Plug-in Translator node methods
@@ -621,13 +581,13 @@ public:
 
   /// \brief  returns the plugin translator registry assigned to this shape
   /// \return the translator registry
-  fileio::translators::TranslatorManufacture& translatorManufacture()
-    { return m_translatorManufacture; }
+  AL_USDMAYA_PUBLIC
+  fileio::translators::TranslatorManufacture& translatorManufacture();
 
   /// \brief  returns the plugin translator context assigned to this shape
   /// \return the translator context
-  inline fileio::translators::TranslatorContextPtr& context()
-    { return m_context; }
+  AL_USDMAYA_PUBLIC
+  fileio::translators::TranslatorContextPtr& context();
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   ProxyShape selection
@@ -636,8 +596,7 @@ public:
   /// \brief  returns the paths of the selected items within the proxy shape
   /// \return the paths of the selected prims
   AL_USDMAYA_PUBLIC
-  SdfPathHashSet& selectedPaths()
-    { return m_selectedPaths; }
+  SdfPathHashSet& selectedPaths();
 
   /// \brief  Performs a selection operation on this node. Intended for use by the ProxyShapeSelect command only
   /// \param  helper provides the arguments to the selection system, and stores the internal proxy shape state
@@ -675,20 +634,8 @@ public:
   ///         has been specified, the pseudo root will be passed to UsdImaging
   /// \return the prim specified by the user (if valid), the pseudo root if no prim has been specified, or a NULL
   ///         prim if the stage is invalid.
-  UsdPrim getRootPrim()
-    {
-      if(m_stage)
-      {
-        if(!m_path.IsEmpty())
-        {
-          UsdPrim prim = m_stage->GetPrimAtPath(m_path);
-          if(prim)
-            return prim;
-        }
-        return m_stage->GetPseudoRoot();
-      }
-      return UsdPrim();
-    }
+  AL_USDMAYA_PUBLIC
+  UsdPrim getRootPrim();
 
   /// \brief  serialise the state of the transform ref counts prior to saving the file
   AL_USDMAYA_PUBLIC
@@ -723,7 +670,6 @@ public:
   AL_USDMAYA_PUBLIC
   void resync(const SdfPath& primPath);
 
-
   // \brief Serialize information unique to this shape
   AL_USDMAYA_PUBLIC
   void serialize(UsdStageRefPtr stage, LayerManager* layerManager);
@@ -732,51 +678,38 @@ public:
   AL_USDMAYA_PUBLIC
   static void serializeAll();
 
-  static inline std::vector<MObjectHandle>& GetUnloadedProxyShapes()
-  {
-    return m_unloadedProxyShapes;
-  }
+  AL_USDMAYA_PUBLIC
+  static std::vector<MObjectHandle>& GetUnloadedProxyShapes();
 
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
-  inline void primChangedAtPath(const SdfPath& changePath)
-  {
-    UsdPrim p = m_stage->GetPrimAtPath(changePath);
-
-    if(!p.IsValid())
-    {
-      MGlobal::displayInfo("ProxyShape: Could not change prim at path since there was no valid prim at the passed in path");
-      return;
-    }
-    m_compositionHasChanged = true;
-    m_changedPath = changePath;
-    onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
-  }
+  AL_USDMAYA_PUBLIC
+  void primChangedAtPath(const SdfPath& changePath);
 
   /// \brief  change the status of the composition changed status
   /// \param  hasObjectsChanged
-  inline void setHaveObjectsChangedAtPath(const bool hasObjectsChanged)
-    { m_compositionHasChanged = hasObjectsChanged; }
+  AL_USDMAYA_PUBLIC
+  void setHaveObjectsChangedAtPath(const bool hasObjectsChanged);
 
   /// \brief  provides access to the selection list on this proxy shape
   /// \return the internal selection list
-  SelectionList& selectionList()
-    { return m_selectionList; }
+  AL_USDMAYA_PUBLIC
+  SelectionList& selectionList();
 
   /// \brief  internal method used to correctly schedule changes to the selection list
   /// \param  hasSelectabilityChanged the state
-  inline void setChangedSelectionState(const bool hasSelectabilityChanged)
-    { m_hasChangedSelection = hasSelectabilityChanged; }
+  AL_USDMAYA_PUBLIC
+  void setChangedSelectionState(const bool hasSelectabilityChanged);
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A SelectableDB owned by the ProxyShape
-  AL::usdmaya::SelectabilityDB& selectabilityDB()
-    { return m_selectabilityDB; }
+  AL_USDMAYA_PUBLIC
+  AL::usdmaya::SelectabilityDB& selectabilityDB();
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A constant SelectableDB owned by the ProxyShape
-  const AL::usdmaya::SelectabilityDB& selectabilityDB() const
-    { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
+  AL_USDMAYA_PUBLIC
+  const AL::usdmaya::SelectabilityDB& selectabilityDB() const;
 
   /// \brief  used to reload the stage after file open
   AL_USDMAYA_PUBLIC
@@ -813,7 +746,6 @@ public:
   AL_USDMAYA_PUBLIC
   SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
 
-#if defined(WANT_UFE_BUILD)
   /// \brief Get the UFE path of the maya proxy shape
   /// \return An UFE path containing the path to the proxy shape
   AL_USDMAYA_PUBLIC
@@ -823,12 +755,10 @@ public:
   /// \return An UFE path segment containing the maya path to the proxy shape
   AL_USDMAYA_PUBLIC
   Ufe::PathSegment ufePathSegment() const;
-#endif
 
   /// \brief  Returns the selection mask of the shape
   AL_USDMAYA_PUBLIC
   MSelectionMask getShapeSelectionMask() const override;
-
 
   /// \brief  determines if this prim has a parent that has been tagged as excluded geometry 
   ///         (i.e. will not be shown in the viewport)
