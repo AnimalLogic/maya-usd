@@ -2808,7 +2808,1711 @@ TEST(TransformOpProcessor, rotate_world_space_d_no_scale)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Apply a world space translation on a simple set up
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, translate_world_space_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(6.810837, translate[0], 1e-5f);
+    EXPECT_NEAR(7.022931, translate[1], 1e-5f);
+    EXPECT_NEAR(9.024255, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(10.621674, translate[0], 1e-5f);
+    EXPECT_NEAR(10.045862, translate[1], 1e-5f);
+    EXPECT_NEAR(13.04851, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3f(3.0f, 4.0f, 5.0f));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(6.810837, translate[0], 1e-5f);
+    EXPECT_NEAR(7.022931, translate[1], 1e-5f);
+    EXPECT_NEAR(9.024255, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(10.621674, translate[0], 1e-5f);
+    EXPECT_NEAR(10.045862, translate[1], 1e-5f);
+    EXPECT_NEAR(13.04851, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3h(3.0f, 4.0f, 5.0f));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(6.810837, translate[0], 1e-2f);
+    EXPECT_NEAR(7.022931, translate[1], 1e-2f);
+    EXPECT_NEAR(9.024255, translate[2], 1e-2f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(10.621674, translate[0], 1e-2f);
+    EXPECT_NEAR(10.045862, translate[1], 1e-2f);
+    EXPECT_NEAR(13.04851, translate[2], 1e-2f);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Test world space translations against the results given by Maya (double precision).
+// Tested with a varying number of xform operations of different types
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, translate_parent_space1_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // translate in parent space - this should be the same as a simple local space transform in this case
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(7.3, translate[0], 1e-5f);
+    EXPECT_NEAR(8.4, translate[1], 1e-5f);
+    EXPECT_NEAR(9.5, translate[2], 1e-5f);
+  }
+
+  // translate in parent space - this should be the same as a simple local space transform in this case
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(11.6, translate[0], 1e-5f);
+    EXPECT_NEAR(12.8, translate[1], 1e-5f);
+    EXPECT_NEAR(14.0, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space2_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+
+  parent_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 1e-5f);
+    EXPECT_NEAR(9.667113, translate[1], 1e-5f);
+    EXPECT_NEAR(18.075923, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space3_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+
+  parent_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  parent_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 1);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    parent_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    parent_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 1e-5f);
+    EXPECT_NEAR(9.667113, translate[1], 1e-5f);
+    EXPECT_NEAR(18.075923, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space4_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 1, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    GfMatrix4d result = cresult * presult;
+    GfMatrix4d expected(1.206578,1.165179,-1.089278,0,-0.994625,1.617376,0.628343,0,1.246952,0.162639,1.555204,0,5.875997,10.778238,7.021556,1);
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.353331, translate[0], 1e-5f);
+    EXPECT_NEAR(5.416778, translate[1], 1e-5f);
+    EXPECT_NEAR(8.268981, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space5_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0, 3, 4, 5, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.150, translate[0], 1e-5f);
+    EXPECT_NEAR(6.200, translate[1], 1e-5f);
+    EXPECT_NEAR(7.250, translate[2], 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(7.3, translate[0], 1e-5f);
+    EXPECT_NEAR(8.4, translate[1], 1e-5f);
+    EXPECT_NEAR(9.5, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space6_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+    
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 1e-5f);
+    EXPECT_NEAR(9.667113, translate[1], 1e-5f);
+    EXPECT_NEAR(18.075923, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space7_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 1, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    GfMatrix4d result = cresult * presult;
+    GfMatrix4d expected(1.206578,1.165179,-1.089278,0,-0.994625,1.617376,0.628343,0,1.246952,0.162639,1.555204,0,5.875997,10.778238,7.021556,1);
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.353331, translate[0], 1e-5f);
+    EXPECT_NEAR(5.416778, translate[1], 1e-5f);
+    EXPECT_NEAR(8.268981, translate[2], 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space8_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+
+  {
+    bool resetsXformStack = false;
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-0.607473,4.804837,3.589779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-3,-2,-1,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
+  
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.868398, translate[0], 1e-5f);
+    EXPECT_NEAR(5.813738, translate[1], 1e-5f);
+    EXPECT_NEAR(10.751057, translate[2], 1e-5f);
+  }
+    {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,3.692527,9.204837,8.089779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3d translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(6.736796, translate[0], 1e-5f);
+    EXPECT_NEAR(7.627476, translate[1], 1e-5f);
+    EXPECT_NEAR(16.502115, translate[2], 1e-5f);
+  }
+    {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-0.607473 + 4.3 + 4.3,4.4 + 4.4 +4.804837,4.5 + 4.5 + 3.589779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+// Test world space translations against the results given by Maya (double precision).
+// Tested with a varying number of xform operations of different types
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, translate_parent_space1_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // translate in parent space - this should be the same as a simple local space transform in this case
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(7.3, translate[0], 1e-5f);
+    EXPECT_NEAR(8.4, translate[1], 1e-5f);
+    EXPECT_NEAR(9.5, translate[2], 1e-5f);
+  }
+
+  // translate in parent space - this should be the same as a simple local space transform in this case
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(11.6, translate[0], 1e-5f);
+    EXPECT_NEAR(12.8, translate[1], 1e-5f);
+    EXPECT_NEAR(14.0, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space2_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+
+  parent_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 1e-5f);
+    EXPECT_NEAR(9.667113, translate[1], 1e-5f);
+    EXPECT_NEAR(18.075923, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space3_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("parent_translate"));
+
+  parent_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  parent_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 1);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    parent_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    parent_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 1e-5f);
+    EXPECT_NEAR(9.667113, translate[1], 1e-5f);
+    EXPECT_NEAR(18.075923, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space4_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 1, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    GfMatrix4d result = cresult * presult;
+    GfMatrix4d expected(1.206578,1.165179,-1.089278,0,-0.994625,1.617376,0.628343,0,1.246952,0.162639,1.555204,0,5.875997,10.778238,7.021556,1);
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.353331, translate[0], 1e-5f);
+    EXPECT_NEAR(5.416778, translate[1], 1e-5f);
+    EXPECT_NEAR(8.268981, translate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space5_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0, 3, 4, 5, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.150, translate[0], 1e-5f);
+    EXPECT_NEAR(6.200, translate[1], 1e-5f);
+    EXPECT_NEAR(7.250, translate[2], 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(7.3, translate[0], 1e-5f);
+    EXPECT_NEAR(8.4, translate[1], 1e-5f);
+    EXPECT_NEAR(9.5, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space6_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+    
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 1e-5f);
+    EXPECT_NEAR(9.667113, translate[1], 1e-5f);
+    EXPECT_NEAR(18.075923, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space7_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 1, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    GfMatrix4d result = cresult * presult;
+    GfMatrix4d expected(1.206578,1.165179,-1.089278,0,-0.994625,1.617376,0.628343,0,1.246952,0.162639,1.555204,0,5.875997,10.778238,7.021556,1);
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.353331, translate[0], 1e-5f);
+    EXPECT_NEAR(5.416778, translate[1], 1e-5f);
+    EXPECT_NEAR(8.268981, translate[2], 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(5.706661, translate[0], 1e-5f);
+    EXPECT_NEAR(6.833556, translate[1], 1e-5f);
+    EXPECT_NEAR(11.537962, translate[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space8_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3f(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+
+  {
+    bool resetsXformStack = false;
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-0.607473,4.804837,3.589779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-3,-2,-1,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
+  
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.868398, translate[0], 1e-5f);
+    EXPECT_NEAR(5.813738, translate[1], 1e-5f);
+    EXPECT_NEAR(10.751057, translate[2], 1e-5f);
+  }
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,3.692527,9.204837,8.089779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3f translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(6.736796, translate[0], 1e-5f);
+    EXPECT_NEAR(7.627476, translate[1], 1e-5f);
+    EXPECT_NEAR(16.502115, translate[2], 1e-5f);
+  }
+    {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-0.607473 + 4.3 + 4.3,4.4 + 4.4 +4.804837,4.5 + 4.5 + 3.589779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Test world space translations against the results given by Maya (half precision).
+// Tested with a varying number of xform operations of different types
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, translate_parent_space1_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // translate in parent space - this should be the same as a simple local space transform in this case
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(7.3, translate[0], 2e-3f);
+    EXPECT_NEAR(8.4, translate[1], 3.2e-3f);
+    EXPECT_NEAR(9.5, translate[2], 2e-3f);
+  }
+
+  // translate in parent space - this should be the same as a simple local space transform in this case
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(11.6, translate[0], 2e-3f);
+    EXPECT_NEAR(12.8, translate[1], 3.2e-3f);
+    EXPECT_NEAR(14.0, translate[2], 2.3e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space2_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+
+  parent_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 3,4,5,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 2e-3f);
+    EXPECT_NEAR(6.833556, translate[1], 2e-3f);
+    EXPECT_NEAR(11.537962, translate[2], 2e-3f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 2e-3f);
+    EXPECT_NEAR(9.667113, translate[1], 3.1e-3f);
+    EXPECT_NEAR(18.075923, translate[2], 2.3e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space3_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("parent_translate"));
+
+  parent_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  parent_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 1);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    parent_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 2e-3f);
+    EXPECT_NEAR(6.833556, translate[1], 2e-3f);
+    EXPECT_NEAR(11.537962, translate[2], 2e-3f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    parent_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 2e-3f);
+    EXPECT_NEAR(9.667113, translate[1], 3.1e-3f);
+    EXPECT_NEAR(18.075923, translate[2], 2.3e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space4_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 1, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    GfMatrix4d result = cresult * presult;
+    GfMatrix4d expected(1.206578,1.165179,-1.089278,0,-0.994625,1.617376,0.628343,0,1.246952,0.162639,1.555204,0,5.875997,10.778238,7.021556,1);
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.353331, translate[0], 2e-3f);
+    EXPECT_NEAR(5.416778, translate[1], 2e-3f);
+    EXPECT_NEAR(8.268981, translate[2], 3.4e-3f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(5.706661, translate[0], 3.6e-3f);
+    EXPECT_NEAR(6.833556, translate[1], 2.4e-3f);
+    EXPECT_NEAR(11.537962, translate[2], 6.8e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space5_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0, 3, 4, 5, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.150, translate[0], 2e-3f);
+    EXPECT_NEAR(6.200, translate[1], 2e-3f);
+    EXPECT_NEAR(7.250, translate[2], 2e-3f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(7.3, translate[0], 3.2e-3f);
+    EXPECT_NEAR(8.4, translate[1], 2e-3f);
+    EXPECT_NEAR(9.5, translate[2], 2e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space6_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,0,0,0,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+    
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(5.706661, translate[0], 2e-3f);
+    EXPECT_NEAR(6.833556, translate[1], 2e-3f);
+    EXPECT_NEAR(11.537962, translate[2], 2e-3f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(8.413323, translate[0], 2e-3f);
+    EXPECT_NEAR(9.667113, translate[1], 3.1e-3f);
+    EXPECT_NEAR(18.075923, translate[2], 2.3e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space7_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+  parent_scale.Set(GfVec3d(2, 2, 2));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d parent_matrix(2, 0, 0,0,  0, 2, 0, 0,  0, 0, 2, 0, 0, 0, 0, 1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+  
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22.0, 33.0, 44.0));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+  
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 1, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    GfMatrix4d result = cresult * presult;
+    GfMatrix4d expected(1.206578,1.165179,-1.089278,0,-0.994625,1.617376,0.628343,0,1.246952,0.162639,1.555204,0,5.875997,10.778238,7.021556,1);
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.353331, translate[0], 2e-3f);
+    EXPECT_NEAR(5.416778, translate[1], 2e-3f);
+    EXPECT_NEAR(8.268981, translate[2], 3.4e-3f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(5.706661, translate[0], 3.6e-3f);
+    EXPECT_NEAR(6.833556, translate[1], 2.4e-3f);
+    EXPECT_NEAR(11.537962, translate[2], 6.8e-3f);
+  }
+}
+
+TEST(TransformOpProcessor, translate_world_space8_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(0.998441,0.363403,-0.284701,0,-0.353509,1.128946,0.201278,0,0.388579,-0.0987992,1.236627,0,-3,-2,-1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_translate"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3h(3.0, 4.0, 5.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(0.603289,0.58259,-0.544639,0,-0.497312,0.808688,0.314172,0,0.623476,0.0813195,0.777602,0,2.937999,5.389119,3.510778,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+
+  {
+    bool resetsXformStack = false;
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-0.607473,4.804837,3.589779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 1e-5f);
+  }
+  
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+
+  {
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-3,-2,-1,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
+  
+  // rotate 15 degrees around X in world space
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+
+    EXPECT_NEAR(4.868398, translate[0], 2e-3f);
+    EXPECT_NEAR(5.813738, translate[1], 2e-3f);
+    EXPECT_NEAR(10.751057, translate[2], 2e-3f);
+  }
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,3.692527,9.204837,8.089779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 2.5e-3f);
+  }
+
+  {
+    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    GfVec3h translate(0);
+    child_translate.Get(&translate);
+    EXPECT_NEAR(6.736796, translate[0], 2.5e-3f);
+    EXPECT_NEAR(7.627476, translate[1], 2.5e-3f);
+    EXPECT_NEAR(16.502115, translate[2], 2.2e-3f);
+  }
+    {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d presult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(parent.GetOrderedXformOps(&resetsXformStack), 3, UsdTimeCode::Default());
+    GfMatrix4d cresult = TransformOpProcessor::EvaluateCoordinateFrameForIndex(child.GetOrderedXformOps(&resetsXformStack), 2, UsdTimeCode::Default());
+    const GfMatrix4d expected(0.184763,0.930759,-0.72801,0,-0.660335,0.701201,0.692869,0,0.895916,0.241552,0.800467,0,-0.607473 + 4.3 + 4.3,4.4 + 4.4 +4.804837,4.5 + 4.5 + 3.589779,1);
+    GfMatrix4d result = cresult * presult;
+    COMPARE_MAT4(result, expected, 4.5e-2f);
+  }
+}
+
+
 #if 0
+
 //----------------------------------------------------------------------------------------------------------------------
 // Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
 // with the same result. The Y and Z rotations will utilise quaternions.

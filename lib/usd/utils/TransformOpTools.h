@@ -32,9 +32,11 @@ namespace MayaUsdUtils {
 
 class alignas(32) TransformOpProcessor
 {
-  GfMatrix4d _invParentFrame;
-  GfMatrix4d _invWorldFrame;
+  GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
+  GfMatrix4d _parentFrame;
+  GfMatrix4d _invCoordFrame;
+  GfMatrix4d _invWorldFrame;
   __m256d _qcoordFrame;
   __m256d _qworldFrame;
   __m256d _qparentFrame;
@@ -135,8 +137,16 @@ public:
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
 
   /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
-  const GfMatrix4d& CoordinateFrame() const 
+  const GfMatrix4d& WorldFrame() const 
     { return _worldFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  const GfMatrix4d& ParentFrame() const 
+    { return _parentFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  const GfMatrix4d& OperationFrame() const 
+    { return _coordFrame; }
 
   /// given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the op at the given index. 
   /// This does not evaluate the xform op at that index (i.e. If the first op in ops is a translate, then requesting
