@@ -7,16 +7,6 @@
 
 namespace MayaUsdUtils {
 
-// If this define is 1, when evaluating matrices, assume that we always have [0,0,0,1] 
-// on the right most column. This saves a handful of clock cycles when evaluating the 
-// transforms, and can improve accuracy. The downside however, is that this code will 
-// fail if any TypeTransform operations use that column (e.g. a projection matrix).
-// 
-#ifndef MAYAUSDUTILS_FAST_MATRIX_EVALUATION
-# define MAYAUSDUTILS_FAST_MATRIX_EVALUATION 1
-#endif
-
-
 namespace 
 {
 
@@ -24,7 +14,7 @@ namespace
 // Note: If needed, it's possible to sneak a bit more performance from this code. I stopped 
 // short of adding a vectorised sincos() implementation, but that would be possible....
 //---------------------------------------------------------------------------------------------
-d256 Quat_from_EulerXYZ(const d256 half_angles)
+inline d256 Quat_from_EulerXYZ(const d256 half_angles)
 {
   alignas(32) double h[4];
   store4d(h, half_angles);
@@ -46,7 +36,7 @@ d256 Quat_from_EulerXYZ(const d256 half_angles)
   );
 }
 
-d256 Quat_from_EulerXZY(const d256 half_angles)
+inline d256 Quat_from_EulerXZY(const d256 half_angles)
 {
   alignas(32) double h[4];
   store4d(h, half_angles);
@@ -68,7 +58,7 @@ d256 Quat_from_EulerXZY(const d256 half_angles)
   );
 }
 
-d256 Quat_from_EulerYXZ(const d256 half_angles)
+inline d256 Quat_from_EulerYXZ(const d256 half_angles)
 {
   alignas(32) double h[4];
   store4d(h, half_angles);
@@ -90,7 +80,7 @@ d256 Quat_from_EulerYXZ(const d256 half_angles)
   );
 }
 
-d256 Quat_from_EulerYZX(const d256 half_angles)
+inline d256 Quat_from_EulerYZX(const d256 half_angles)
 {
   alignas(32) double h[4];
   store4d(h, half_angles);
@@ -112,7 +102,7 @@ d256 Quat_from_EulerYZX(const d256 half_angles)
   );
 }
 
-d256 Quat_from_EulerZYX(const d256 half_angles)
+inline d256 Quat_from_EulerZYX(const d256 half_angles)
 {
   alignas(32) double h[4];
   store4d(h, half_angles);
@@ -134,7 +124,7 @@ d256 Quat_from_EulerZYX(const d256 half_angles)
   );
 }
 
-d256 Quat_from_EulerZXY(const d256 half_angles)
+inline d256 Quat_from_EulerZXY(const d256 half_angles)
 {
   alignas(32) double h[4];
   store4d(h, half_angles);
@@ -172,30 +162,28 @@ enum class RotationOrder
   kZYX
 };
 
-d256 multiplyQuat(const d256 parent, const d256 child)
+inline d256 multiplyQuat(const d256 parent, const d256 child)
 {
   const d256 negw = set4d(0, 0, 0, -0.0);
   const d256 pWWWW = permute4d<3, 3, 3, 3>(parent);
   const d256 pXYZX = xor4d(permute4d<0, 1, 2, 0>(parent), negw);
   const d256 pZXYY = permute4d<2, 0, 1, 1>(parent);
   const d256 pYZXZ = xor4d(permute4d<1, 2, 0, 2>(parent), negw);
-
   const d256 cXYZW = permute4d<0, 1, 2, 3>(child);
   const d256 cWWWX = permute4d<3, 3, 3, 0>(child);
   const d256 cYZXY = permute4d<1, 2, 0, 1>(child);
   const d256 cZXYZ = permute4d<2, 0, 1, 2>(child);
-  
   d256 rr = fmadd4d(pXYZX, cWWWX, mul4d(pWWWW, cXYZW));
   rr = fnmadd4d(pZXYY, cYZXY, rr);
   return fmadd4d(pYZXZ, cZXYZ, rr);
 }
-#define sqrt4d _mm256_sqrt_pd
-d256 cross(d256 b, d256 c)
+
+inline d256 cross(d256 b, d256 c)
 {
-  d256 B1 = permute4d<1, 2, 0, 3>(b);
-  d256 C1 = permute4d<2, 0, 1, 3>(c);
-  d256 B2 = permute4d<2, 0, 1, 3>(b);
-  d256 C2 = permute4d<1, 2, 0, 3>(c);
+  const d256 B1 = permute4d<1, 2, 0, 3>(b);
+  const d256 C1 = permute4d<2, 0, 1, 3>(c);
+  const d256 B2 = permute4d<2, 0, 1, 3>(b);
+  const d256 C2 = permute4d<1, 2, 0, 3>(c);
 
 	// (a)[0] = (b)[1] * (c)[2] - (c)[1] * (b)[2];
 	// (a)[1] = (b)[2] * (c)[0] - (c)[2] * (b)[0];
@@ -204,7 +192,7 @@ d256 cross(d256 b, d256 c)
   return fmadd4d(B1, C1, mul4d(B2, C2));
 }
 
-void extractEuler(const d256 mat[4], RotationOrder rotOrder, GfVec3f& rot)
+inline void extractEuler(const d256 mat[4], RotationOrder rotOrder, GfVec3f& rot)
 {
   const int mod3[6] = {0, 1, 2, 0, 1, 2};
   const int k1 = int(rotOrder) > 2 ? 2 : 1;
@@ -239,7 +227,7 @@ void extractEuler(const d256 mat[4], RotationOrder rotOrder, GfVec3f& rot)
   }
 }
 
-d256 quatInvert(d256 quat)
+inline d256 quatInvert(d256 quat)
 {
   return xor4d(quat, set4d(-0.0, -0.0, -0.0, 0.0));
 }
@@ -310,18 +298,9 @@ void quatToMatrix(d256 quat, d256 matrix[4])
     Z = xor4d(Z, set4d(0, 0, -0.0, 0));
     Z = add4d(Z, set4d(0, 0, 1.0, 0));
   }
-  // When using the fast evaluation, since the right hand column of the matrix is ignored, 
-  // we can allow for some garbage to enter the 'W' values (because they will be ignored later on).
-  // When performing the full 4x4 matrix mult however, we'll need to zero those out.
-  #ifndef MAYAUSDUTILS_FAST_MATRIX_EVALUATION
-  matrix[0] = X;
-  matrix[1] = Y;
-  matrix[2] = Z;
-  #else
   matrix[0] = select4d<1, 1, 1, 0>(X, zero4d());
   matrix[1] = select4d<1, 1, 1, 0>(Y, zero4d());
   matrix[2] = select4d<1, 1, 1, 0>(Z, zero4d());
-  #endif
   matrix[3] = set4d(0, 0, 0, 1.0);
 }
 
@@ -358,9 +337,7 @@ inline d256 fastInverseRotate(const d256 offset, const d256 frame[4])
 inline d256 inverseRotate(const d256 offset, const d256 frame[4])
 {
   d256 len2 = set4d(dot3(frame[0], frame[0]), dot3(frame[1], frame[1]), dot3(frame[2], frame[2]), 0.0);
-  std::cout << "len2 " << len2[0] << ' ' << len2[1] << ' ' << len2[2] << '\n';
-  std::cout << "dot3 " << dot3(offset, frame[0]) << ' ' << dot3(offset, frame[1]) << ' ' << dot3(offset, frame[2]) << '\n';
-  return _mm256_div_pd(set4d(dot3(offset, frame[0]), dot3(offset, frame[1]), dot3(offset, frame[2]), 0), len2);
+  return div4d(set4d(dot3(offset, frame[0]), dot3(offset, frame[1]), dot3(offset, frame[2]), 0), len2);
 }
 
 // transform a point by the coordinate frame
@@ -372,13 +349,8 @@ inline d256 transform(const d256 offset, const d256 frame[4])
 // transform a point by the inverse coordinate frame
 inline d256 inverseTransform(d256 offset, const d256 frame[4])
 {
-  std::cout << "inverseTransform_offset: " << offset[0] << ' ' << offset[1] << ' ' << offset[2] << std::endl;
   offset = sub4d(offset, frame[3]);
-  std::cout << "inverseTransform_offset: " << offset[0] << ' ' << offset[1] << ' ' << offset[2] << std::endl;
-  std::cout << "inverseTransform_frame[3]: " << frame[3][0] << ' ' << frame[3][1] << ' ' << frame[3][2] << std::endl;
-
   auto r = inverseRotate(offset, frame);
-  std::cout << "inverseTransform_result: " << r[0] << ' ' << r[1] << ' ' << r[2] << std::endl;
   return r;
 }
 
@@ -416,19 +388,40 @@ inline void multiply4x4(d256 frame[4], const d256 childTransform[4])
   frame[1] = my;
   frame[2] = mz;
 }
+// frame *= childTransform
+inline void multiply4x4(d256 output[4], const d256 childTransform[4], const d256 parentTransform[4])
+{
+  const d256 mx = transform4d(childTransform[0], parentTransform);
+  const d256 my = transform4d(childTransform[1], parentTransform);
+  const d256 mz = transform4d(childTransform[2], parentTransform);
+  output[3] = transform4d(childTransform[3], parentTransform);
+  output[0] = mx;
+  output[1] = my;
+  output[2] = mz;
+}
+// frame *= childTransform
+inline void multiply(d256 output[4], const d256 childTransform[4], const d256 parentTransform[4])
+{
+  const d256 mx = rotate(childTransform[0], parentTransform);
+  const d256 my = rotate(childTransform[1], parentTransform);
+  const d256 mz = rotate(childTransform[2], parentTransform);
+  output[3] = transform(childTransform[3], parentTransform);
+  output[0] = mx;
+  output[1] = my;
+  output[2] = mz;
+}
 
-#define div4d _mm256_div_pd
-d256 fastFromMatrix(const d256 iframe[4])
+inline d256 quatToMatrix(const d256 iframe[4])
 {
   d256 frame[3];
 
   // normalise matrix
   double lx = std::sqrt(dot3(iframe[0], iframe[0]));
-  double ly = std::sqrt(dot3(iframe[1], iframe[1]));
   double lz = std::sqrt(dot3(iframe[2], iframe[2]));
   frame[0] = div4d(iframe[0], splat4d(lx));
-  frame[1] = div4d(iframe[1], splat4d(ly));
   frame[2] = div4d(iframe[2], splat4d(lz));
+  frame[1] = cross(iframe[2], iframe[0]);
+  frame[2] = cross(iframe[0], iframe[1]);
 
   double W = 1.0 + frame[0][0] + frame[1][1] + frame[2][2];
   W = std::sqrt(W);
@@ -536,23 +529,32 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
   _timeCode = tc;
   if(!_resetsXformStack)
   {
-    _parentFrame = cache.GetParentToWorldTransform(_prim);
+    alignas(32) auto _parentFrame = cache.GetParentToWorldTransform(_prim);
     _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
-    _worldFrame = _coordFrame * _parentFrame;
+    multiply4x4((d256*)&_worldFrame, (const d256*)&_coordFrame, (const d256*)&_parentFrame);
     _invWorldFrame = _worldFrame.GetInverse();
     _invCoordFrame = _coordFrame.GetInverse();
-    _qcoordFrame = fastFromMatrix((const d256*)&_coordFrame);
-    _qworldFrame = fastFromMatrix((const d256*)&_worldFrame);
-    _qparentFrame = fastFromMatrix((const d256*)&_parentFrame);
+    _qcoordFrame = quatToMatrix((const d256*)&_coordFrame);
+    _qworldFrame = quatToMatrix((const d256*)&_worldFrame);
   }
   else
   {
-    _parentFrame.SetIdentity();
-    _worldFrame.SetIdentity();
-    _invWorldFrame.SetIdentity();
-    _qparentFrame = _qworldFrame = set4d(0.0, 0.0, 0.0, 1.0);
+    // set to identity
+    const d256 x = set4d(1.0, 0.0, 0.0, 0.0);
+    const d256 y = set4d(0.0, 1.0, 0.0, 0.0);
+    const d256 z = set4d(0.0, 0.0, 1.0, 0.0);
+    const d256 w = set4d(0.0, 0.0, 0.0, 1.0);
+    store4d(_worldFrame[0], x);
+    store4d(_invWorldFrame[0], x);
+    store4d(_worldFrame[1], y);
+    store4d(_invWorldFrame[1], y);
+    store4d(_worldFrame[2], z);
+    store4d(_invWorldFrame[2], z);
+    store4d(_worldFrame[3], w);
+    store4d(_invWorldFrame[3], w);
+    _qworldFrame = w;
     _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
-    _qcoordFrame = fastFromMatrix((const d256*)&_coordFrame);
+    _qcoordFrame = quatToMatrix((const d256*)&_coordFrame);
   }
 }
 
@@ -564,13 +566,8 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
   switch(space)
   {
   case kTransform: break;
-  #if MAYAUSDUTILS_FAST_MATRIX_EVALUATION
   case kWorld: temp = transform4d(temp, (const d256*)&_invWorldFrame); break;
   case kParent: temp = transform4d(temp, (const d256*)&_invCoordFrame); break;
-  #else
-  case kWorld: temp = transform4d(temp, (const d256*)&_worldFrame); break;
-  case kParent: temp = transform4d(temp, (const d256*)&_coordFrame); break;
-  #endif
   }
 
   // if the change is close to zero, ignore it. 
@@ -808,54 +805,48 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
   // euler angle triplet
   auto process3AxisRotation = [this] (d256 original, d256 offset, const Space space, const RotationOrder order)
   {
-    d256 new_rotation;
-    d256 axis = select4d<1, 1, 1, 0>(offset, zero4d());
-    d256 axis2 = mul4d(axis, axis);
-    double len = std::sqrt(axis2[0] + axis2[1] + axis2[2]);
-   switch(space)
+    GfVec3f rot(0);
+    switch(space)
     {
-/*
-    // convert rotation offset into the correct coordinate frame for the transformation
- 
     default:
-    //case kTransform:
-      new_rotation = multiplyQuat(original, offset);
-      break;
-
-    case kWorld: 
       {
-        axis = transform4d(axis, (const d256*)&_invWorldFrame); 
-        axis2 = mul4d(axis, axis);
-        double len2 = std::sqrt(axis2[0] + axis2[1] + axis2[2]);
-        len2 = len / len2;
-        axis = mul4d(axis, splat4d(len2));
-        new_rotation = select4d<1, 1, 1, 0>(axis, offset);
+        d256 new_rotation = multiplyQuat(original, offset);
+        extractEuler(new_rotation, order, rot);
       }
       break;
-
-    case kParent: 
-      axis = transform4d(axis, (const d256*)&_invCoordFrame); 
-      break;
-*/
-    default:
-      new_rotation = multiplyQuat(original, offset);
-      break;
     case kWorld:
-    // transform into world
-      new_rotation = multiplyQuat(_qworldFrame, original);
-      new_rotation = multiplyQuat(offset, new_rotation);
-      new_rotation = multiplyQuat(quatInvert(_qworldFrame), new_rotation);
+      {
+        d256 rotateMatrix[4], rmatrix[4] = {load4d(_worldFrame[0]), load4d(_worldFrame[1]), load4d(_worldFrame[2]), zero4d()}, omatrix[4];
+        quatToMatrix(offset, rotateMatrix);
+        quatToMatrix(original, omatrix);
+        rotateMatrix[3] = omatrix[3] = zero4d();
+        multiply(rmatrix, omatrix, rmatrix);
+        // remove translation
+        rmatrix[3] = zero4d();
+        multiply(rotateMatrix, rmatrix, rotateMatrix);
+        rotateMatrix[3] = load4d(_worldFrame[3]);
+        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
+        extractEuler(rmatrix, order , rot);
+      }
       break;
     case kParent:
-      new_rotation = multiplyQuat(_qcoordFrame, original);
-      new_rotation = multiplyQuat(offset, new_rotation);
-      new_rotation = multiplyQuat(quatInvert(_qcoordFrame), original);
+      {
+        d256 rotateMatrix[4], rmatrix[4] = {load4d(_coordFrame[0]), load4d(_coordFrame[1]), load4d(_coordFrame[2]), zero4d()}, omatrix[4];
+        quatToMatrix(offset, rotateMatrix);
+        quatToMatrix(original, omatrix);
+        rotateMatrix[3] = omatrix[3] = zero4d();
+        multiply(rmatrix, omatrix, rmatrix);
+        // remove translation
+        rmatrix[3] = zero4d();
+        multiply(rotateMatrix, rmatrix, rotateMatrix);
+        rotateMatrix[3] = load4d(_worldFrame[3]);
+        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invCoordFrame);
+        extractEuler(rmatrix, order , rot);
+      }
       break;
       
     }
-    // convert back to euler angles (in degrees)
-    GfVec3f rot;
-    extractEuler(new_rotation, order, rot);
+    // convert back to degrees
     return rot * (180.0f / M_PI);
   };
 
@@ -871,15 +862,8 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
     default:
     case kTransform:
       new_rotation = multiplyQuat(original, offset);
-      #if 0
-      std::cout << "\n1d\n";
-      std::cout << "original " << original[0] << ' ' << original[1] << ' ' << original[2] << ' ' << original[3] << std::endl;
-      std::cout << "offset " << offset[0] << ' ' << offset[1] << ' ' << offset[2] << ' ' << offset[3] << std::endl;
-      std::cout << "new_rotation " << new_rotation[0] << ' ' << new_rotation[1] << ' ' << new_rotation[2] << ' ' << new_rotation[3] << std::endl;
-      #endif
       break;
     case kWorld:
-    // transform into world
       new_rotation = multiplyQuat(_qworldFrame, original);
       new_rotation = multiplyQuat(offset, new_rotation);
       new_rotation = multiplyQuat(quatInvert(_qworldFrame), new_rotation);
@@ -1787,11 +1771,7 @@ GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForIndex(const std::vect
           break;
         }
 
-        #if MAYAUSDUTILS_FAST_MATRIX_EVALUATION
-        multiply(frame, dmatrix);
-        #else
         multiply4x4(frame, dmatrix);
-        #endif
         lastType = UsdGeomXformOp::TypeTransform;
       }
       break;
@@ -1852,11 +1832,7 @@ GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForIndex(const std::vect
         quatToMatrix(rotation, rotateMatrix);
 
         // and transform coordinate frame
-        #if MAYAUSDUTILS_FAST_MATRIX_EVALUATION
         multiply(frame, rotateMatrix);
-        #else
-        multiply4x4(frame, rotateMatrix);
-        #endif
 
         // a bit naughty, but make sure we tag it as something a bit rotationy
         lastType = UsdGeomXformOp::TypeOrient;
@@ -1953,7 +1929,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
         }
         break;
       }
-      result = fastFromMatrix(dmatrix);
+      result = quatToMatrix(dmatrix);
     }
     break;
 

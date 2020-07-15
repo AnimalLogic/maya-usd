@@ -198,6 +198,9 @@ AL_DLL_HIDDEN inline i128 cmpeq2i64(const i128 a, const i128 b) { return _mm_cmp
 inline f128 abs4f(const f128 v) { return _mm_andnot_ps(splat4f(-0.0f), v); }
 inline d128 abs2d(const d128 v) { return _mm_andnot_pd(splat2d(-0.0), v); }
 
+#define div4d _mm256_div_pd
+#define sqrt4d _mm256_sqrt_pd
+
 #endif
 
 

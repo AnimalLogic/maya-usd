@@ -35,7 +35,6 @@ TEST(TransformOpProcessor, translate_d)
   ASSERT_TRUE(stage);
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
 
-
   UsdGeomXformOp first = xform.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("first"));
   first.Set(GfVec3d(1.0, 2.0, 3.0));
   GfMatrix4d first_result(1.0, 0.0, 0.0, 0.0,
@@ -54,7 +53,7 @@ TEST(TransformOpProcessor, translate_d)
                            0.0, 1.0, 0.0, 0.0,
                            0.0, 0.0, 1.0, 0.0,
                            1.0, 2.0, 3.0, 1.0);
-                          
+
   ops = xform.GetOrderedXformOps(&resetsXformStack);
   result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 0, UsdTimeCode::Default());
   COMPARE_MAT4(result, first_result, 1e-5f);
@@ -71,7 +70,7 @@ TEST(TransformOpProcessor, translate_d)
                           0.0, 1.0, 0.0, 0.0,
                           0.0, 0.0, 1.0, 0.0,
                           1.11, 2.22, 3.33, 1.0);
-                          
+
   ops = xform.GetOrderedXformOps(&resetsXformStack);
   result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 0, UsdTimeCode::Default());
   COMPARE_MAT4(result, first_result, 1e-5f);
@@ -1496,7 +1495,7 @@ TEST(TransformOpProcessor, no_scale_value)
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
-  processor.Scale(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Scale(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d scale;
   first.Get(&scale);
@@ -1504,7 +1503,7 @@ TEST(TransformOpProcessor, no_scale_value)
   EXPECT_NEAR(0.5, scale[1], 1e-5f);
   EXPECT_NEAR(0.3, scale[2], 1e-5f);
 
-  processor.Scale(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Scale(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&scale);
   EXPECT_NEAR(2.0 * 2.0, scale[0], 1e-5f);
@@ -1524,7 +1523,7 @@ TEST(TransformOpProcessor, no_translate_value)
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
-  processor.Translate(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Translate(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d translate;
   first.Get(&translate);
@@ -1532,7 +1531,7 @@ TEST(TransformOpProcessor, no_translate_value)
   EXPECT_NEAR(0.5, translate[1], 1e-5f);
   EXPECT_NEAR(0.3, translate[2], 1e-5f);
 
-  processor.Translate(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Translate(GfVec3d(2.0, 0.5, 0.3), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&translate);
   EXPECT_NEAR(4.0, translate[0], 1e-5f);
@@ -1557,7 +1556,7 @@ TEST(TransformOpProcessor, no_rotate_value)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -1566,7 +1565,7 @@ TEST(TransformOpProcessor, no_rotate_value)
   EXPECT_NEAR(0.0, rotate[2], 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate[0], 1e-5f);
@@ -1593,14 +1592,14 @@ TEST(TransformOpProcessor, rotateXd)
   GfQuatd Q(cx, sx, 0, 0);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   double rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5);
@@ -1623,14 +1622,14 @@ TEST(TransformOpProcessor, rotateYd)
   GfQuatd Q(cx, 0, sx, 0);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around Y
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   double rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5);
 
   // 45 degrees around Y
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5);
@@ -1652,14 +1651,14 @@ TEST(TransformOpProcessor, rotateZd)
   GfQuatd Q(cx, 0, 0, sx);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around Z
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   double rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5);
 
   // 45 degrees around Z
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5);
@@ -1684,14 +1683,14 @@ TEST(TransformOpProcessor, rotateXf)
   GfQuatd Q(cx, sx, 0, 0);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   float rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5f);
@@ -1713,14 +1712,14 @@ TEST(TransformOpProcessor, rotateYf)
   GfQuatd Q(cx, 0, sx, 0);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   float rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5f);
@@ -1742,14 +1741,14 @@ TEST(TransformOpProcessor, rotateZf)
   GfQuatd Q(cx, 0, 0, sx);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   float rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5f);
@@ -1774,14 +1773,14 @@ TEST(TransformOpProcessor, rotateXh)
   GfQuatd Q(cx, sx, 0, 0);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfHalf rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5f);
@@ -1803,14 +1802,14 @@ TEST(TransformOpProcessor, rotateYh)
   GfQuatd Q(cx, 0, sx, 0);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfHalf rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5f);
@@ -1832,14 +1831,14 @@ TEST(TransformOpProcessor, rotateZh)
   GfQuatd Q(cx, 0, 0, sx);
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), first.GetOpName());
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfHalf rotate;
   first.Get(&rotate);
   EXPECT_NEAR(45.0, rotate, 1e-5f);
 
   // 45 degrees around X
-  processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformOpProcessor::kTransform));
 
   first.Get(&rotate);
   EXPECT_NEAR(90.0, rotate, 1e-5f);
@@ -1864,7 +1863,7 @@ TEST(TransformOpProcessor, rotateXYZd_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -1886,7 +1885,7 @@ TEST(TransformOpProcessor, rotateXYZf_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -1908,7 +1907,7 @@ TEST(TransformOpProcessor, rotateXYZh_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -1936,7 +1935,7 @@ TEST(TransformOpProcessor, rotateXZYd_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -1958,7 +1957,7 @@ TEST(TransformOpProcessor, rotateXZYf_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -1980,7 +1979,7 @@ TEST(TransformOpProcessor, rotateXZYh_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateX(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2008,7 +2007,7 @@ TEST(TransformOpProcessor, rotateYXZd_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2030,7 +2029,7 @@ TEST(TransformOpProcessor, rotateYXZf_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2052,7 +2051,7 @@ TEST(TransformOpProcessor, rotateYXZh_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2080,7 +2079,7 @@ TEST(TransformOpProcessor, rotateYZXd_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2102,7 +2101,7 @@ TEST(TransformOpProcessor, rotateYZXf_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2123,7 +2122,7 @@ TEST(TransformOpProcessor, rotateYZXh_rotate_first)
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
-  processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2151,7 +2150,7 @@ TEST(TransformOpProcessor, rotateZXYd_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2173,7 +2172,7 @@ TEST(TransformOpProcessor, rotateZXYf_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2195,7 +2194,7 @@ TEST(TransformOpProcessor, rotateZXYh_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2223,7 +2222,7 @@ TEST(TransformOpProcessor, rotateZYXd_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2245,7 +2244,7 @@ TEST(TransformOpProcessor, rotateZYXf_rotate_first)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2266,7 +2265,7 @@ TEST(TransformOpProcessor, rotateZYXh_rotate_first)
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
-  processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateZ(5.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2293,9 +2292,9 @@ TEST(TransformOpProcessor, rotateXYZd)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2317,9 +2316,9 @@ TEST(TransformOpProcessor, rotateXYZf)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2341,9 +2340,9 @@ TEST(TransformOpProcessor, rotateXYZh)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2369,9 +2368,9 @@ TEST(TransformOpProcessor, rotateXZYd)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2393,9 +2392,9 @@ TEST(TransformOpProcessor, rotateXZYf)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2417,9 +2416,9 @@ TEST(TransformOpProcessor, rotateXZYh)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2445,9 +2444,9 @@ TEST(TransformOpProcessor, rotateYXZd)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2469,9 +2468,9 @@ TEST(TransformOpProcessor, rotateYXZf)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2493,9 +2492,9 @@ TEST(TransformOpProcessor, rotateYXZh)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2521,9 +2520,9 @@ TEST(TransformOpProcessor, rotateYZXd)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2545,9 +2544,9 @@ TEST(TransformOpProcessor, rotateYZXf)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2569,9 +2568,9 @@ TEST(TransformOpProcessor, rotateYZXh)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2598,9 +2597,9 @@ TEST(TransformOpProcessor, rotateZXYd)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2622,9 +2621,9 @@ TEST(TransformOpProcessor, rotateZXYf)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2646,9 +2645,9 @@ TEST(TransformOpProcessor, rotateZXYh)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2674,9 +2673,9 @@ TEST(TransformOpProcessor, rotateZYXd)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3d rotate;
   first.Get(&rotate);
@@ -2698,9 +2697,9 @@ TEST(TransformOpProcessor, rotateZYXf)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3f rotate;
   first.Get(&rotate);
@@ -2722,9 +2721,9 @@ TEST(TransformOpProcessor, rotateZYXh)
 
   MayaUsdUtils::TransformOpProcessor processor(xform.GetPrim(), 0);
   // 45 degrees around X
-  processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
-  processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform);
+  EXPECT_TRUE(processor.RotateY(-38.164457 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateX(42.759017 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+  EXPECT_TRUE(processor.RotateZ(26.413781 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
 
   GfVec3h rotate;
   first.Get(&rotate);
@@ -2773,14 +2772,18 @@ TEST(TransformOpProcessor, rotate_world_space_d_no_scale)
     GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
     COMPARE_MAT4(result, child_matrix, 1e-5f);
   }
-  
+
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(0.865601,0.349725,0.358368,0,-0.304323,0.935764,-0.178136,0,-0.397646,0.0451345,0.916428,0,-1.368415,4.725484,3.371456,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
 
   // rotate 15 degrees around X in world space
   {
     GfVec3d rotate(0);
     child_rotate.Get(&rotate);
-    processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
     child_rotate.Get(&rotate);
     EXPECT_NEAR(13.218885, rotate[0], 1e-5f);
     EXPECT_NEAR(-3.843776, rotate[1], 1e-5f);
@@ -2789,7 +2792,7 @@ TEST(TransformOpProcessor, rotate_world_space_d_no_scale)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d rotate(0);
     child_rotate.Get(&rotate);
     EXPECT_NEAR(16.968949, rotate[0], 1e-5f);
@@ -2799,7 +2802,7 @@ TEST(TransformOpProcessor, rotate_world_space_d_no_scale)
 
   // rotate 15 degrees around Z in world space
   {
-    processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d rotate(0);
     child_rotate.Get(&rotate);
     EXPECT_NEAR(22.315417, rotate[0], 1e-5f);
@@ -2854,7 +2857,7 @@ TEST(TransformOpProcessor, translate_world_space_d)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(6.810837, translate[0], 1e-5f);
@@ -2864,7 +2867,7 @@ TEST(TransformOpProcessor, translate_world_space_d)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(10.621674, translate[0], 1e-5f);
@@ -2916,7 +2919,7 @@ TEST(TransformOpProcessor, translate_world_space_f)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(6.810837, translate[0], 1e-5f);
@@ -2926,7 +2929,7 @@ TEST(TransformOpProcessor, translate_world_space_f)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(10.621674, translate[0], 1e-5f);
@@ -2978,7 +2981,7 @@ TEST(TransformOpProcessor, translate_world_space_h)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(6.810837, translate[0], 1e-2f);
@@ -2988,7 +2991,7 @@ TEST(TransformOpProcessor, translate_world_space_h)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(10.621674, translate[0], 1e-2f);
@@ -3044,7 +3047,7 @@ TEST(TransformOpProcessor, translate_parent_space1_d)
 
   // translate in parent space - this should be the same as a simple local space transform in this case
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(7.3, translate[0], 1e-5f);
@@ -3054,7 +3057,7 @@ TEST(TransformOpProcessor, translate_parent_space1_d)
 
   // translate in parent space - this should be the same as a simple local space transform in this case
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(11.6, translate[0], 1e-5f);
@@ -3101,7 +3104,7 @@ TEST(TransformOpProcessor, translate_world_space2_d)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
 
@@ -3112,7 +3115,7 @@ TEST(TransformOpProcessor, translate_world_space2_d)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 1e-5f);
@@ -3147,7 +3150,7 @@ TEST(TransformOpProcessor, translate_world_space3_d)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     parent_translate.Get(&translate);
 
@@ -3158,7 +3161,7 @@ TEST(TransformOpProcessor, translate_world_space3_d)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     parent_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 1e-5f);
@@ -3216,7 +3219,7 @@ TEST(TransformOpProcessor, translate_world_space4_d)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
 
@@ -3227,7 +3230,7 @@ TEST(TransformOpProcessor, translate_world_space4_d)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(5.706661, translate[0], 1e-5f);
@@ -3272,7 +3275,7 @@ TEST(TransformOpProcessor, translate_world_space5_d)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
 
@@ -3282,7 +3285,7 @@ TEST(TransformOpProcessor, translate_world_space5_d)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(7.3, translate[0], 1e-5f);
@@ -3320,7 +3323,7 @@ TEST(TransformOpProcessor, translate_world_space6_d)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
 
@@ -3330,7 +3333,7 @@ TEST(TransformOpProcessor, translate_world_space6_d)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 1e-5f);
@@ -3387,7 +3390,7 @@ TEST(TransformOpProcessor, translate_world_space7_d)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
 
@@ -3397,7 +3400,7 @@ TEST(TransformOpProcessor, translate_world_space7_d)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(5.706661, translate[0], 1e-5f);
@@ -3464,7 +3467,7 @@ TEST(TransformOpProcessor, translate_world_space8_d)
   
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
 
@@ -3483,7 +3486,7 @@ TEST(TransformOpProcessor, translate_world_space8_d)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(6.736796, translate[0], 1e-5f);
@@ -3549,7 +3552,7 @@ TEST(TransformOpProcessor, translate_parent_space1_f)
 
   // translate in parent space - this should be the same as a simple local space transform in this case
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(7.3, translate[0], 1e-5f);
@@ -3559,7 +3562,7 @@ TEST(TransformOpProcessor, translate_parent_space1_f)
 
   // translate in parent space - this should be the same as a simple local space transform in this case
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(11.6, translate[0], 1e-5f);
@@ -3606,7 +3609,7 @@ TEST(TransformOpProcessor, translate_world_space2_f)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
 
@@ -3617,7 +3620,7 @@ TEST(TransformOpProcessor, translate_world_space2_f)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 1e-5f);
@@ -3652,7 +3655,7 @@ TEST(TransformOpProcessor, translate_world_space3_f)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     parent_translate.Get(&translate);
 
@@ -3663,7 +3666,7 @@ TEST(TransformOpProcessor, translate_world_space3_f)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     parent_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 1e-5f);
@@ -3721,7 +3724,7 @@ TEST(TransformOpProcessor, translate_world_space4_f)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
 
@@ -3732,7 +3735,7 @@ TEST(TransformOpProcessor, translate_world_space4_f)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(5.706661, translate[0], 1e-5f);
@@ -3777,7 +3780,7 @@ TEST(TransformOpProcessor, translate_world_space5_f)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
 
@@ -3787,7 +3790,7 @@ TEST(TransformOpProcessor, translate_world_space5_f)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(7.3, translate[0], 1e-5f);
@@ -3825,7 +3828,7 @@ TEST(TransformOpProcessor, translate_world_space6_f)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
 
@@ -3835,7 +3838,7 @@ TEST(TransformOpProcessor, translate_world_space6_f)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 1e-5f);
@@ -3892,7 +3895,7 @@ TEST(TransformOpProcessor, translate_world_space7_f)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
 
@@ -3902,7 +3905,7 @@ TEST(TransformOpProcessor, translate_world_space7_f)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(5.706661, translate[0], 1e-5f);
@@ -3969,7 +3972,7 @@ TEST(TransformOpProcessor, translate_world_space8_f)
   
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
 
@@ -3988,7 +3991,7 @@ TEST(TransformOpProcessor, translate_world_space8_f)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3f translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(6.736796, translate[0], 1e-5f);
@@ -4053,7 +4056,7 @@ TEST(TransformOpProcessor, translate_parent_space1_h)
 
   // translate in parent space - this should be the same as a simple local space transform in this case
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(7.3, translate[0], 2e-3f);
@@ -4063,7 +4066,7 @@ TEST(TransformOpProcessor, translate_parent_space1_h)
 
   // translate in parent space - this should be the same as a simple local space transform in this case
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(11.6, translate[0], 2e-3f);
@@ -4110,7 +4113,7 @@ TEST(TransformOpProcessor, translate_world_space2_h)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
 
@@ -4121,7 +4124,7 @@ TEST(TransformOpProcessor, translate_world_space2_h)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 2e-3f);
@@ -4156,7 +4159,7 @@ TEST(TransformOpProcessor, translate_world_space3_h)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     parent_translate.Get(&translate);
 
@@ -4167,7 +4170,7 @@ TEST(TransformOpProcessor, translate_world_space3_h)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     parent_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 2e-3f);
@@ -4225,7 +4228,7 @@ TEST(TransformOpProcessor, translate_world_space4_h)
 
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
 
@@ -4236,7 +4239,7 @@ TEST(TransformOpProcessor, translate_world_space4_h)
 
   // rotate 15 degrees around Y in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(5.706661, translate[0], 3.6e-3f);
@@ -4281,7 +4284,7 @@ TEST(TransformOpProcessor, translate_world_space5_h)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
 
@@ -4291,7 +4294,7 @@ TEST(TransformOpProcessor, translate_world_space5_h)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(7.3, translate[0], 3.2e-3f);
@@ -4329,7 +4332,7 @@ TEST(TransformOpProcessor, translate_world_space6_h)
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
 
@@ -4339,7 +4342,7 @@ TEST(TransformOpProcessor, translate_world_space6_h)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(8.413323, translate[0], 2e-3f);
@@ -4473,7 +4476,7 @@ TEST(TransformOpProcessor, translate_world_space8_h)
   
   // rotate 15 degrees around X in world space
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
 
@@ -4492,7 +4495,7 @@ TEST(TransformOpProcessor, translate_world_space8_h)
   }
 
   {
-    processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.Translate(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3h translate(0);
     child_translate.Get(&translate);
     EXPECT_NEAR(6.736796, translate[0], 2.5e-3f);
@@ -4510,14 +4513,320 @@ TEST(TransformOpProcessor, translate_world_space8_h)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Scaling in world space is only valid if the scale is uniform. Non uniform scales are rejected.
+//----------------------------------------------------------------------------------------------------------------------
 
-#if 0
+TEST(TransformOpProcessor, scale_world_space_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_scale = child.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_scale"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+  child_scale.Set(GfVec3d(-2.0, 5.0, 3.0));
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2);
+  
+  {
+    // non-uniform scales are ignored in world space
+    EXPECT_FALSE(processor.Scale(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3d scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original
+    EXPECT_NEAR(-2.0, scale[0], 1e-5f);
+    EXPECT_NEAR(5.0, scale[1], 1e-5f);
+    EXPECT_NEAR(3.0, scale[2], 1e-5f);
+  }
+  {
+    // uniform scales are handled in world space
+    EXPECT_TRUE(processor.Scale(GfVec3d(4.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3d scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original * 4.0
+    EXPECT_NEAR(-8.0, scale[0], 1e-5f);
+    EXPECT_NEAR(20.0, scale[1], 1e-5f);
+    EXPECT_NEAR(12.0, scale[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, scale_world_space_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_scale = child.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_scale"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+  child_scale.Set(GfVec3f(-2.0, 5.0, 3.0));
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2);
+  
+  {
+    // non-uniform scales are ignored in world space
+    EXPECT_FALSE(processor.Scale(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original
+    EXPECT_NEAR(-2.0, scale[0], 1e-5f);
+    EXPECT_NEAR(5.0, scale[1], 1e-5f);
+    EXPECT_NEAR(3.0, scale[2], 1e-5f);
+  }
+  {
+    // uniform scales are handled in world space
+    EXPECT_TRUE(processor.Scale(GfVec3d(4.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original * 4.0
+    EXPECT_NEAR(-8.0, scale[0], 1e-5f);
+    EXPECT_NEAR(20.0, scale[1], 1e-5f);
+    EXPECT_NEAR(12.0, scale[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, scale_world_space_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_scale = child.AddScaleOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_scale"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+  child_scale.Set(GfVec3h(-2.0, 5.0, 3.0));
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2);
+  
+  {
+    // non-uniform scales are ignored in world space
+    EXPECT_FALSE(processor.Scale(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original
+    EXPECT_NEAR(-2.0, scale[0], 1e-5f);
+    EXPECT_NEAR(5.0, scale[1], 1e-5f);
+    EXPECT_NEAR(3.0, scale[2], 1e-5f);
+  }
+  {
+    // uniform scales are handled in world space
+    EXPECT_TRUE(processor.Scale(GfVec3d(4.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original * 4.0
+    EXPECT_NEAR(-8.0, scale[0], 1e-5f);
+    EXPECT_NEAR(20.0, scale[1], 1e-5f);
+    EXPECT_NEAR(12.0, scale[2], 1e-5f);
+  }
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+// Scaling in world space is only valid if the scale is uniform. Non uniform scales are rejected.
+//----------------------------------------------------------------------------------------------------------------------
+
+TEST(TransformOpProcessor, scale_parent_space_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_scale = child.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_scale"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+  child_scale.Set(GfVec3d(-2.0, 5.0, 3.0));
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2);
+  
+  {
+    // non-uniform scales are ignored in world space
+    EXPECT_FALSE(processor.Scale(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
+    GfVec3d scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original
+    EXPECT_NEAR(-2.0, scale[0], 1e-5f);
+    EXPECT_NEAR(5.0, scale[1], 1e-5f);
+    EXPECT_NEAR(3.0, scale[2], 1e-5f);
+  }
+  {
+    // uniform scales are handled in world space
+    EXPECT_TRUE(processor.Scale(GfVec3d(4.0), MayaUsdUtils::TransformOpProcessor::kParent));
+    GfVec3d scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original * 4.0
+    EXPECT_NEAR(-8.0, scale[0], 1e-5f);
+    EXPECT_NEAR(20.0, scale[1], 1e-5f);
+    EXPECT_NEAR(12.0, scale[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, scale_parent_space_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_scale = child.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_scale"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+  child_scale.Set(GfVec3f(-2.0, 5.0, 3.0));
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2);
+  
+  {
+    // non-uniform scales are ignored in world space
+    EXPECT_FALSE(processor.Scale(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
+    GfVec3f scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original
+    EXPECT_NEAR(-2.0, scale[0], 1e-5f);
+    EXPECT_NEAR(5.0, scale[1], 1e-5f);
+    EXPECT_NEAR(3.0, scale[2], 1e-5f);
+  }
+  {
+    // uniform scales are handled in world space
+    EXPECT_TRUE(processor.Scale(GfVec3d(4.0), MayaUsdUtils::TransformOpProcessor::kParent));
+    GfVec3f scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original * 4.0
+    EXPECT_NEAR(-8.0, scale[0], 1e-5f);
+    EXPECT_NEAR(20.0, scale[1], 1e-5f);
+    EXPECT_NEAR(12.0, scale[2], 1e-5f);
+  }
+}
+
+TEST(TransformOpProcessor, scale_parent_space_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-3.0, -2.0, -1.0));
+  parent_rotate.Set(GfVec3d(10.0, 15.0, 20.0));
+  parent_scale.Set(GfVec3d(1.1, 1.2, 1.3));
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_scale = child.AddScaleOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_scale"));
+  child_rotate.Set(GfVec3d(22, 33, 44));
+  child_translate.Set(GfVec3d(3.0, 4.0, 5.0));
+  child_scale.Set(GfVec3h(-2.0, 5.0, 3.0));
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2);
+  
+  {
+    // non-uniform scales are ignored in world space
+    EXPECT_FALSE(processor.Scale(GfVec3d(4.3, 4.4, 4.5), MayaUsdUtils::TransformOpProcessor::kParent));
+    GfVec3h scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original
+    EXPECT_NEAR(-2.0, scale[0], 1e-5f);
+    EXPECT_NEAR(5.0, scale[1], 1e-5f);
+    EXPECT_NEAR(3.0, scale[2], 1e-5f);
+  }
+  {
+    // uniform scales are handled in world space
+    EXPECT_TRUE(processor.Scale(GfVec3d(4.0), MayaUsdUtils::TransformOpProcessor::kParent));
+    GfVec3h scale(0);
+    child_scale.Get(&scale);
+
+    // should be the same as the original * 4.0
+    EXPECT_NEAR(-8.0, scale[0], 1e-5f);
+    EXPECT_NEAR(20.0, scale[1], 1e-5f);
+    EXPECT_NEAR(12.0, scale[2], 1e-5f);
+  }
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
-// with the same result. The Y and Z rotations will utilise quaternions.
+// with the same result. 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(TransformOpProcessor, rotate_world_space_d)
+TEST(TransformOpProcessor, rotate_world_space_with_uniform_scale_d)
 {
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   ASSERT_TRUE(stage);
@@ -4530,10 +4839,10 @@ TEST(TransformOpProcessor, rotate_world_space_d)
 
   parent_translate.Set(GfVec3d(-2.0, 3.0, 1.0));
   parent_rotate.Set(GfVec3d(-11.0, -21.0, 22.0));
-  parent_scale.Set(GfVec3d(2.0, 1.5, 3.0));
+  parent_scale.Set(GfVec3d(2,2,2));
 
   // sanity check parent matrix matches result from maya 
-  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.456485,1.403647,-0.267203,0,-1.192939,0.135404,2.749284,0,-2,3,1,1);
+  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.608647,1.871529,-0.356271,0,-0.795293,0.090269,1.832856,0,-2,3,1,1);
   {
     bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
@@ -4552,58 +4861,53 @@ TEST(TransformOpProcessor, rotate_world_space_d)
   {
     bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
-    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
     COMPARE_MAT4(result, child_matrix, 1e-5f);
   }
-  
+
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(1.731201,0.699451,0.716736,0,-0.608647,1.871529,-0.356271,0,-0.795293,0.090269,1.832856,0,-0.73683,6.450968,5.742912,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
 
   // rotate 15 degrees around X in world space
   {
     GfVec3d rotate(0);
     child_rotate.Get(&rotate);
-    std::cout << rotate[0] << ' ' << rotate[1] << ' ' << rotate[2] << std::endl;
-    processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(6.698577, rotate[0], 1e-5f);
-    std::cout << '\n';
-    EXPECT_NEAR(-2.552219, rotate[1], 1e-5f);
-    std::cout << '\n';
-    EXPECT_NEAR(-8.557557, rotate[2], 1e-5f);
-    std::cout << '\n';
-    std::cout << '\n';
+    EXPECT_NEAR(13.218885, rotate[0], 1e-5f);
+    EXPECT_NEAR(-3.843776, rotate[1], 1e-5f);
+    EXPECT_NEAR(-6.439076, rotate[2], 1e-5f);
   }
 
   // rotate 15 degrees around Y in world space
   {
-    processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(7.969821, rotate[0], 1e-5f);
-    std::cout << '\n';
-    EXPECT_NEAR(7.172523, rotate[1], 1e-5f);
-    std::cout << '\n';
-    EXPECT_NEAR(-6.933309, rotate[2], 1e-5f);
-    std::cout << '\n';
-    std::cout << '\n';
+    EXPECT_NEAR(16.968949, rotate[0], 1e-5f);
+    EXPECT_NEAR(10.668345, rotate[1], 1e-5f);
+    EXPECT_NEAR(-5.533085, rotate[2], 1e-5f);
   }
 
   // rotate 15 degrees around Z in world space
   {
-    processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
     GfVec3d rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(10.730779, rotate[0], 1e-5f);
-    std::cout << '\n';
-    EXPECT_NEAR(5.337441, rotate[1], 1e-5f);
-    std::cout << '\n';
-    EXPECT_NEAR(11.312078, rotate[2], 1e-5f);
-    std::cout << '\n';
-    std::cout << '\n';
+    EXPECT_NEAR(22.315417, rotate[0], 1e-5f);
+    EXPECT_NEAR(7.835664, rotate[1], 1e-5f);
+    EXPECT_NEAR(9.086346, rotate[2], 1e-5f);
   }
 }
 
-TEST(TransformOpProcessor, rotate_world_space_f)
+//----------------------------------------------------------------------------------------------------------------------
+// Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
+// with the same result. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, rotate_world_space_with_uniform_scale_f)
 {
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   ASSERT_TRUE(stage);
@@ -4616,10 +4920,10 @@ TEST(TransformOpProcessor, rotate_world_space_f)
 
   parent_translate.Set(GfVec3d(-2.0, 3.0, 1.0));
   parent_rotate.Set(GfVec3d(-11.0, -21.0, 22.0));
-  parent_scale.Set(GfVec3d(2.0, 1.5, 3.0));
+  parent_scale.Set(GfVec3d(2,2,2));
 
   // sanity check parent matrix matches result from maya 
-  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.456485,1.403647,-0.267203,0,-1.192939,0.135404,2.749284,0,-2,3,1,1);
+  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.608647,1.871529,-0.356271,0,-0.795293,0.090269,1.832856,0,-2,3,1,1);
   {
     bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
@@ -4631,51 +4935,59 @@ TEST(TransformOpProcessor, rotate_world_space_f)
   UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
   UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
   UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_rotate"));
-  child_translate.Set(GfVec3f(2.0, 1.0, 2.0));
+  child_translate.Set(GfVec3d(2.0, 1.0, 2.0));
 
   // sanity check starting matrix against maya result
   const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,2,1,2,1);
   {
     bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
-    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
     COMPARE_MAT4(result, child_matrix, 1e-5f);
   }
-  
+
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(1.731201,0.699451,0.716736,0,-0.608647,1.871529,-0.356271,0,-0.795293,0.090269,1.832856,0,-0.73683,6.450968,5.742912,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
 
   // rotate 15 degrees around X in world space
   {
-    processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
-    GfVec3f rotate;
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(6.698577f, rotate[0], 1e-5f);
-    EXPECT_NEAR(-2.552219f, rotate[1], 1e-5f);
-    EXPECT_NEAR(-8.557557f, rotate[2], 1e-5f);
+    EXPECT_NEAR(13.218885, rotate[0], 1e-5f);
+    EXPECT_NEAR(-3.843776, rotate[1], 1e-5f);
+    EXPECT_NEAR(-6.439076, rotate[2], 1e-5f);
   }
 
   // rotate 15 degrees around Y in world space
   {
-    processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
-    GfVec3f rotate;
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(7.969821f, rotate[0], 1e-5f);
-    EXPECT_NEAR(7.172523f, rotate[1], 1e-5f);
-    EXPECT_NEAR(-6.933309f, rotate[2], 1e-5f);
+    EXPECT_NEAR(16.968949, rotate[0], 1e-5f);
+    EXPECT_NEAR(10.668345, rotate[1], 1e-5f);
+    EXPECT_NEAR(-5.533085, rotate[2], 1e-5f);
   }
 
   // rotate 15 degrees around Z in world space
   {
-    processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
-    GfVec3f rotate;
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(10.730779f, rotate[0], 1e-5f);
-    EXPECT_NEAR(5.337441f, rotate[1], 1e-5f);
-    EXPECT_NEAR(11.312078f, rotate[2], 1e-5f);
+    EXPECT_NEAR(22.315417, rotate[0], 1e-5f);
+    EXPECT_NEAR(7.835664, rotate[1], 1e-5f);
+    EXPECT_NEAR(9.086346, rotate[2], 1e-5f);
   }
 }
 
-TEST(TransformOpProcessor, rotate_world_space_h)
+//----------------------------------------------------------------------------------------------------------------------
+// Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
+// with the same result. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, rotate_world_space_with_uniform_scale_h)
 {
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   ASSERT_TRUE(stage);
@@ -4688,10 +5000,10 @@ TEST(TransformOpProcessor, rotate_world_space_h)
 
   parent_translate.Set(GfVec3d(-2.0, 3.0, 1.0));
   parent_rotate.Set(GfVec3d(-11.0, -21.0, 22.0));
-  parent_scale.Set(GfVec3d(2.0, 1.5, 3.0));
+  parent_scale.Set(GfVec3d(2,2,2));
 
   // sanity check parent matrix matches result from maya 
-  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.456485,1.403647,-0.267203,0,-1.192939,0.135404,2.749284,0,-2,3,1,1);
+  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.608647,1.871529,-0.356271,0,-0.795293,0.090269,1.832856,0,-2,3,1,1);
   {
     bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
@@ -4703,47 +5015,290 @@ TEST(TransformOpProcessor, rotate_world_space_h)
   UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
   UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
   UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_rotate"));
-  child_translate.Set(GfVec3h(2.0f, 1.0f, 2.0f));
+  child_translate.Set(GfVec3d(2.0, 1.0, 2.0));
 
   // sanity check starting matrix against maya result
   const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,2,1,2,1);
   {
     bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
-    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 2, UsdTimeCode::Default());
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
     COMPARE_MAT4(result, child_matrix, 1e-5f);
   }
-  
+
   MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(1.731201,0.699451,0.716736,0,-0.608647,1.871529,-0.356271,0,-0.795293,0.090269,1.832856,0,-0.73683,6.450968,5.742912,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
 
   // rotate 15 degrees around X in world space
   {
-    processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
-    GfVec3h rotate;
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(6.698577f, rotate[0], 1e-5f);
-    EXPECT_NEAR(-2.552219f, rotate[1], 1e-5f);
-    EXPECT_NEAR(-8.557557f, rotate[2], 1e-5f);
+    EXPECT_NEAR(13.218885, rotate[0], 1.4e-3f);
+    EXPECT_NEAR(-3.843776, rotate[1], 2.7e-5f);
+    EXPECT_NEAR(-6.439076, rotate[2], 1.6e-2f);
   }
 
   // rotate 15 degrees around Y in world space
   {
-    processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
-    GfVec3h rotate;
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(7.969821f, rotate[0], 1e-5f);
-    EXPECT_NEAR(7.172523f, rotate[1], 1e-5f);
-    EXPECT_NEAR(-6.933309f, rotate[2], 1e-5f);
+    EXPECT_NEAR(16.968949, rotate[0], 2e-3f);
+    EXPECT_NEAR(10.668345, rotate[1], 3.6e-2f);
+    EXPECT_NEAR(-5.533085, rotate[2], 2e-2f);
   }
 
   // rotate 15 degrees around Z in world space
   {
-    processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld);
-    GfVec3h rotate;
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h rotate(0);
     child_rotate.Get(&rotate);
-    EXPECT_NEAR(10.730779f, rotate[0], 1e-5f);
-    EXPECT_NEAR(5.337441f, rotate[1], 1e-5f);
-    EXPECT_NEAR(11.312078f, rotate[2], 1e-5f);
+    EXPECT_NEAR(22.315417, rotate[0], 3e-2f);
+    EXPECT_NEAR(7.835664, rotate[1], 4.2e-2f);
+    EXPECT_NEAR(9.086346, rotate[2], 4.1e-2f);
   }
 }
-#endif
+
+//----------------------------------------------------------------------------------------------------------------------
+// Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
+// with the same result. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, rotate_world_space_with_non_uniform_scale_d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-2.0, 3.0, 1.0));
+  parent_rotate.Set(GfVec3d(-11.0, -21.0, 22.0));
+  parent_scale.Set(GfVec3d(2,3,4));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.91297,2.807293,-0.534407,0,-1.590586,0.180538,3.665712,0,-2,3,1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_rotate"));
+  child_translate.Set(GfVec3d(2.0, 1.0, 2.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,2,1,2,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(1.731201,0.699451,0.716736,0,-0.91297,2.807293,-0.534407,0,-1.590586,0.180538,3.665712,0,-2.631739,7.567271,9.230489,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
+
+  // rotate 15 degrees around X in world space
+  {
+    GfVec3d rotate(0);
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(9.991373, rotate[0], 1e-5f);
+    EXPECT_NEAR(-1.930805, rotate[1], 1e-2f);
+    EXPECT_NEAR(-4.302774, rotate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3d rotate(0);
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(13.515801, rotate[0], 1e-3f);
+    EXPECT_NEAR(5.457887, rotate[1], 0.11);   //< Fairly high difference - shearing effects?
+    EXPECT_NEAR(-3.5485, rotate[2], 0.146);   //< Fairly high difference - shearing effects?
+  }
+
+  // rotate 15 degrees around Z in world space
+  {
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3d rotate(0);
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(17.381871, rotate[0], 1e-3f);
+    EXPECT_NEAR(4.011838, rotate[1], 0.088);   //< Fairly high difference - shearing effects?
+    EXPECT_NEAR(5.998051, rotate[2], 0.083);   //< Fairly high difference - shearing effects?
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
+// with the same result. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, rotate_world_space_with_non_uniform_scale_f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-2.0, 3.0, 1.0));
+  parent_rotate.Set(GfVec3d(-11.0, -21.0, 22.0));
+  parent_scale.Set(GfVec3d(2,3,4));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.91297,2.807293,-0.534407,0,-1.590586,0.180538,3.665712,0,-2,3,1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("child_rotate"));
+  child_translate.Set(GfVec3d(2.0, 1.0, 2.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,2,1,2,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(1.731201,0.699451,0.716736,0,-0.91297,2.807293,-0.534407,0,-1.590586,0.180538,3.665712,0,-2.631739,7.567271,9.230489,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
+
+  // rotate 15 degrees around X in world space
+  {
+    GfVec3f rotate(0);
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(9.991373, rotate[0], 1e-5f);
+    EXPECT_NEAR(-1.930805, rotate[1], 1e-2f);
+    EXPECT_NEAR(-4.302774, rotate[2], 1e-5f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f rotate(0);
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(13.515801, rotate[0], 1e-3f);
+    EXPECT_NEAR(5.457887, rotate[1], 0.11);   //< Fairly high difference - shearing effects?
+    EXPECT_NEAR(-3.5485, rotate[2], 0.146);   //< Fairly high difference - shearing effects?
+  }
+
+  // rotate 15 degrees around Z in world space
+  {
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3f rotate(0);
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(17.381871, rotate[0], 1e-3f);
+    EXPECT_NEAR(4.011838, rotate[1], 0.088);   //< Fairly high difference - shearing effects?
+    EXPECT_NEAR(5.998051, rotate[2], 0.083);   //< Fairly high difference - shearing effects?
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Using an XYZ rotation order, replicate some rotations that may occur with the Maya rotate tool, and check we end up 
+// with the same result. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, rotate_world_space_with_non_uniform_scale_h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp parent_translate = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_translate"));
+  UsdGeomXformOp parent_rotate = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_rotate"));
+  UsdGeomXformOp parent_scale = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("parent_scale"));
+
+  parent_translate.Set(GfVec3d(-2.0, 3.0, 1.0));
+  parent_rotate.Set(GfVec3d(-11.0, -21.0, 22.0));
+  parent_scale.Set(GfVec3d(2,3,4));
+
+  // sanity check parent matrix matches result from maya 
+  const GfMatrix4d parent_matrix(1.731201,0.699451,0.716736,0,-0.91297,2.807293,-0.534407,0,-1.590586,0.180538,3.665712,0,-2,3,1,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = parent.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 3, UsdTimeCode::Default());
+    COMPARE_MAT4(result, parent_matrix, 1e-5f);
+  }
+
+  // now specify a child transform with a rotation
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_translate = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_translate"));
+  UsdGeomXformOp child_rotate = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("child_rotate"));
+  child_translate.Set(GfVec3d(2.0, 1.0, 2.0));
+
+  // sanity check starting matrix against maya result
+  const GfMatrix4d child_matrix(1,0,0,0,0,1,0,0,0,0,1,0,2,1,2,1);
+  {
+    bool resetsXformStack = false;
+    std::vector<UsdGeomXformOp> ops = child.GetOrderedXformOps(&resetsXformStack);
+    GfMatrix4d result = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, 1, UsdTimeCode::Default());
+    COMPARE_MAT4(result, child_matrix, 1e-5f);
+  }
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1);
+  {
+    const GfMatrix4d expected(1.731201,0.699451,0.716736,0,-0.91297,2.807293,-0.534407,0,-1.590586,0.180538,3.665712,0,-2.631739,7.567271,9.230489,1);
+    COMPARE_MAT4(expected, processor.WorldFrame(), 1e-5f);
+  }
+
+  // rotate 15 degrees around X in world space
+  {
+    GfVec3h rotate(0);
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(9.991373, rotate[0], 8.2e-3f);
+    EXPECT_NEAR(-1.930805, rotate[1], 2e-2f);
+    EXPECT_NEAR(-4.302774, rotate[2], 2e-2f);
+  }
+
+  // rotate 15 degrees around Y in world space
+  {
+    EXPECT_TRUE(processor.RotateY(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h rotate(0);
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(13.515801, rotate[0], 1e-3f);
+    EXPECT_NEAR(5.457887, rotate[1], 0.12);   //< Fairly high difference - shearing effects?
+    EXPECT_NEAR(-3.5485, rotate[2], 0.147);   //< Fairly high difference - shearing effects?
+  }
+
+  // rotate 15 degrees around Z in world space
+  {
+    EXPECT_TRUE(processor.RotateZ(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+    GfVec3h rotate(0);
+    child_rotate.Get(&rotate);
+    EXPECT_NEAR(17.381871, rotate[0], 8.8e-2f);
+    EXPECT_NEAR(4.011838, rotate[1], 0.089);   //< Fairly high difference - shearing effects?
+    EXPECT_NEAR(5.998051, rotate[2], 0.083);   //< Fairly high difference - shearing effects?
+  }
+}

@@ -34,7 +34,6 @@ class alignas(32) TransformOpProcessor
 {
   GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
-  GfMatrix4d _parentFrame;
   GfMatrix4d _invCoordFrame;
   GfMatrix4d _invWorldFrame;
   __m256d _qcoordFrame;
@@ -45,6 +44,7 @@ class alignas(32) TransformOpProcessor
   UsdTimeCode _timeCode = UsdTimeCode::Default();
   UsdPrim _prim;
   bool _resetsXformStack = false;
+  bool _isMatrixOp = false;
   UsdGeomXformOp op() const { return _ops[_opIndex]; }
 public:
 
@@ -83,20 +83,32 @@ public:
   bool CanScale() const;
 
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
-  // Compute the current transform op value. 
+  // Compute the current transform op value - all values in local space
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
 
-  /// returns true if the current xfrom op can be rotated
+  /// returns the current orientation as a quat (If CanRotate() returns false, the identity quat is returned)
   MAYA_USD_UTILS_PUBLIC
   GfQuatd Rotation() const;
 
-  /// returns true if the current xfrom op can be translated
+  /// returns the current translation as a vec3 (If CanTranslate() returns false, [0,0,0] is returned)
   MAYA_USD_UTILS_PUBLIC
   GfVec3d Translation() const;
 
-  /// returns true if the current xfrom op can be scaled
+  /// returns the current scale as a vec3 (If CanScale() returns false, [1,1,1] is returned)
   MAYA_USD_UTILS_PUBLIC
   GfVec3d Scale() const;
+
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  // Compute the current transform op value. 
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  /// returns the coordinate frame for this manipulator where the transformation is the identity (e.g. the local origin)
+  inline const GfMatrix4d& ManipulatorFrame() const
+    { return _worldFrame; }
+
+  /// returns the inclusive matrix of the manipulator frame, and the transformation of the xform op applied 
+  inline GfMatrix4d ManipulatorMatrix() const
+    { return EvaluateCoordinateFrameForIndex(_ops, _opIndex + 1, _timeCode); }
 
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
   // Apply relative transformations to the Transform Op
@@ -110,16 +122,6 @@ public:
   MAYA_USD_UTILS_PUBLIC
   bool Scale(const GfVec3d& scaleChange, Space space = kTransform);
 
-  /// apply a rotational offset to the xform op. 
-  /// NOTE: This is primarily useful for rotating objects via the sphere (rather than axis rings of the rotate manip)
-  /// It's likely that using this method won't result in 'nice' eulers afterwards. 
-  /// If you want 'nice' eulers (as much as is possible with a rotate tool), then prefer to use the axis rotation 
-  /// methods, RotateX etc. 
-  /// It should also be noted that this method may end up being called by the RotateX/RotateY/RotateZ methods if 
-  /// either the rotation is not a simple one - i.e. a simple RotateX xform op 
-  MAYA_USD_UTILS_PUBLIC
-  bool Rotate(const GfQuatd& quatChange, Space space);
-
   /// apply a rotational offset to the X axis
   MAYA_USD_UTILS_PUBLIC
   bool RotateX(const double radianChange, Space space = kTransform);
@@ -132,6 +134,16 @@ public:
   MAYA_USD_UTILS_PUBLIC
   bool RotateZ(const double radianChange, Space space = kTransform);
 
+  /// apply a rotational offset to the xform op. 
+  /// NOTE: This is primarily useful for rotating objects via the sphere (rather than axis rings of the rotate manip)
+  /// It's likely that using this method won't result in 'nice' eulers afterwards. 
+  /// If you want 'nice' eulers (as much as is possible with a rotate tool), then prefer to use the axis rotation 
+  /// methods, RotateX etc. 
+  /// It should also be noted that this method may end up being called by the RotateX/RotateY/RotateZ methods if 
+  /// either the rotation is not a simple one - i.e. a simple RotateX xform op 
+  MAYA_USD_UTILS_PUBLIC
+  bool Rotate(const GfQuatd& quatChange, Space space);
+
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
   // Apply absolute transformation to the Transform Op
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -141,11 +153,7 @@ public:
     { return _worldFrame; }
 
   /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
-  const GfMatrix4d& ParentFrame() const 
-    { return _parentFrame; }
-
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
-  const GfMatrix4d& OperationFrame() const 
+  const GfMatrix4d& CoordinateFrame() const 
     { return _coordFrame; }
 
   /// given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the op at the given index. 
