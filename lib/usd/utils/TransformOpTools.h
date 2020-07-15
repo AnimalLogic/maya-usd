@@ -30,24 +30,20 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
 
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
 class alignas(32) TransformOpProcessor
 {
-  GfMatrix4d _coordFrame;
-  GfMatrix4d _worldFrame;
-  GfMatrix4d _invCoordFrame;
-  GfMatrix4d _invWorldFrame;
-  __m256d _qcoordFrame;
-  __m256d _qworldFrame;
-  __m256d _qparentFrame;
-  std::vector<UsdGeomXformOp> _ops;
-  uint32_t _opIndex;
-  UsdTimeCode _timeCode = UsdTimeCode::Default();
-  UsdPrim _prim;
-  bool _resetsXformStack = false;
-  bool _isMatrixOp = false;
-  UsdGeomXformOp op() const { return _ops[_opIndex]; }
 public:
 
+  // when processing matrix transform ops, the coordinate frame for the manipulator will change 
+  // depending on whether we are setting up for scale, rotatation, or translation
+  enum ManipulatorMode
+  {
+    kTranslate, 
+    kRotate, 
+    kScale,
+    kGuess //< for most ops, this will just work. For matrix ops, you'll need to be more specific
+  };
   enum Space
   {
     kTransform,
@@ -56,15 +52,15 @@ public:
   };
 
   MAYA_USD_UTILS_PUBLIC
-  TransformOpProcessor(const UsdPrim prim, const TfToken opName, const UsdTimeCode& tc = UsdTimeCode::Default());
+  TransformOpProcessor(const UsdPrim prim, const TfToken opName, ManipulatorMode mode = kGuess, const UsdTimeCode& tc = UsdTimeCode::Default());
 
   MAYA_USD_UTILS_PUBLIC
-  TransformOpProcessor(const UsdPrim prim, const uint32_t opIndex, const UsdTimeCode& tc = UsdTimeCode::Default());
+  TransformOpProcessor(const UsdPrim prim, const uint32_t opIndex, ManipulatorMode mode = kGuess, const UsdTimeCode& tc = UsdTimeCode::Default());
 
   /// re-evaluate the internal coordinate frames on time change
   MAYA_USD_UTILS_PUBLIC
-  void UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache);
-  void UpdateToTime(const UsdTimeCode& tc) { UsdGeomXformCache cache; UpdateToTime(tc, cache); }
+  void UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache, ManipulatorMode mode = kGuess);
+  void UpdateToTime(const UsdTimeCode& tc, ManipulatorMode mode = kGuess) { UsdGeomXformCache cache; UpdateToTime(tc, cache, mode); }
 
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
   // given the xform op currently assigned to this processor, can we scale, rotate, and/or translate the op? (In some cases, e.g. matrices, all may be supported)
@@ -73,6 +69,18 @@ public:
   /// returns true if the current xfrom op can be rotated
   MAYA_USD_UTILS_PUBLIC
   bool CanRotate() const;
+
+  /// returns true if the current xfrom op can be rotated in the local x axis
+  bool CanRotateX() const
+    { return CanRotate() && op().GetOpType() != UsdGeomXformOp::TypeRotateY && op().GetOpType() != UsdGeomXformOp::TypeRotateZ; }
+
+  /// returns true if the current xfrom op can be rotated in the local y axis
+  bool CanRotateY() const
+    { return CanRotate() && op().GetOpType() != UsdGeomXformOp::TypeRotateX && op().GetOpType() != UsdGeomXformOp::TypeRotateZ; }
+
+  /// returns true if the current xfrom op can be rotated in the local z axis
+  bool CanRotateZ() const
+    { return CanRotate() && op().GetOpType() != UsdGeomXformOp::TypeRotateX && op().GetOpType() != UsdGeomXformOp::TypeRotateY; }
 
   /// returns true if the current xfrom op can be translated
   MAYA_USD_UTILS_PUBLIC
@@ -104,11 +112,15 @@ public:
 
   /// returns the coordinate frame for this manipulator where the transformation is the identity (e.g. the local origin)
   inline const GfMatrix4d& ManipulatorFrame() const
-    { return _worldFrame; }
+    { return _coordFrame; }
 
   /// returns the inclusive matrix of the manipulator frame, and the transformation of the xform op applied 
   inline GfMatrix4d ManipulatorMatrix() const
     { return EvaluateCoordinateFrameForIndex(_ops, _opIndex + 1, _timeCode); }
+
+  /// returns the current manipulator mode
+  MAYA_USD_UTILS_PUBLIC
+  ManipulatorMode ManipMode() const;
 
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
   // Apply relative transformations to the Transform Op
@@ -168,6 +180,21 @@ private:
   static __m256d _Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
   static __m256d _Rotation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
   static __m256d _Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
+private:
+  GfMatrix4d _coordFrame;
+  GfMatrix4d _worldFrame;
+  GfMatrix4d _invCoordFrame;
+  GfMatrix4d _invWorldFrame;
+  __m256d _qcoordFrame;
+  __m256d _qworldFrame;
+  __m256d _qparentFrame;
+  std::vector<UsdGeomXformOp> _ops;
+  uint32_t _opIndex;
+  UsdTimeCode _timeCode = UsdTimeCode::Default();
+  UsdPrim _prim;
+  ManipulatorMode _manipMode;
+  bool _resetsXformStack = false;
+  UsdGeomXformOp op() const { return _ops[_opIndex]; }
 };
 
 } // MayaUsdUtils

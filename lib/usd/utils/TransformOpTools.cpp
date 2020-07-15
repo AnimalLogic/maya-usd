@@ -415,7 +415,7 @@ inline d256 quatToMatrix(const d256 iframe[4])
 {
   d256 frame[3];
 
-  // normalise matrix
+  // orthogonalise matrix
   double lx = std::sqrt(dot3(iframe[0], iframe[0]));
   double lz = std::sqrt(dot3(iframe[2], iframe[2]));
   frame[0] = div4d(iframe[0], splat4d(lx));
@@ -436,7 +436,7 @@ inline d256 quatToMatrix(const d256 iframe[4])
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opName, const UsdTimeCode& tc)
+TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opName, const TransformOpProcessor::ManipulatorMode mode, const UsdTimeCode& tc)
   : _prim(prim)
 {
   _ops = UsdGeomXformable(prim).GetOrderedXformOps(&_resetsXformStack);
@@ -450,12 +450,12 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
   {
     throw std::runtime_error(std::string("unable to find xform op on prim: ") + opName.GetString());
   }
-  UpdateToTime(tc);
+  UpdateToTime(tc, mode);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const uint32_t opIndex, const UsdTimeCode& tc)
+TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const uint32_t opIndex, const TransformOpProcessor::ManipulatorMode mode, const UsdTimeCode& tc)
   : _opIndex(opIndex), _prim(prim)
 {
   _ops = UsdGeomXformable(prim).GetOrderedXformOps(&_resetsXformStack);
@@ -463,7 +463,13 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const uint32_t op
   {
     throw std::range_error(std::string("invalid op index"));
   }
-  UpdateToTime(tc);
+  UpdateToTime(tc, mode);
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+TransformOpProcessor::ManipulatorMode TransformOpProcessor::ManipMode() const
+{
+  return _manipMode; 
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -524,13 +530,91 @@ bool TransformOpProcessor::CanScale() const
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache)
+void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache, const TransformOpProcessor::ManipulatorMode mode)
 {
+  _manipMode = mode;
   _timeCode = tc;
+
+  // grab type of op 
+  auto xop = op();
+  auto opType = xop.GetOpType();
+
+  // if we are to guess the manipulator mode in use...
+  if(_manipMode == kGuess)
+  {
+    // if the type is a translation (or a matrix - default to possibly wrong here!)
+    if(opType == UsdGeomXformOp::TypeTransform || 
+       opType == UsdGeomXformOp::TypeTranslate)
+    {
+      _manipMode = kTranslate;
+    }
+    else
+    // if the op type is a scale
+    if(opType == UsdGeomXformOp::TypeScale)
+    {
+      _manipMode = kScale;
+    }
+    else
+    // otherwise assume a rotation
+    {
+      _manipMode = kRotate;
+    }
+  }
+
+  // evaluate the initial guess for the coordinate frame 
+  _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
+
+  // If we have a matrix transformation, depending on the type of manip used, 
+  // we may have to offset the coordinate frame slightly
+  if(opType == UsdGeomXformOp::TypeTransform)
+  {
+    switch(_manipMode)
+    {
+    default:
+    case kTranslate:
+      /* nothing to do. Translation frame will be correct */
+      break;
+
+    case kRotate:
+      /* we need to offset the coordinate frame by the translation */
+      {
+        alignas(32) GfMatrix4d matrix;
+        if(xop.Get(&matrix, _timeCode))
+        {
+          // transform offset by coordinate frame, and apply to coordinate frame
+          GfVec4d offset(matrix[3][0], matrix[3][1], matrix[3][2], 0.0);
+          offset = offset * _coordFrame;
+          _coordFrame[3][0] += offset[0];
+          _coordFrame[3][1] += offset[1];
+          _coordFrame[3][2] += offset[2];
+        }
+      }
+      break;
+
+    case kScale:
+      /* we need to offset the coordinate frame by the translation & rotation */
+      {
+        d256 matrix[4];
+        if(xop.Get((GfMatrix4d*)matrix, _timeCode))
+        {
+          // orthogonalise matrix to remove scaling
+          auto sx = splat4d(std::sqrt(dot3(matrix[0], matrix[0])));
+          auto sy = splat4d(std::sqrt(dot3(matrix[1], matrix[1])));
+          auto sz = splat4d(std::sqrt(dot3(matrix[2], matrix[2])));
+          matrix[0] = div4d(matrix[0], sx);
+          matrix[1] = div4d(matrix[1], sy);
+          matrix[2] = div4d(matrix[2], sz);
+          // offset the coordinate frame
+          multiply4x4((d256*)&_coordFrame, matrix, (const d256*)&_coordFrame);
+        }
+      }
+      break;
+    }
+  }
+
   if(!_resetsXformStack)
   {
     alignas(32) auto _parentFrame = cache.GetParentToWorldTransform(_prim);
-    _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
     multiply4x4((d256*)&_worldFrame, (const d256*)&_coordFrame, (const d256*)&_parentFrame);
     _invWorldFrame = _worldFrame.GetInverse();
     _invCoordFrame = _coordFrame.GetInverse();
@@ -553,7 +637,7 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
     store4d(_worldFrame[3], w);
     store4d(_invWorldFrame[3], w);
     _qworldFrame = w;
-    _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
+    _invCoordFrame = _coordFrame.GetInverse();
     _qcoordFrame = quatToMatrix((const d256*)&_coordFrame);
   }
 }
@@ -803,6 +887,45 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
   // a utility method that applies an rotational offset to the original rotation quaternion, 
   // in the correct coordinate frame (e.g. local, parent, world), and returns the resulting
   // euler angle triplet
+  auto processMatrixRotation = [this] (d256 offset, const Space space)
+  {
+    switch(space)
+    {
+    default:
+      {
+        // grab original matrix
+        d256 matrix[4] = {
+          set4d(1.0, 0.0, 0.0, 0.0),
+          set4d(0.0, 1.0, 0.0, 0.0),
+          set4d(0.0, 0.0, 1.0, 0.0),
+          set4d(0.0, 0.0, 0.0, 1.0)
+        };
+        op().Get((GfMatrix4d*)matrix, _timeCode);
+        d256 rmatrix[4];
+        quatToMatrix(offset, rmatrix);
+        matrix[0] = rotate(matrix[0], rmatrix);
+        matrix[1] = rotate(matrix[1], rmatrix);
+        matrix[2] = rotate(matrix[2], rmatrix);
+        op().Set(*(GfMatrix4d*)matrix, _timeCode);
+      }
+      break;
+    case kWorld:
+      {
+        std::cerr << "unsupported currently" << std::endl;
+      }
+      break;
+    case kParent:
+      {
+        std::cerr << "unsupported currently" << std::endl;
+      }
+      break;
+      
+    }
+  };
+  
+  // a utility method that applies an rotational offset to the original rotation quaternion, 
+  // in the correct coordinate frame (e.g. local, parent, world), and returns the resulting
+  // euler angle triplet
   auto process3AxisRotation = [this] (d256 original, d256 offset, const Space space, const RotationOrder order)
   {
     GfVec3f rot(0);
@@ -883,6 +1006,9 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
   switch(xformOp.GetOpType())
   {
   case UsdGeomXformOp::TypeTransform:
+    {
+      processMatrixRotation(temp, space);
+    }
     break;
 
   case UsdGeomXformOp::TypeRotateX:
