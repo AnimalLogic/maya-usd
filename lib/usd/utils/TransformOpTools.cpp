@@ -1,3 +1,18 @@
+//
+// Copyright 2017 Animal Logic
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "TransformOpTools.h"
 #include "SIMD.h"
@@ -646,6 +661,21 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
 MAYA_USD_UTILS_PUBLIC
 bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space space)
 {
+  auto xformOp = op();
+  // check to make sure this transform op can be translated!
+  if(_manipMode != kTranslate)
+  {
+    if(xformOp.GetOpType() == UsdGeomXformOp::TypeTransform)
+    {
+      // update to time can convert the coordinate frame in this case
+      UpdateToTime(_timeCode, kTranslate);
+    }
+    else
+    {
+      return false;
+    }
+  }
+
   d256 temp = set4d(translateChange[0], translateChange[1], translateChange[2], 0);
   switch(space)
   {
@@ -772,6 +802,21 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
     break;
   }
 
+  auto xformOp = op();
+  // check to make sure this transform op can be translated!
+  if(_manipMode != kScale)
+  {
+    if(xformOp.GetOpType() == UsdGeomXformOp::TypeTransform)
+    {
+      // update to time can convert the coordinate frame in this case
+      UpdateToTime(_timeCode, kScale);
+    }
+    else
+    {
+      return false;
+    }
+  }
+
   d256 temp = set4d(scaleChange[0], scaleChange[1], scaleChange[2], 0.0);
 
   // if the change is close to one, ignore it. 
@@ -785,7 +830,6 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
     }
   }
 
-  auto xformOp = op();
   if(xformOp.GetOpType() == UsdGeomXformOp::TypeScale)
   {
     // grab the current value from USD
@@ -883,6 +927,22 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       return true;
     }
   }
+
+  auto xformOp = op();
+  // check to make sure this transform op can be rotated!
+  if(_manipMode != kRotate)
+  {
+    if(xformOp.GetOpType() == UsdGeomXformOp::TypeTransform)
+    {
+      // update to time can convert the coordinate frame in this case
+      UpdateToTime(_timeCode, kRotate);
+    }
+    else
+    {
+      return false;
+    }
+  }
+
   
   // a utility method that applies an rotational offset to the original rotation quaternion, 
   // in the correct coordinate frame (e.g. local, parent, world), and returns the resulting
