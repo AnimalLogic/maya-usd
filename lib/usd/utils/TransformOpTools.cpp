@@ -627,6 +627,29 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
     }
   }
 
+  switch(_manipMode)
+  {
+  default:
+  case kTranslate:
+    if(!CanTranslate())
+    {
+      throw std::runtime_error(std::string("Cannot translate transform op: ") + xop.GetName().GetString());
+    }
+    break;
+  case kRotate:
+    if(!CanRotate())
+    {
+      throw std::runtime_error(std::string("Cannot rotate transform op: ") + xop.GetName().GetString());
+    }
+    break;
+  case kScale:
+    if(!CanScale())
+    {
+      throw std::runtime_error(std::string("Cannot scale transform op: ") + xop.GetName().GetString());
+    }
+    break;
+  }
+
   if(!_resetsXformStack)
   {
     alignas(32) auto _parentFrame = cache.GetParentToWorldTransform(_prim);
@@ -695,7 +718,6 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
     }
   }
 
-  auto xformOp = op();
   if(xformOp.GetOpType() == UsdGeomXformOp::TypeTranslate)
   {
     // grab the current value from USD
@@ -1059,8 +1081,6 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
     }
     return new_rotation;
   };
-
-  auto xformOp = op();
 
   const auto precision = xformOp.GetPrecision();
   switch(xformOp.GetOpType())
