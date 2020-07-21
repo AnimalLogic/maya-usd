@@ -18,6 +18,7 @@
 #include "SIMD.h"
 
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/base/gf/rotation.h>
 #include <iostream>
 
 namespace MayaUsdUtils {
@@ -426,7 +427,7 @@ inline void multiply(d256 output[4], const d256 childTransform[4], const d256 pa
   output[2] = mz;
 }
 
-inline d256 quatToMatrix(const d256 iframe[4])
+inline d256 matrixToQuat(const d256 iframe[4])
 {
   d256 frame[3];
 
@@ -656,8 +657,8 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
     multiply4x4((d256*)&_worldFrame, (const d256*)&_coordFrame, (const d256*)&_parentFrame);
     _invWorldFrame = _worldFrame.GetInverse();
     _invCoordFrame = _coordFrame.GetInverse();
-    _qcoordFrame = quatToMatrix((const d256*)&_coordFrame);
-    _qworldFrame = quatToMatrix((const d256*)&_worldFrame);
+    _qcoordFrame = matrixToQuat((const d256*)&_coordFrame);
+    _qworldFrame = matrixToQuat((const d256*)&_worldFrame);
   }
   else
   {
@@ -676,7 +677,7 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
     store4d(_invWorldFrame[3], w);
     _qworldFrame = w;
     _invCoordFrame = _coordFrame.GetInverse();
-    _qcoordFrame = quatToMatrix((const d256*)&_coordFrame);
+    _qcoordFrame = matrixToQuat((const d256*)&_coordFrame);
   }
 }
 
@@ -964,7 +965,6 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
     }
   }
 
-  
   // a utility method that applies an rotational offset to the original rotation quaternion, 
   // in the correct coordinate frame (e.g. local, parent, world), and returns the resulting
   // euler angle triplet
@@ -992,12 +992,56 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       break;
     case kWorld:
       {
-        std::cerr << "unsupported currently" << std::endl;
+        // grab original matrix
+        d256 omatrix[4] = {
+          set4d(1.0, 0.0, 0.0, 0.0),
+          set4d(0.0, 1.0, 0.0, 0.0),
+          set4d(0.0, 0.0, 1.0, 0.0),
+          set4d(0.0, 0.0, 0.0, 1.0)
+        };
+        op().Get((GfMatrix4d*)omatrix, _timeCode);
+
+        d256 rotateMatrix[4], rmatrix[4] = {load4d(_worldFrame[0]), load4d(_worldFrame[1]), load4d(_worldFrame[2]), zero4d()};
+        quatToMatrix(offset, rotateMatrix);
+        d256 translateToAddBackIn = omatrix[3];
+        rotateMatrix[3] = omatrix[3] = zero4d();
+        multiply(rmatrix, omatrix, rmatrix);
+        // remove translation
+        rmatrix[3] = zero4d();
+        multiply(rotateMatrix, rmatrix, rotateMatrix);
+        // add translation back in here
+        rotateMatrix[3] = load4d(_worldFrame[3]);
+        // bang into local space
+        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
+        rmatrix[3] = translateToAddBackIn;
+        op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
       }
       break;
     case kParent:
       {
-        std::cerr << "unsupported currently" << std::endl;
+        // grab original matrix
+        d256 omatrix[4] = {
+          set4d(1.0, 0.0, 0.0, 0.0),
+          set4d(0.0, 1.0, 0.0, 0.0),
+          set4d(0.0, 0.0, 1.0, 0.0),
+          set4d(0.0, 0.0, 0.0, 1.0)
+        };
+        op().Get((GfMatrix4d*)omatrix, _timeCode);
+
+        d256 rotateMatrix[4], rmatrix[4] = {load4d(_coordFrame[0]), load4d(_coordFrame[1]), load4d(_coordFrame[2]), zero4d()};
+        quatToMatrix(offset, rotateMatrix);
+        d256 translateToAddBackIn = omatrix[3];
+        rotateMatrix[3] = omatrix[3] = zero4d();
+        multiply(rmatrix, omatrix, rmatrix);
+        // remove translation
+        rmatrix[3] = zero4d();
+        multiply(rotateMatrix, rmatrix, rotateMatrix);
+        // add translation back in here
+        rotateMatrix[3] = load4d(_coordFrame[3]);
+        // bang into local space
+        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
+        rmatrix[3] = translateToAddBackIn;
+        op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
       }
       break;
       
@@ -1028,6 +1072,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         // remove translation
         rmatrix[3] = zero4d();
         multiply(rotateMatrix, rmatrix, rotateMatrix);
+        // add translation back in here
         rotateMatrix[3] = load4d(_worldFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
         d256 ctest = cross(rmatrix[0], rmatrix[1]);
@@ -2140,7 +2185,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
         }
         break;
       }
-      result = quatToMatrix(dmatrix);
+      result = matrixToQuat(dmatrix);
     }
     break;
 

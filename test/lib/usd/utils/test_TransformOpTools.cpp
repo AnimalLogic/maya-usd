@@ -5520,3 +5520,394 @@ TEST(TransformOpProcessor, matrix_transform_op_correct_frame_scale)
   COMPARE_MAT4(expectedResult, evaluated, 1e-5f);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Test that we can rotate a matrix op in world space
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, matrix_transform_op_world_rotate)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(1, 2, 3));
+  parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(15, 30, 45));
+
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_transform = child.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_transform"));
+
+  const GfMatrix4d matrixTransform(4,0,0,0,0,3.535534,3.535534,0,0,-4.242641,4.242641,0,1,2,3,1);
+  child_transform.Set(matrixTransform);
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0, MayaUsdUtils::TransformOpProcessor::kRotate);
+  EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+
+  EXPECT_TRUE(processor.RotateX(15.0 * M_PI / 180.0, MayaUsdUtils::TransformOpProcessor::kWorld));
+
+  const GfMatrix4d expectedResult(3.914815,0.493652,0.656151,0,-1.026176,2.859477,3.97119,0,0.0252416,-4.86594,3.51027,0,1,2,3,1);
+  GfMatrix4d evaluated;
+  child_transform.Get(&evaluated);
+  COMPARE_MAT4(expectedResult, evaluated, 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Test that we can rotate a matrix op in parent space
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, matrix_transform_op_parent_rotate)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(1, 2, 3));
+  parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(15, 30, 45));
+  UsdGeomXformOp child_transform = parent.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_transform"));
+
+  const GfMatrix4d matrixTransform(4,0,0,0,0,3.535534,3.535534,0,0,-4.242641,4.242641,0,1,2,3,1);
+  child_transform.Set(matrixTransform);
+
+  MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 2, MayaUsdUtils::TransformOpProcessor::kRotate);
+  EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+
+  EXPECT_TRUE(processor.RotateX(15.0 * M_PI / 180.0, MayaUsdUtils::TransformOpProcessor::kParent));
+
+  const GfMatrix4d expectedResult(3.914815,0.493652,0.656151,0,-1.026176,2.859477,3.97119,0,0.0252416,-4.86594,3.51027,0,1,2,3,1);
+  GfMatrix4d evaluated;
+  child_transform.Get(&evaluated);
+  COMPARE_MAT4(expectedResult, evaluated, 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Test that we can rotate a matrix op in world space
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, matrix_transform_op_world_translate)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(1, 2, 3));
+  parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(15, 30, 45));
+
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp child_transform = child.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_transform"));
+
+  const GfMatrix4d matrixTransform(4,0,0,0,0,3.535534,3.535534,0,0,-4.242641,4.242641,0,1,2,3,1);
+  child_transform.Set(matrixTransform);
+
+  MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0, MayaUsdUtils::TransformOpProcessor::kTranslate);
+  EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kTranslate, processor.ManipMode());
+
+  EXPECT_TRUE(processor.Translate(GfVec3d(-2.0, 3.0, 1.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+  const GfMatrix4d expectedResult(4,0,0,0,0,3.535534,3.535534,0,0,-4.242641,4.242641,0,1.112372,5.730714,3.262959,1);
+  GfMatrix4d evaluated;
+  child_transform.Get(&evaluated);
+  COMPARE_MAT4(expectedResult, evaluated, 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Test that we can rotate a matrix op in parent space
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, matrix_transform_op_parent_translate)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(1, 2, 3));
+  parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble).Set(GfVec3d(15, 30, 45));
+  UsdGeomXformOp child_transform = parent.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("child_transform"));
+
+  const GfMatrix4d matrixTransform(4,0,0,0,0,3.535534,3.535534,0,0,-4.242641,4.242641,0,1,2,3,1);
+  child_transform.Set(matrixTransform);
+
+  MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 2, MayaUsdUtils::TransformOpProcessor::kRotate);
+  EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+
+  EXPECT_TRUE(processor.Translate(GfVec3d(-2.0, 3.0, 1.0), MayaUsdUtils::TransformOpProcessor::kParent));
+
+  const GfMatrix4d expectedResult(4,0,0,0,0,3.535534,3.535534,0,0,-4.242641,4.242641,0,1.112372,5.730714,3.262959,1);
+  GfMatrix4d evaluated;
+  child_transform.Get(&evaluated);
+  COMPARE_MAT4(expectedResult, evaluated, 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Simplest negative scale case. This shouldn't need to apply any special negative scale handling, so it should just work
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, negative_scale_and_translate_local)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  // initialise a parent transform
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp T = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp R = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp S = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  T.Set(GfVec3d(2.0, 3.0, 1.0));
+  R.Set(GfVec3d(15.0, 30.0, 45.0));
+  S.Set(GfVec3d(-2.2, 3.3, 1.1));
+
+  // make a small translation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 0, MayaUsdUtils::TransformOpProcessor::kTranslate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kTranslate, processor.ManipMode());
+    EXPECT_TRUE(processor.Translate(GfVec3d(-1, -2, -4), MayaUsdUtils::TransformOpProcessor::kTransform));
+
+    GfVec3d result;
+    T.Get(&result);
+
+    EXPECT_NEAR(2.0 - 1.0, result[0], 1e-5f);
+    EXPECT_NEAR(3.0 - 2.0, result[1], 1e-5f);
+    EXPECT_NEAR(1.0 - 4.0, result[2], 1e-5f);
+  }
+
+  // make a small rotation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 1, MayaUsdUtils::TransformOpProcessor::kRotate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+    EXPECT_TRUE(processor.RotateX(45.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+
+    GfVec3d result;
+    R.Get(&result);
+
+    EXPECT_NEAR(60.0, result[0], 1e-5f);
+    EXPECT_NEAR(30.0, result[1], 1e-5f);
+    EXPECT_NEAR(45.0, result[2], 1e-5f);
+  }
+
+  // make a small scale modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(parent.GetPrim(), 2, MayaUsdUtils::TransformOpProcessor::kScale);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kScale, processor.ManipMode());
+    EXPECT_TRUE(processor.Scale(GfVec3d(10.0, 20.0, 30.0), MayaUsdUtils::TransformOpProcessor::kTransform));
+
+    GfVec3d result;
+    S.Get(&result);
+
+    EXPECT_NEAR(-22.0, result[0], 1e-5f);
+    EXPECT_NEAR(66.0, result[1], 1e-5f);
+    EXPECT_NEAR(33.0, result[2], 1e-5f);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Simplest negative scale case. This shouldn't need to apply any special negative scale handling. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, uniform_negative_scale_and_transform_world)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp T = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp R = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp S = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  T.Set(GfVec3d(0.0, 0.0, 0.0));
+  R.Set(GfVec3d(0.0, 0.0, 0.0));
+  S.Set(GfVec3d(-2.2, -2.2, -2.2));
+
+  // initialise a parent transform
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp Tc = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp Rc = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp Sc = child.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  Tc.Set(GfVec3d(2.0, 3.0, 1.0));
+  Rc.Set(GfVec3d(15.0, 30.0, 45.0));
+  Sc.Set(GfVec3d(2.2, -3.3, 1.1));
+
+  // make a small translation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0, MayaUsdUtils::TransformOpProcessor::kTranslate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kTranslate, processor.ManipMode());
+    EXPECT_TRUE(processor.Translate(GfVec3d(-1, -2, -4), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Tc.Get(&result);
+
+    EXPECT_NEAR(2.454545, result[0], 1e-5f);
+    EXPECT_NEAR(3.909091, result[1], 1e-5f);
+    EXPECT_NEAR(2.818182, result[2], 1e-5f);
+  }
+
+  // make a small rotation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1, MayaUsdUtils::TransformOpProcessor::kRotate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+    EXPECT_TRUE(processor.RotateX(15.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Rc.Get(&result);
+
+    EXPECT_NEAR(26.155986, result[0], 1e-5f);
+    EXPECT_NEAR(18.933424, result[1], 1e-5f);
+    EXPECT_NEAR(49.654204, result[2], 1e-5f);
+  }
+
+  // make a small scale modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2, MayaUsdUtils::TransformOpProcessor::kScale);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kScale, processor.ManipMode());
+    EXPECT_TRUE(processor.Scale(GfVec3d(-3, -3, -3), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Sc.Get(&result);
+
+    EXPECT_NEAR(2.2 * -3.0, result[0], 1e-5f);
+    EXPECT_NEAR(-3.3 * -3.0, result[1], 1e-5f);
+    EXPECT_NEAR(1.1 * -3.0, result[2], 1e-5f);
+  }
+}
+
+#if 0
+// 
+// I've disabled these tests for now. 
+// 
+// I'm a little unsure how Maya is handling the case where the parent matrix has a negative non-uniform scale in 1 or 3 axes, 
+// and we're applying a world space rotation to the child transform. 
+// 
+// The results are always going to be *wrong* when you do this (since we have to account for shear), so in that regard, 
+// my approach is no less wrong than Maya's, however it would be nice to make this final edge case match the result of Maya :(
+//
+
+//----------------------------------------------------------------------------------------------------------------------
+// Simplest negative scale case. This shouldn't need to apply any special negative scale handling. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, negative_non_uniform_scale_and_translate_world1)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp T = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp R = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp S = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  T.Set(GfVec3d(0.0, 0.0, 0.0));
+  R.Set(GfVec3d(0.0, 0.0, 0.0));
+  S.Set(GfVec3d(-2.2, 3.3, 1.1));
+
+  // initialise a parent transform
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp Tc = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp Rc = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp Sc = child.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  Tc.Set(GfVec3d(2.0, 3.0, 1.0));
+  Rc.Set(GfVec3d(15.0, 30.0, 45.0));
+  Sc.Set(GfVec3d(2.2, -3.3, 1.1));
+
+  // make a small translation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0, MayaUsdUtils::TransformOpProcessor::kTranslate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kTranslate, processor.ManipMode());
+    EXPECT_TRUE(processor.Translate(GfVec3d(-1, -2, -4), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Tc.Get(&result);
+
+    EXPECT_NEAR(2.454545, result[0], 1e-5f);
+    EXPECT_NEAR(2.393939, result[1], 1e-5f);
+    EXPECT_NEAR(-2.636364, result[2], 1e-5f);
+  }
+
+  // make a small rotation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1, MayaUsdUtils::TransformOpProcessor::kRotate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+    EXPECT_TRUE(processor.RotateX(45.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Rc.Get(&result);
+
+    EXPECT_NEAR(62.752755, result[0], 1e-5f);
+    EXPECT_NEAR(-25.013615, result[1], 1e-5f);
+    EXPECT_NEAR(47.487338, result[2], 1e-5f);
+  }
+
+  // make a small scale modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2, MayaUsdUtils::TransformOpProcessor::kScale);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kScale, processor.ManipMode());
+    EXPECT_TRUE(processor.Scale(GfVec3d(-3, -3, -3), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Sc.Get(&result);
+
+    EXPECT_NEAR(2.2 * -3.0, result[0], 1e-5f);
+    EXPECT_NEAR(-3.3 * -3.0, result[1], 1e-5f);
+    EXPECT_NEAR(1.1 * -3.0, result[2], 1e-5f);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Simplest negative scale case. This shouldn't need to apply any special negative scale handling. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformOpProcessor, negative_non_uniform_scale_and_translate_world2)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+
+  UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/xform"));
+  UsdGeomXformOp T = parent.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp R = parent.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp S = parent.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  T.Set(GfVec3d(2.0, 3.0, 1.0));
+  R.Set(GfVec3d(15.0, 30.0, 45.0));
+  S.Set(GfVec3d(-2.2, 3.3, 1.1));
+
+  // initialise a parent transform
+  UsdGeomXform child = UsdGeomXform::Define(stage, SdfPath("/xform/child"));
+  UsdGeomXformOp Tc = child.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("T"));
+  UsdGeomXformOp Rc = child.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("R"));
+  UsdGeomXformOp Sc = child.AddScaleOp(UsdGeomXformOp::PrecisionDouble, TfToken("S"));
+  Tc.Set(GfVec3d(2.0, 3.0, 1.0));
+  Rc.Set(GfVec3d(15.0, 30.0, 45.0));
+  Sc.Set(GfVec3d(2.2, -3.3, 1.1));
+
+  // make a small translation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 0, MayaUsdUtils::TransformOpProcessor::kTranslate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kTranslate, processor.ManipMode());
+    EXPECT_TRUE(processor.Translate(GfVec3d(-1, -2, -4), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Tc.Get(&result);
+
+    EXPECT_NEAR(1.925962, result[0], 1e-5f);
+    EXPECT_NEAR(2.438149, result[1], 1e-5f);
+    EXPECT_NEAR(-2.806883, result[2], 1e-5f);
+  }
+
+  // make a small rotation modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 1, MayaUsdUtils::TransformOpProcessor::kRotate);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kRotate, processor.ManipMode());
+    EXPECT_TRUE(processor.RotateX(45.0 * (M_PI / 180.0), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Rc.Get(&result);
+
+    EXPECT_NEAR(90.312074, result[0], 1e-5f);
+    EXPECT_NEAR(21.092268, result[1], 1e-5f);
+    EXPECT_NEAR(43.367621, result[2], 1e-5f);
+  }
+
+  // make a small scale modification
+  {
+    MayaUsdUtils::TransformOpProcessor processor(child.GetPrim(), 2, MayaUsdUtils::TransformOpProcessor::kScale);
+    EXPECT_EQ(MayaUsdUtils::TransformOpProcessor::kScale, processor.ManipMode());
+    EXPECT_TRUE(processor.Scale(GfVec3d(-3, -3, -3), MayaUsdUtils::TransformOpProcessor::kWorld));
+
+    GfVec3d result;
+    Sc.Get(&result);
+
+    EXPECT_NEAR(2.2 * -3.0, result[0], 1e-5f);
+    EXPECT_NEAR(-3.3 * -3.0, result[1], 1e-5f);
+    EXPECT_NEAR(1.1 * -3.0, result[2], 1e-5f);
+  }
+}
+#endif

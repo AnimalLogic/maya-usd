@@ -268,6 +268,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   static bool SetRotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& orientation, Space space = kTransform);
 
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  // The static version of Rotate/Translate etc, end up hiding the base class implementations. inline them here. 
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
 
   /// apply a translation offset to the xform op
   inline
