@@ -218,10 +218,15 @@ AL_DLL_HIDDEN inline d256 zero4d() { return _mm256_setzero_pd(); }
 
 AL_DLL_HIDDEN inline f256 cast8f(const d256 reg) { return _mm256_castpd_ps(reg); }
 AL_DLL_HIDDEN inline f256 cast8f(const i256 reg) { return _mm256_castsi256_ps(reg); }
+AL_DLL_HIDDEN inline f256 cast8f(const f128 reg) { return _mm256_castps128_ps256(reg); }
 AL_DLL_HIDDEN inline i256 cast8i(const d256 reg) { return _mm256_castpd_si256(reg); }
 AL_DLL_HIDDEN inline i256 cast8i(const f256 reg) { return _mm256_castps_si256(reg); }
+AL_DLL_HIDDEN inline i256 cast8i(const i128 reg) { return _mm256_castsi128_si256(reg); }
 AL_DLL_HIDDEN inline d256 cast4d(const f256 reg) { return _mm256_castps_pd(reg); }
+AL_DLL_HIDDEN inline d256 cast4d(const f128 reg) { return cast4d(cast8f(reg)); }
 AL_DLL_HIDDEN inline d256 cast4d(const i256 reg) { return _mm256_castsi256_pd(reg); }
+AL_DLL_HIDDEN inline d256 cast4d(const i128 reg) { return cast4d(cast8i(reg)); }
+AL_DLL_HIDDEN inline d256 cast4d(const d128 reg) { return _mm256_castpd128_pd256(reg); }
 AL_DLL_HIDDEN inline f128 cast4f(const f256 reg) { return _mm256_castps256_ps128(reg); }
 
 AL_DLL_HIDDEN inline int32_t movemask32i8(const i256 reg) { return _mm256_movemask_epi8(reg); }
@@ -247,8 +252,6 @@ AL_DLL_HIDDEN inline f256 set8f(const float a, const float b, const float c, con
 AL_DLL_HIDDEN inline i256 set8i(const int32_t a, const int32_t b, const int32_t c, const int32_t d,
                                 const int32_t e, const int32_t f, const int32_t g, const int32_t h)
   {return _mm256_setr_epi32(a,b,c,d,e,f,g,h); }
-AL_DLL_HIDDEN inline d256 set4f(const double a, const double b, const double c, const double d)
-  {return _mm256_setr_pd(a, b, c, d); }
 
 AL_DLL_HIDDEN inline f256 loadu8f(const void* const ptr) { return _mm256_loadu_ps((const float*)ptr); }
 AL_DLL_HIDDEN inline i256 loadu8i(const void* const ptr) { return _mm256_loadu_si256((const i256*)ptr); }

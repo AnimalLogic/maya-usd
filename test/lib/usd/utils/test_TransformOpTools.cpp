@@ -5519,3 +5519,4 @@ TEST(TransformOpProcessor, matrix_transform_op_correct_frame_scale)
   parent_transform.Get(&evaluated);
   COMPARE_MAT4(expectedResult, evaluated, 1e-5f);
 }
+

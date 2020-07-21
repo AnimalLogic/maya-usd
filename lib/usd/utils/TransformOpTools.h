@@ -175,12 +175,11 @@ public:
   MAYA_USD_UTILS_PUBLIC
   static GfMatrix4d EvaluateCoordinateFrameForIndex(const std::vector<UsdGeomXformOp>& ops, uint32_t index, const UsdTimeCode& timeCode);
 
-private:
+protected:
   // helper methods to extract scale/rotation/translation from the transform op
   static __m256d _Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
   static __m256d _Rotation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
   static __m256d _Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
-private:
   GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
   GfMatrix4d _invCoordFrame;
@@ -195,6 +194,116 @@ private:
   ManipulatorMode _manipMode;
   bool _resetsXformStack = false;
   UsdGeomXformOp op() const { return _ops[_opIndex]; }
+};
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+/// All methods in TransformOpProcessor deal with relative offsets. This class extends the base and adds support to set xform ops to specific positions
+/// and orientations. All methods in this class are implemented using methods from the base class.  
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+class TransformOpProcessorEx : public TransformOpProcessor
+{
+public:
+
+  TransformOpProcessorEx(const UsdPrim prim, const TfToken opName, ManipulatorMode mode = kGuess, const UsdTimeCode& tc = UsdTimeCode::Default())
+    : TransformOpProcessor(prim, opName, mode, tc) {}
+
+  TransformOpProcessorEx(const UsdPrim prim, const uint32_t opIndex, ManipulatorMode mode = kGuess, const UsdTimeCode& tc = UsdTimeCode::Default())
+    : TransformOpProcessor(prim, opIndex, mode, tc) {}
+
+  /// set the translate value on the translate op xform op
+  MAYA_USD_UTILS_PUBLIC
+  bool SetTranslate(const GfVec3d& position, Space space = kTransform);
+
+  /// set the scale value on the xform op
+  MAYA_USD_UTILS_PUBLIC
+  bool SetScale(const GfVec3d& scale, Space space = kTransform);
+
+  /// set transform op to world space orientation
+  MAYA_USD_UTILS_PUBLIC
+  bool SetRotate(const GfQuatd& orientation, Space space = kTransform);
+
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  // static 'one-hit' versions
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  /// apply a translation offset to the xform op
+  MAYA_USD_UTILS_PUBLIC
+  static bool Translate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& translateChange, Space space = kTransform);
+
+  /// apply a scale offset to the xform op
+  MAYA_USD_UTILS_PUBLIC
+  static bool Scale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scaleChange, Space space = kTransform);
+
+  /// apply a rotational offset to the X axis
+  MAYA_USD_UTILS_PUBLIC
+  static bool RotateX(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space = kTransform);
+
+  /// apply a rotational offset to the Y axis
+  MAYA_USD_UTILS_PUBLIC
+  static bool RotateY(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space = kTransform);
+
+  /// apply a rotational offset to the Z axis
+  MAYA_USD_UTILS_PUBLIC
+  static bool RotateZ(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space = kTransform);
+
+  /// apply a rotational offset to the xform op. 
+  /// NOTE: This is primarily useful for rotating objects via the sphere (rather than axis rings of the rotate manip)
+  /// It's likely that using this method won't result in 'nice' eulers afterwards. 
+  /// If you want 'nice' eulers (as much as is possible with a rotate tool), then prefer to use the axis rotation 
+  /// methods, RotateX etc. 
+  /// It should also be noted that this method may end up being called by the RotateX/RotateY/RotateZ methods if 
+  /// either the rotation is not a simple one - i.e. a simple RotateX xform op 
+  MAYA_USD_UTILS_PUBLIC
+  static bool Rotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& quatChange, Space space);
+
+  /// set the translate value on the translate op xform op
+  MAYA_USD_UTILS_PUBLIC
+  static bool SetTranslate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& position, Space space = kTransform);
+
+  /// set the scale value on the xform op
+  MAYA_USD_UTILS_PUBLIC
+  static bool SetScale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scale, Space space = kTransform);
+
+  /// set transform op to world space orientation
+  MAYA_USD_UTILS_PUBLIC
+  static bool SetRotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& orientation, Space space = kTransform);
+
+
+  /// apply a translation offset to the xform op
+  inline
+  bool Translate(const GfVec3d& translateChange, Space space = kTransform)
+    { return TransformOpProcessor::Translate(translateChange, space); }
+
+  /// apply a scale offset to the xform op
+  inline
+  bool Scale(const GfVec3d& scaleChange, Space space = kTransform)
+    { return TransformOpProcessor::Scale(scaleChange, space); }
+
+  /// apply a rotational offset to the X axis
+  inline
+  bool RotateX(const double radianChange, Space space = kTransform)
+    { return TransformOpProcessor::RotateX(radianChange, space); }
+
+  /// apply a rotational offset to the Y axis
+  inline
+  bool RotateY(const double radianChange, Space space = kTransform)
+    { return TransformOpProcessor::RotateY(radianChange, space); }
+
+  /// apply a rotational offset to the Z axis
+  inline
+  bool RotateZ(const double radianChange, Space space = kTransform)
+    { return TransformOpProcessor::RotateZ(radianChange, space); }
+
+  /// apply a rotational offset to the xform op. 
+  /// NOTE: This is primarily useful for rotating objects via the sphere (rather than axis rings of the rotate manip)
+  /// It's likely that using this method won't result in 'nice' eulers afterwards. 
+  /// If you want 'nice' eulers (as much as is possible with a rotate tool), then prefer to use the axis rotation 
+  /// methods, RotateX etc. 
+  /// It should also be noted that this method may end up being called by the RotateX/RotateY/RotateZ methods if 
+  /// either the rotation is not a simple one - i.e. a simple RotateX xform op 
+  inline
+  bool Rotate(const GfQuatd& quatChange, Space space)
+    { return TransformOpProcessor::Rotate(quatChange, space); }
 };
 
 } // MayaUsdUtils

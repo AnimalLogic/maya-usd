@@ -750,7 +750,6 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
 
     // sum offset
     temp = add4d(temp, original);
-
     // write back into USD
     switch(precision)
     {
@@ -1031,6 +1030,9 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         multiply(rotateMatrix, rmatrix, rotateMatrix);
         rotateMatrix[3] = load4d(_worldFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
+        d256 ctest = cross(rmatrix[0], rmatrix[1]);
+        if(dot3(ctest, rmatrix[2]) < 0)
+          rmatrix[2] = sub4d(zero4d(), rmatrix[2]);
         extractEuler(rmatrix, order , rot);
       }
       break;
@@ -1046,6 +1048,9 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         multiply(rotateMatrix, rmatrix, rotateMatrix);
         rotateMatrix[3] = load4d(_worldFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invCoordFrame);
+        d256 ctest = cross(rmatrix[0], rmatrix[1]);
+        if(dot3(ctest, rmatrix[2]) < 0)
+          rmatrix[2] = sub4d(zero4d(), rmatrix[2]);
         extractEuler(rmatrix, order , rot);
       }
       break;
@@ -2634,5 +2639,129 @@ GfVec3d TransformOpProcessor::Scale() const
   }
   return GfVec3d(1.0);
 }
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+bool TransformOpProcessorEx::SetTranslate(const GfVec3d& position, Space space)
+{
+  if(CanTranslate())
+  {
+    d256 translate = _Translation(op(), _timeCode);
+    if(space == kTransform)
+    {
+      d256 offset = sub4d(set4d(position[0], position[1], position[2], 0), translate);
+      return TransformOpProcessor::Translate(GfVec3d(offset[0], offset[1], offset[2]), space);
+    }
+    if(space == kWorld)
+    {
+      d256* pworldFrame = (d256*)&_worldFrame;
+      d256 worldPos = transform(translate, pworldFrame);
+      d256 world_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
+      return TransformOpProcessor::Translate(GfVec3d(world_offset[0], world_offset[1], world_offset[2]), kWorld);
+    }
+    if(space == kParent)
+    {
+      d256* pcoordFrame = (d256*)&_coordFrame;
+      d256 worldPos = transform(translate, pcoordFrame);
+      d256 parent_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
+      return TransformOpProcessor::Translate(GfVec3d(parent_offset[0], parent_offset[1], parent_offset[2]), kParent);
+    }
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+bool TransformOpProcessorEx::SetScale(const GfVec3d& scale, Space space)
+{
+  if(CanScale())
+  {
+    d256 original = _Scale(op(), _timeCode);
+    d256 offset = div4d(set4d(scale[0], scale[1], scale[2], 0.0), original); 
+    return TransformOpProcessor::Scale(GfVec3d(offset[0], offset[1], offset[2]), kWorld);
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+bool TransformOpProcessorEx::SetRotate(const GfQuatd& orientation, Space space)
+{
+  if(CanRotate())
+  {
+    d256 final_orient = load4d(&orientation);
+    d256 rotate = _Rotation(op(), _timeCode);
+    if(space == kTransform)
+    {
+      d256 offset = multiplyQuat(rotate, quatInvert(final_orient));
+      return TransformOpProcessor::Rotate(GfQuatd(offset[0], offset[1], offset[2], offset[3]), space);
+    }
+    if(space == kWorld)
+    {
+      d256 world_rotate = multiplyQuat(rotate, _qworldFrame);
+      d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
+      return TransformOpProcessor::Rotate(GfQuatd(world_offset[0], world_offset[1], world_offset[2], world_offset[3]), space);
+    }
+    if(space == kParent)
+    {
+      d256 world_rotate = multiplyQuat(rotate, _qcoordFrame);
+      d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
+      return TransformOpProcessor::Rotate(GfQuatd(world_offset[0], world_offset[1], world_offset[2], world_offset[3]), space);
+    }
+  }
+  return false;
+}
+
+bool TransformOpProcessorEx::Translate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& translateChange, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.Translate(translateChange, space);
+}
+
+bool TransformOpProcessorEx::Scale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scaleChange, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kScale, timeCode);
+  return proc.Scale(scaleChange, space);
+}
+
+bool TransformOpProcessorEx::RotateX(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.RotateX(radianChange, space);
+}
+
+bool TransformOpProcessorEx::RotateY(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.RotateY(radianChange, space);
+}
+
+bool TransformOpProcessorEx::RotateZ(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.RotateZ(radianChange, space);
+}
+
+bool TransformOpProcessorEx::Rotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& quatChange, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.Rotate(quatChange, space);
+}
+
+bool TransformOpProcessorEx::SetTranslate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& position, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.SetTranslate(position, space);
+}
+
+bool TransformOpProcessorEx::SetScale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scale, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.SetScale(scale, space);
+}
+
+bool TransformOpProcessorEx::SetRotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& orientation, Space space)
+{
+  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
+  return proc.SetRotate(orientation, space);
+}
+
 
 } // MayaUsdUtils
