@@ -895,7 +895,7 @@ private:
   bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
-  MPxNode::SchedulingType schedulingType() const override { return kSerial; }
+  MPxNode::SchedulingType schedulingType() const override { return kGloballySerial; }
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
   void CacheEmptyBoundingBox(MBoundingBox&) override;
   UsdTimeCode GetOutputTime(MDataBlock) const override;
