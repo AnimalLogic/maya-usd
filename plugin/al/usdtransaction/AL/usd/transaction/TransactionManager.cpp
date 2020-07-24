@@ -180,8 +180,8 @@ bool TransactionManager::Close(const SdfLayerHandle& layer)
       {
         SdfPathVector changedInfo, resynched;
         comparePrims(it->second.base->GetPseudoRoot(), layer->GetPseudoRoot(), resynched, changedInfo);
-        CloseNotice(layer, std::move(changedInfo), std::move(resynched)).Send(m_stage);
         m_transactions.erase(it);
+        CloseNotice(layer, std::move(changedInfo), std::move(resynched)).Send(m_stage);
       }
       return true;
     }
