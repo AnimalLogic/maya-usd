@@ -21,6 +21,16 @@
 #include "AL/usdmaya/fileio/TransformIterator.h"
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "AL_usdmaya_ProxyShape_selection", "AL_usdmaya_ProxyShape_selection"
+#else
+    "AL_usdmaya_ProxyShape_selection"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {
@@ -30,6 +40,10 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::removeMetaData(const SdfPathVector& removedPaths)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "removeMetaData");
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::removeMetaData");
 
   m_selectabilityDB.removePathsAsUnselectable(removedPaths);
@@ -39,6 +53,10 @@ void ProxyShape::removeMetaData(const SdfPathVector& removedPaths)
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "processChangedMetaData");
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::processChangedMetaData - processing changes %lu %lu\n", resyncedPaths.size(), changedOnlyPaths.size());
 
   // if this is just a data change (rather than a variant switch), check for any meta data changes
@@ -253,6 +271,10 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructExcludedPrims()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "constructExcludedPrims");
   auto excludedPaths = getExcludePrimPaths();
   if (m_excludedGeometry != excludedPaths)
   {
@@ -264,6 +286,10 @@ void ProxyShape::constructExcludedPrims()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructLockPrims()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "constructLockPrims");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructLockPrims\n");
 
   // iterate over the 
@@ -307,6 +333,10 @@ void ProxyShape::constructLockPrims()
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::primHasExcludedParent(UsdPrim prim)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "primHasExcludedParent");
   if(prim.IsValid())
   {
     SdfPath primPath = prim.GetPrimPath();
@@ -326,6 +356,10 @@ bool ProxyShape::primHasExcludedParent(UsdPrim prim)
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::findPrimsWithMetaData()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "findPrimsWithMetaData");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findPrimsWithMetaData\n");
   if(!m_stage)
     return;

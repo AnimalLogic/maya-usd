@@ -28,6 +28,16 @@
 #include <maya/MNodeClass.h>
 
 #include <iostream>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "AnimationTranslator", "AnimationTranslator"
+#else
+    "AnimationTranslator"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {

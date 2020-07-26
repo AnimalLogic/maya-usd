@@ -35,7 +35,6 @@
 #include "AL/maya/utils/Utils.h"
 
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
-#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
@@ -68,6 +67,8 @@
 #include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/Global.h>
 
+#include <maya/MProfiler.h>
+
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"
 #endif
@@ -79,9 +80,23 @@ typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::Pro
 
 const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
 
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "AL_usdmaya_ProxyShape", "AL_usdmaya_ProxyShape"
+#else
+    "AL_usdmaya_ProxyShape"
+#endif
+);
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "serialiseTranslatorContext");
   triggerEvent("PreSerialiseContext");
 
   context()->updateUniqueKeys();
@@ -93,6 +108,10 @@ void ProxyShape::serialiseTranslatorContext()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::deserialiseTranslatorContext()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "deserialiseTranslatorContext");
   triggerEvent("PreDeserialiseContext");
 
   MString value;
@@ -145,6 +164,10 @@ UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
 //----------------------------------------------------------------------------------------------------------------------
 UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &paths) const
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "constructStagePopulationMask");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructStagePopulationMask(%s)\n", paths.asChar());
   UsdStagePopulationMask mask;
   SdfPathVector list = getPrimPathsFromCommaJoinedString(paths);
@@ -168,6 +191,10 @@ void ProxyShape::translatePrimPathsIntoMaya(
     const SdfPathVector& teardownPaths,
     const fileio::translators::TranslatorParameters& param)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "translatePrimPathsIntoMaya");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n",
                                      importPaths.size(),
                                      teardownPaths.size());
@@ -196,6 +223,10 @@ void ProxyShape::translatePrimsIntoMaya(
     const SdfPathVector& teardownPrims,
     const fileio::translators::TranslatorParameters& param)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "translatePrimsIntoMaya");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n", importPrims.size(), teardownPrims.size());
 
   proxy::PrimFilter filter(teardownPrims, importPrims, this, param.forceTranslatorImport());
@@ -309,6 +340,10 @@ Engine* ProxyShape::engine(bool construct)
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::destroyGLImagingEngine()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "destroyGLImagingEngine");
   if(m_engine)
   {
     triggerEvent("DestroyGLEngine");
@@ -322,6 +357,10 @@ void ProxyShape::destroyGLImagingEngine()
 void ProxyShape::constructGLImagingEngine()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructGLImagingEngine\n");
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "constructGLImagingEngine");
 
   // kBatch does not cover mayapy use, we only need this in interactive mode:
   if (MGlobal::mayaState() == MGlobal::kInteractive)
@@ -369,6 +408,10 @@ void ProxyShape::onNodePreRemoval(MObject& obj, void* ptr)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "setDependentsDirty");
   // I thought that, if your ProxyDrawOverride is set to not always be dirty,
   // prepareForDraw would automatically be triggered whenever any attribute
   // that was marked as affectsAppearance was dirtied; however, this is not
@@ -637,6 +680,10 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "trackEditTargetLayer");
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer\n");
   auto stage = getUsdStage();
 
@@ -696,6 +743,10 @@ void ProxyShape::trackAllDirtyLayers(LayerManager* layerManager)
 void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "onPrimResync");
 
   UsdPrim resyncPrim = m_stage->GetPrimAtPath(primPath);
   if(!resyncPrim.IsValid())
@@ -747,6 +798,10 @@ void ProxyShape::resync(const SdfPath& primPath)
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "serialize");
   if(stage)
   {
     if (layerManager)
@@ -948,6 +1003,10 @@ void ProxyShape::onTransactionNotice(AL::usd::transaction::CloseNotice const &no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::processChangedObjects(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "processChangedObjects");
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::processChangedObjects - processing changes\n");
 
   bool shouldCleanBBoxCache = false;
@@ -1034,10 +1093,6 @@ void ProxyShape::processChangedObjects(const SdfPathVector& resyncedPaths, const
     onPrimResync(m_changedPath, m_variantSwitchedPrims);
     m_variantSwitchedPrims.clear();
     m_changedPath = SdfPath();
-
-    std::stringstream strstr;
-    strstr << "Breakdown for Variant Switch:\n";
-    AL::usdmaya::Profiler::printReport(strstr);
   }
 }
 
@@ -1048,6 +1103,10 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     fileio::translators::TranslatorManufacture& manufacture,
     const bool importAll)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "huntForNativeNodesUnderPrim");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::huntForNativeNodesUnderPrim\n");
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
@@ -1095,6 +1154,10 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
 // nodes based on the contents of the new variant selection.
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "variantSelectionListener");
   if(MFileIO::isReadingFile())
     return;
 
@@ -1147,6 +1210,10 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::loadStage()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "loadStage");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::loadStage\n");
 
   triggerEvent("PreStageLoaded");
@@ -1410,14 +1477,6 @@ void ProxyShape::loadStage()
       }
   }
 
-  if(MGlobal::kInteractive == MGlobal::mayaState())
-  {
-    std::stringstream strstr;
-    strstr << "Breakdown for file: " << file << std::endl;
-    AL::usdmaya::Profiler::printReport(strstr);
-    MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
-  }
-
   destroyGLImagingEngine();
   stageDataDirtyPlug().setValue(true);
 
@@ -1485,6 +1544,10 @@ void ProxyShape::copyInternalData(MPxNode* srcNode)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "computeOutStageData");
   // create new stage data
   MObject data;
   MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
@@ -1700,6 +1763,10 @@ UsdTimeCode ProxyShape::GetOutputTime(MDataBlock dataBlock) const
 void ProxyShape::unloadMayaReferences()
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::unloadMayaReferences called\n");
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "unloadMayaReferences");
   MObjectArray references;
   for(auto it = m_requiredPaths.begin(), e = m_requiredPaths.end(); it != e; ++it)
   {
@@ -1735,6 +1802,10 @@ void ProxyShape::unloadMayaReferences()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTransformRefs()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "serialiseTransformRefs");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::serialiseTransformRefs\n");
   triggerEvent("PreSerialiseTransformRefs");
 
@@ -1767,6 +1838,10 @@ void ProxyShape::serialiseTransformRefs()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::deserialiseTransformRefs()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "deserialiseTransformRefs");
   triggerEvent("PreDeserialiseTransformRefs");
 
   MString str = serializedRefCountsPlug().asString();

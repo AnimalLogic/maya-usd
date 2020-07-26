@@ -16,6 +16,17 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "PrimFIlter", "PrimFIlter"
+#else
+    "PrimFIlter"
+#endif
+);
+}
+
 
 namespace AL {
 namespace usdmaya {
@@ -30,6 +41,10 @@ PrimFilter::PrimFilter(
   bool forceImport)
         : m_newPrimSet(newPrimSet), m_transformsToCreate(), m_updatablePrimSet(), m_removedPrimSet()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "PrimFilter");
   // copy over original prims
   m_removedPrimSet.assign(previousPrims.begin(), previousPrims.end());
   std::sort(m_removedPrimSet.begin(), m_removedPrimSet.end(),  [](const SdfPath& a, const SdfPath& b){ return b < a; } );

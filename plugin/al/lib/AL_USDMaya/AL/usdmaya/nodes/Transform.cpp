@@ -25,6 +25,16 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MGlobal.h>
 #include <maya/MTime.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "Transform", "Transform"
+#else
+    "Transform"
+#endif
+);
+}
 
 namespace {
   // Simple RAII class to ensure boolean gets set to false when done.
@@ -176,6 +186,10 @@ MStatus Transform::initialise()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "compute");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::compute %s\n", plug.name().asChar());
   if(plug == m_time || plug == m_timeOffset || plug == m_timeScalar || plug == m_outTime)
   {
@@ -230,6 +244,10 @@ MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
 void Transform::updateTransform(MDataBlock& dataBlock)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::updateTransform\n");
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "updateTransform");
 
   // It's possible that the calls to inputTimeValue below will ALSO trigger a call to
   // updateTransform; since there's no need to run this twice, we check for this and
@@ -332,6 +350,10 @@ MStatus Transform::connectionBroken(const MPlug& plug, const MPlug& otherPlug, b
 //
 MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& handle, const MDGContext& context)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "validateAndSetValue");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::validateAndSetValue %s\n", plug.name().asChar());
 
   if (plug.isNull())

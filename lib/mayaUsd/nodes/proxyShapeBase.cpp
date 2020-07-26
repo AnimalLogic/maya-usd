@@ -82,6 +82,8 @@
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <maya/MProfiler.h>
+
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>
 #endif
@@ -94,6 +96,15 @@ TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
 MayaUsdProxyShapeBase::ClosestPointDelegate
 MayaUsdProxyShapeBase::_sharedClosestPointDelegate = nullptr;
 
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "MayaUsdProxyShapeBase", "MayaUsdProxyShapeBase"
+#else
+    "MayaUsdProxyShapeBase"
+#endif
+);
+}
 
 // ========================================================
 
@@ -371,6 +382,10 @@ MayaUsdProxyShapeBase::GetObjectSoftSelectEnabled() const
 void
 MayaUsdProxyShapeBase::postConstructor()
 {
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Issue Invalidate Stage Notice");
     setRenderable(true);
     MayaUsdProxyStageInvalidateNotice(*this).Send();
 }
@@ -385,6 +400,10 @@ MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
             plug == drawRenderPurposeAttr ||
             plug == drawProxyPurposeAttr ||
             plug == drawGuidePurposeAttr) {
+        MProfilingScope profilingScope(
+            ProfilerCategory,
+            MProfiler::kColorE_L3,
+            "calling MHWRender::MRenderer::setGeometryDrawDirty from compute");
         // If the attribute that needs to be computed is one of these, then it
         // does not affect the ouput stage data, but it *does* affect imaging
         // the shape. In that case, we notify Maya that the shape needs to be
@@ -416,6 +435,10 @@ MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&)
 MStatus
 MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 {
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "computeInStageDataCached");
     MStatus retValue = MS::kSuccess;
 
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
@@ -490,6 +513,11 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             
             if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
                 SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+
+                MProfilingScope profilingScope(
+                    ProfilerCategory,
+                    MProfiler::kColorE_L3,
+                    "opening stage");
                 if (sessionLayer) {
                     usdStage = UsdStage::Open(rootLayer,
                             sessionLayer,
@@ -543,6 +571,10 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 MStatus
 MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 {
+    MProfilingScope computeOutStageDatacomputeOutStageData(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "opening stage");
     MStatus retValue = MS::kSuccess;
 
     TfReset(_boundingBoxCache);
@@ -662,6 +694,10 @@ MBoundingBox
 MayaUsdProxyShapeBase::boundingBox() const
 {
     TRACE_FUNCTION();
+    MProfilingScope profilerScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "computing  bounding box");
 
     MStatus status;
 
@@ -1088,6 +1124,10 @@ MayaUsdProxyShapeBase::closestPoint(
     bool  /*findClosestOnMiss*/,
     double  /*tolerance*/)
 {
+    MProfilingScope profilerScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "closestPoint");
     if (_sharedClosestPointDelegate) {
         GfRay ray(
             GfVec3d(raySource.x, raySource.y, raySource.z),

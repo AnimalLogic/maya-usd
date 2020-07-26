@@ -35,6 +35,16 @@
 
 #include "NurbsCurve.h"
 #include "CommonTranslatorOptions.h"
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "NurbsCurve", "NurbsCurve"
+#else
+    "NurbsCurve"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {
@@ -61,6 +71,10 @@ MStatus NurbsCurve::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "import");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("NurbsCurve::import prim=%s\n", prim.GetPath().GetText());
 
   MFnNurbsCurve fnCurve;
@@ -106,6 +120,10 @@ MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent, MObject& create
 UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
                                  const ExporterParams& params)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "exportObject");
   if(!params.getBool(GeometryExportOptions::kNurbsCurves))
       return UsdPrim();
 
@@ -138,6 +156,10 @@ UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const S
 //----------------------------------------------------------------------------------------------------------------------
 MStatus NurbsCurve::tearDown(const SdfPath& path)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "tearDown");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("NurbsCurveTranslator::tearDown prim=%s\n", path.GetText());
 
   context()->removeItems(path);
@@ -154,6 +176,10 @@ MStatus NurbsCurve::update(const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus NurbsCurve::preTearDown(UsdPrim& prim)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "preTearDown");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("NurbsCurveTranslator::preTearDown prim=%s\n", prim.GetPath().GetText());
   TranslatorBase::preTearDown(prim);
 
@@ -201,6 +227,10 @@ MStatus NurbsCurve::preTearDown(UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 void NurbsCurve::writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& fnCurve, bool writeAll)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "writeEdits");
   uint32_t diff_curves = AL::usdmaya::utils::kAllNurbsCurveComponents;
   bool performDiff = !writeAll;
   if(performDiff)

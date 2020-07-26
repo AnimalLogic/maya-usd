@@ -40,6 +40,16 @@
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 
 #include <pxr/usd/usd/attribute.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "MayaReference", "MayaReference"
+#else
+    "MayaReference"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {
@@ -59,6 +69,10 @@ MStatus MayaReference::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "import");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
   return UsdMayaTranslatorMayaReference::update(prim, parent);
 }
@@ -66,6 +80,10 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& cre
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::tearDown(const SdfPath& primPath)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "tearDown");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
   MObject mayaObject;
   MObjectHandle handle;
@@ -78,6 +96,10 @@ MStatus MayaReference::tearDown(const SdfPath& primPath)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::update(const UsdPrim& prim)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "update");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
   MObjectHandle handle;
   if(!context()->getTransform(prim, handle))
