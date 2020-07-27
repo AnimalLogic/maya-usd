@@ -189,6 +189,9 @@ public:
   /// \param  os the stream to write the report to
   static void printReport(std::ostream& os);
 
+  /// \brief  Check if on outmost stack call
+  static bool readyToReport();
+
   /// \brief  call to clear internal timers
   static inline void clearAll()
     {
