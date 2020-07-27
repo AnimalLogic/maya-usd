@@ -1435,7 +1435,7 @@ void ProxyShape::loadStage()
 
   AL_END_PROFILE_SECTION();
 
-  if(MGlobal::kInteractive == MGlobal::mayaState())
+  if(AL::usdmaya::Profiler::readyToReport() && MGlobal::kInteractive == MGlobal::mayaState())
   {
     std::stringstream strstr;
     strstr << "Breakdown for file: " << file << std::endl;

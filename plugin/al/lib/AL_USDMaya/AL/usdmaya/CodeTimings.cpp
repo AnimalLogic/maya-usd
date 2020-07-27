@@ -77,8 +77,18 @@ void Profiler::print(std::ostream& os, iter_t it, const ProfilerSectionPathLUT& 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool Profiler::readyToReport()
+{
+  return (m_stackPos == 0);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void Profiler::printReport(std::ostream& os)
 {
+  if(m_stackPos > 0){
+    // Only print report on outmost caller when stack is exhausted
+    return;
+  }
   double total = 0;
   std::vector<iter_t> sorted;
   for(auto a = m_map.begin(), e = m_map.end(); a != e; ++a)
@@ -162,6 +172,7 @@ void Profiler::popTime()
 {
   assert(m_stackPos > 0);
   --m_stackPos;
+
   timespec endtime{};
   #ifdef _WIN32
   while(clock_gettime(CLOCK_REALTIME_COARSE, &endtime) != 0) /* deliberately empty */;
