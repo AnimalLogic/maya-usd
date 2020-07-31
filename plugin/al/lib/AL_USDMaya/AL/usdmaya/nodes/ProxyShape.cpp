@@ -1430,6 +1430,7 @@ void ProxyShape::loadStage()
       {
         findPrimsWithMetaData();
       }
+      cmds::ProxyShapePostLoadProcess::uninitialise(this);
     AL_END_PROFILE_SECTION();
   }
 
