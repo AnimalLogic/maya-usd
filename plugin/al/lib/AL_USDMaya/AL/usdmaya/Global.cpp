@@ -376,6 +376,7 @@ static void postFileRead(void*)
       proxy->translatorManufacture().preparePythonTranslators(proxy->context());
       proxy->findPrimsWithMetaData();
       proxy->deserialiseTransformRefs();
+      proxy->translatorManufacture().popPythonTranslatorContexts();
     }
     unloadedProxies.clear();
   }
