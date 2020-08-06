@@ -198,6 +198,7 @@ void ProxyShape::translatePrimsIntoMaya(
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n", importPrims.size(), teardownPrims.size());
 
+
   proxy::PrimFilter filter(teardownPrims, importPrims, this, param.forceTranslatorImport());
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS))
@@ -223,12 +224,14 @@ void ProxyShape::translatePrimsIntoMaya(
       std::cout << it.GetText() << '\n';
     }
   }
-
+  
   // content to remove needs to be dealt with first
   // as some nodes might be re-imported and we have
   // to make sure their "old" version is gone before
   // recreating them.
   context()->removeEntries(filter.removedPrimSet());
+
+  fileio::translators::TranslatorContextSetterCtx ctxSetter(context());
 
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
@@ -1459,7 +1462,6 @@ void ProxyShape::loadStage()
       {
         findPrimsWithMetaData();
       }
-      cmds::ProxyShapePostLoadProcess::uninitialise(this);
     AL_END_PROFILE_SECTION();
   }
 
