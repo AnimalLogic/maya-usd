@@ -229,6 +229,7 @@ void ProxyShape::translatePrimsIntoMaya(
       "translatePrimsIntoMaya");
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n", importPrims.size(), teardownPrims.size());
 
+
   proxy::PrimFilter filter(teardownPrims, importPrims, this, param.forceTranslatorImport());
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS))
@@ -254,12 +255,14 @@ void ProxyShape::translatePrimsIntoMaya(
       std::cout << it.GetText() << '\n';
     }
   }
-
+  
   // content to remove needs to be dealt with first
   // as some nodes might be re-imported and we have
   // to make sure their "old" version is gone before
   // recreating them.
   context()->removeEntries(filter.removedPrimSet());
+
+  fileio::translators::TranslatorContextSetterCtx ctxSetter(context());
 
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
@@ -1281,7 +1284,7 @@ void ProxyShape::loadStage()
     // let the usd stage cache deal with caching the usd stage data
     std::string fileString = TfStringTrimRight(file.asChar());
 
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage original USD file path is %s\n", fileString.c_str());
 
     SdfLayerRefPtr rootLayer;
     if (SdfLayer::IsAnonymousLayerIdentifier(fileString))
@@ -1298,7 +1301,7 @@ void ProxyShape::loadStage()
       if (rootLayer)
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
-          "ProxyShape::reloadStage found anonymous layer %s from layer manager\n",
+          "ProxyShape::loadStage found anonymous layer %s from layer manager\n",
           fileString.c_str()
         );
       }
@@ -1309,7 +1312,7 @@ void ProxyShape::loadStage()
         if (rootLayer)
         {
           TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
-            "ProxyShape::reloadStage created anonymous layer %s (renamed to %s)\n",
+            "ProxyShape::loadStage created anonymous layer %s (renamed to %s)\n",
             fileString.c_str(),
             rootLayer->GetIdentifier().c_str()
           );
@@ -1322,13 +1325,13 @@ void ProxyShape::loadStage()
       if (filestringPath.is_absolute())
       {
         fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n",
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage resolved the USD file path to %s\n",
                                             fileString.c_str());
       }
       else
       {
         fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n",
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage resolved the relative USD file path to %s\n",
                                             fileString.c_str());
       }
 
@@ -1401,22 +1404,51 @@ void ProxyShape::loadStage()
 
           bool unloadedFlag = inputBoolValue(dataBlock, m_unloaded);
           UsdStage::InitialLoadSet loadOperation = unloadedFlag ? UsdStage::LoadNone : UsdStage::LoadAll;
-
+          bool newStage = true;
           if (sessionLayer)
           {
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called with extra session layer.\n");
-            m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
+            // Here we disregard the InitialLoadSet but check the mask:
+            m_stage = StageCache::Get().FindOneMatching(rootLayer, sessionLayer);
+            if(!m_stage || m_stage->GetPopulationMask() != mask)
+            {
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage Open a stage with root layer and extra session layer.\n");
+              m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);              
+            }
+            else
+            {
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage Get existing stage from cache with the same root and session layer.\n");
+              newStage = false;
+            }
           }
           else
           {
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called without any session layer.\n");
-            m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
+            // Here we disregard the InitialLoadSet but check the mask:
+            m_stage = StageCache::Get().FindOneMatching(rootLayer);
+            if(!m_stage || m_stage->GetPopulationMask() != mask)
+            {
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage Open a stage with root layer but without any session layer.\n");
+              m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
+            }
+            else
+            {
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage Get existing stage from cache with the same root layer.\n");
+              newStage = false;
+            }
           }
 
-          // Expand the mask, since we do not really want to mask the possible relation targets.
-          m_stage->ExpandPopulationMask();
+          if(newStage)
+          {
+            // Expand the mask, since we do not really want to mask the possible relation targets.
+            m_stage->ExpandPopulationMask();
 
-          stageId = StageCache::Get().Insert(m_stage);
+            stageId = StageCache::Get().Insert(m_stage);
+          }
+          else
+          {
+            stageId = StageCache::Get().GetId(m_stage);
+          }
+          
+
           outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
           // Set the stage in datablock so it's ready in case it needs to be accessed
@@ -1560,6 +1592,7 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
   if (!m_stage && m_filePathDirty)
   {
     m_filePathDirty = false;
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::computeOutStageData call ProxyShape::loadStage\n");
     loadStage();
   }
   // Set the output stage data params
@@ -1681,6 +1714,10 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
     }
     else
     {
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg(
+        "ProxyShape::setInternalValue(%s, dataHandle) call ProxyShape::loadStage \n",
+        plug.name().asChar()
+      );
       loadStage();
     }
     return true;
