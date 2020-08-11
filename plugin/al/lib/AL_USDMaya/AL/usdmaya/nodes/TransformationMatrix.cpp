@@ -25,6 +25,16 @@
 #include <maya/MFileIO.h>
 #include <maya/MViewport2Renderer.h>
 #include <maya/MFnTransform.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "TransformationMatrix", "TransformationMatrix"
+#else
+    "TransformationMatrix"
+#endif
+);
+}
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -120,6 +130,10 @@ TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::setPrim(const UsdPrim& prim, Scope* transformNode)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "setPrim");
   if(prim == m_prim)
     return;
 
@@ -537,6 +551,10 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::setFromMatrix(MObject thisNode, const MMatrix& m)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "setFromMatrix");
   double S[3];
   MEulerRotation R;
   double T[3];
@@ -564,6 +582,10 @@ void TransformationMatrix::setFromMatrix(MObject thisNode, const MMatrix& m)
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "pushPoint");
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushPoint %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
 
   if(timeCode.IsDefault() && op.GetNumTimeSamples())
@@ -927,6 +949,10 @@ bool TransformationMatrix::pushRotation(const MEulerRotation& value, UsdGeomXfor
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformNode)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "initialiseToPrim");
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::initialiseToPrim\n");
 
   // if not yet initialized, do not execute this code! (It will crash!).
@@ -1217,6 +1243,10 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "updateToTime");
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::updateToTime %f\n", time.GetValue());
   // if not yet initialized, do not execute this code! (It will crash!).
   if(!m_prim)

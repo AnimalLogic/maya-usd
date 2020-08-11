@@ -30,6 +30,16 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MNodeClass.h>
 #include <maya/M3dView.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "Camera", "Camera"
+#else
+    "Camera"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {
@@ -72,6 +82,10 @@ MStatus Camera::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 void Camera::checkCurrentCameras(MObject cameraNode)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "checkCurrentCameras");
   MSelectionList sl;
   sl.add("perspShape");
   MDagPath path;
@@ -100,6 +114,10 @@ void Camera::checkCurrentCameras(MObject cameraNode)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "updateAttributes");
   UsdGeomCamera usdCamera(prim);
   const char* const errorString = "CameraTranslator: error setting maya camera parameters";
   const float mm_to_inches = 0.0393701f;
@@ -219,6 +237,10 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Camera::update(const UsdPrim& prim)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "update");
   MObjectHandle handle;
   if(context() && !context()->getMObject(prim, handle, MFn::kCamera))
   {
@@ -232,6 +254,10 @@ MStatus Camera::update(const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "import");
   const char* const errorString = "CameraTranslator: error setting maya camera parameters";
   UsdGeomCamera usdCamera(prim);
 
@@ -283,6 +309,10 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
 UsdPrim Camera::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
                              const ExporterParams& params)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "exportObject");
   UsdGeomCamera usdCamera = UsdGeomCamera::Define(stage, usdPath);
   UsdPrim prim = usdCamera.GetPrim();
   writePrim(prim, dagPath, params);
@@ -292,6 +322,10 @@ UsdPrim Camera::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPa
 //----------------------------------------------------------------------------------------------------------------------
 void Camera::writePrim(UsdPrim &prim, MDagPath dagPath, const ExporterParams& params)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "writePrim");
   UsdGeomCamera usdCamera(prim);
 
   MStatus status;
@@ -358,6 +392,10 @@ void Camera::writePrim(UsdPrim &prim, MDagPath dagPath, const ExporterParams& pa
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Camera::tearDown(const SdfPath& path)
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "tearDown");
   MObjectHandle obj;
   context()->getMObject(path, obj, MFn::kCamera);
   checkCurrentCameras(obj.object());

@@ -18,6 +18,16 @@
 
 #include <pxr/base/js/json.h>
 #include <pxr/usd/pcp/types.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "AL_usdmaya_ProxyShape_variant_fallbacks", "AL_usdmaya_ProxyShape_variant_fallbacks"
+#else
+    "AL_usdmaya_ProxyShape_variant_fallbacks"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {
@@ -27,6 +37,10 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 PcpVariantFallbackMap ProxyShape::convertVariantFallbackFromStr(const MString& fallbacksStr) const
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "convertVariantFallbackFromStr");
   if (!fallbacksStr.length())
   {
     return {};
@@ -63,6 +77,10 @@ PcpVariantFallbackMap ProxyShape::convertVariantFallbackFromStr(const MString& f
 //----------------------------------------------------------------------------------------------------------------------
 MString ProxyShape::convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "convertVariantFallbacksToStr");
   if (fallbacks.empty())
   {
     return {};
@@ -80,6 +98,10 @@ MString ProxyShape::convertVariantFallbacksToStr(const PcpVariantFallbackMap& fa
 //----------------------------------------------------------------------------------------------------------------------
 MString ProxyShape::getVariantFallbacksFromLayer(const SdfLayerRefPtr& layer) const
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "getVariantFallbacksFromLayer");
   if (!layer)
   {
     return {};
@@ -112,6 +134,10 @@ MString ProxyShape::getVariantFallbacksFromLayer(const SdfLayerRefPtr& layer) co
 //----------------------------------------------------------------------------------------------------------------------
 PcpVariantFallbackMap ProxyShape::updateVariantFallbacks(PcpVariantFallbackMap& defaultVariantFallbacks, MDataBlock& dataBlock) const
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "updateVariantFallbacks");
   auto fallbacks(convertVariantFallbackFromStr(inputStringValue(dataBlock, m_variantFallbacks)));
   if (!fallbacks.empty())
   {

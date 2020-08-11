@@ -34,6 +34,16 @@
 #include <boost/thread.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <mutex>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "LayerManager", "LayerManager"
+#else
+    "LayerManager"
+#endif
+);
+}
 
 namespace {
   // Global mutex protecting _findNode / findOrCreateNode.
@@ -409,6 +419,10 @@ void LayerManager::getLayerIdentifiers(MStringArray& outputNames)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerManager::populateSerialisationAttributes()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "populateSerialisationAttributes");
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::populateSerialisationAttributes\n");
   const char* errorString = "LayerManager::populateSerialisationAttributes";
 
@@ -450,6 +464,10 @@ MStatus LayerManager::populateSerialisationAttributes()
 
 MStatus LayerManager::clearSerialisationAttributes()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "clearSerialisationAttributes");
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::clearSerialisationAttributes\n");
   const char* errorString = "LayerManager::clearSerialisationAttributes";
 
@@ -474,6 +492,10 @@ MStatus LayerManager::clearSerialisationAttributes()
 
 void LayerManager::loadAllLayers()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "loadAllLayers");
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::loadAllLayers\n");
   const char* errorString = "LayerManager::loadAllLayers";
   const char* identifierTempSuffix = "_tmp";

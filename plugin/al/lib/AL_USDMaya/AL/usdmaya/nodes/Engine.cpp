@@ -34,6 +34,16 @@
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "GLEngine", "GLEngine"
+#else
+    "GLEngine"
+#endif
+);
+}
 
 namespace AL {
 namespace usdmaya {
@@ -51,6 +61,10 @@ bool Engine::TestIntersectionBatch(
   unsigned int pickResolution,
   PathTranslatorCallback pathTranslator,
   HitBatch *outHit) {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "TestIntersectionBatch");
   if (ARCH_UNLIKELY(_legacyImpl)) {
     return false;
   }

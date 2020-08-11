@@ -19,6 +19,16 @@
 #include <pxr/usd/usdUtils/stageCache.h>
 #include "AL/maya/event/MayaEventManager.h"
 
+#include <maya/MProfiler.h>
+namespace {
+const int ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "StageCache", "StageCache"
+#else
+    "StageCache"
+#endif
+);
+}
 namespace AL {
 namespace usdmaya {
 
@@ -59,6 +69,10 @@ UsdStageCache& StageCache::Get()
 //----------------------------------------------------------------------------------------------------------------------
 void StageCache::Clear()
 {
+  MProfilingScope profilerScope(
+      ProfilerCategory,
+      MProfiler::kColorE_L3,
+      "Clear");
   UsdUtilsStageCache::Get().Clear();
   AL::event::EventScheduler::getScheduler().triggerEvent(g_stageCacheCleared);
 }
