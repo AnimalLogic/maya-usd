@@ -35,6 +35,13 @@ class alignas(32) TransformOpProcessor
 {
 public:
 
+  MAYA_USD_UTILS_PUBLIC
+  static TfToken primaryRotateSuffix;
+  MAYA_USD_UTILS_PUBLIC
+  static TfToken primaryScaleSuffix;
+  MAYA_USD_UTILS_PUBLIC
+  static TfToken primaryTranslateSuffix;
+
   // when processing matrix transform ops, the coordinate frame for the manipulator will change 
   // depending on whether we are setting up for scale, rotatation, or translation
   enum ManipulatorMode
@@ -118,6 +125,11 @@ public:
   inline GfMatrix4d ManipulatorMatrix() const
     { return EvaluateCoordinateFrameForIndex(_ops, _opIndex + 1, _timeCode); }
 
+  /// returns the inclusive matrix of the manipulator frame, and the transformation of the xform op applied 
+  inline GfMatrix4d MayaManipulatorMatrix() const
+    { return _ops[_opIndex].GetOpTransform(_timeCode); }
+
+
   /// returns the current manipulator mode
   MAYA_USD_UTILS_PUBLIC
   ManipulatorMode ManipMode() const;
@@ -165,6 +177,10 @@ public:
     { return _worldFrame; }
 
   /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  const GfMatrix4d& ParentFrame() const 
+    { return _parentFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   const GfMatrix4d& CoordinateFrame() const 
     { return _coordFrame; }
 
@@ -175,6 +191,8 @@ public:
   MAYA_USD_UTILS_PUBLIC
   static GfMatrix4d EvaluateCoordinateFrameForIndex(const std::vector<UsdGeomXformOp>& ops, uint32_t index, const UsdTimeCode& timeCode);
 
+  UsdGeomXformOp op() const { return _ops[_opIndex]; }
+
 protected:
   // helper methods to extract scale/rotation/translation from the transform op
   static __m256d _Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
@@ -182,6 +200,7 @@ protected:
   static __m256d _Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
   GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
+  GfMatrix4d _parentFrame;
   GfMatrix4d _invCoordFrame;
   GfMatrix4d _invWorldFrame;
   __m256d _qcoordFrame;
@@ -193,7 +212,6 @@ protected:
   UsdPrim _prim;
   ManipulatorMode _manipMode;
   bool _resetsXformStack = false;
-  UsdGeomXformOp op() const { return _ops[_opIndex]; }
 };
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -308,5 +326,17 @@ public:
   bool Rotate(const GfQuatd& quatChange, Space space)
     { return TransformOpProcessor::Rotate(quatChange, space); }
 };
+
+MAYA_USD_UTILS_PUBLIC
+GfVec3d QuatToEulerXYZ(const GfQuatd q);
+
+MAYA_USD_UTILS_PUBLIC
+GfQuatd QuatFromEulerXYZ(const GfVec3d& degrees);
+
+inline
+GfQuatd QuatFromEulerXYZ(double x, double y, double z)
+{
+  return QuatFromEulerXYZ(GfVec3d(x, y, z));
+}
 
 } // MayaUsdUtils

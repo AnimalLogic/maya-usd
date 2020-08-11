@@ -5,11 +5,13 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         baseExportCommand.cpp
         baseImportCommand.cpp
+        trsOptions.cpp
 )
 
 set(headers
         baseExportCommand.h
         baseImportCommand.h
+        trsOptions.h
 )
 
 # -----------------------------------------------------------------------------

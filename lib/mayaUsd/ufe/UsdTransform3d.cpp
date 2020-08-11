@@ -28,29 +28,117 @@
 
 #include <maya/MSelectionList.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+
 
 #include <mayaUsdUtils/MayaTransformAPI.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
 
+#define USE_TRANSFORM_OPS 1
+
+	MAYAUSD_CORE_PUBLIC
+	ActiveTool GetActiveTool()
+	{
+		MString result;
+		MGlobal::executeCommand("currentCtx", result);
+		if(result == "RotateSuperContext")
+			return ActiveTool::kRotate;
+		if(result == "moveSuperContext")
+			return ActiveTool::kTranslate;
+		if(result == "scaleSuperContext")
+			return ActiveTool::kScale;
+		return ActiveTool::kSelect;
+	}
+
+
+	MAYAUSD_CORE_PUBLIC
+	MayaUsdUtils::TransformOpProcessor::Space CurrentManipulatorSpace()
+	{
+		int result = 0;
+		switch(GetActiveTool())
+		{
+		case ActiveTool::kRotate:
+			MGlobal::executeCommand("manipRotateContext -q -mode $currManipRotatePropertiesCtx", result);
+			break;
+		case ActiveTool::kTranslate:
+			MGlobal::executeCommand("manipMoveContext -q -mode $currManipTranslatePropertiesCtx", result);
+			break;
+		case ActiveTool::kScale:
+			MGlobal::executeCommand("manipScaleContext -q -mode $currManipScalePropertiesCtx", result);
+			break;
+		default:
+			break;
+		}
+
+		switch(result)
+		{
+		case 0:
+		case 1: return MayaUsdUtils::TransformOpProcessor::kTransform;
+		case 2: return MayaUsdUtils::TransformOpProcessor::kWorld;
+		// Given the lack of a coordinate frame in UFE, we can only handle local/world frames :(
+		/* 
+		0 - Object Space
+		1 - Local Space
+		2 - World Space (default)
+		3 - Move Along Vertex Normal
+		4 - Move Along Rotation Axis
+		5 - Move Along Live Object Axis
+		6 - Custom Axis Orientation
+		9 - Component Space
+		*/
+		default: break;
+		}
+		return MayaUsdUtils::TransformOpProcessor::kTransform;
+	}
+
 namespace {
+
 	Ufe::Matrix4d convertFromUsd(const GfMatrix4d& matrix)
 	{
-		// Even though memory layout of Ufe::Matrix4d and double[4][4] are identical
-		// we need to return a copy of the matrix so we cannot cast.
-		double m[4][4];
-		matrix.Get(m);
-		Ufe::Matrix4d uMat;
-		uMat.matrix = {{	{{m[0][0], m[0][1], m[0][2], m[0][3]}},
-							{{m[1][0], m[1][1], m[1][2], m[1][3]}},
-							{{m[2][0], m[2][1], m[2][2], m[2][3]}},
-							{{m[3][0], m[3][1], m[3][2], m[3][3]}} }};
-		return uMat;
+		return *(const Ufe::Matrix4d*)&matrix;
 	}
 
 	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
+		#if USE_TRANSFORM_OPS
+		try
+		{		
+			switch(GetActiveTool())
+			{
+			case ActiveTool::kRotate:
+				{
+					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, time);
+					return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+				}
+				break;
+
+			case ActiveTool::kTranslate:
+				{
+					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, time);
+					return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+				}
+				break;
+
+			case ActiveTool::kScale:
+				{
+					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, time);
+					return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+				}
+				break;
+
+			case ActiveTool::kSelect:
+				/* do nothing, just revert to handing back parent world + parent matrices */
+				break;
+			}
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+		}
+		#endif
+
 		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetLocalToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
@@ -59,6 +147,42 @@ namespace {
 
 	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
+		#if USE_TRANSFORM_OPS
+		try
+		{		
+			switch(GetActiveTool())
+			{
+			case ActiveTool::kRotate:
+				{
+					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, time);
+					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
+				}
+				break;
+
+			case ActiveTool::kTranslate:
+				{
+					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, time);
+					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
+				}
+				break;
+
+			case ActiveTool::kScale:
+				{
+					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, time);
+					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
+				}
+				break;
+
+			case ActiveTool::kSelect:
+				/* do nothing, just revert to handing back parent world + parent matrices */
+				break;
+			}
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+		}
+		#endif
 		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetParentToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
@@ -108,7 +232,7 @@ MayaUsdProxyShapeBase* UsdTransform3d::proxy() const
 	MDagPath dagPath;
 	sl.getDagPath(0, dagPath);
 	MFnDagNode fn(dagPath);
-  return (MayaUsdProxyShapeBase*)fn.userNode();
+	return (MayaUsdProxyShapeBase*)fn.userNode();
 }
 
 UsdTimeCode UsdTransform3d::timeCode() const
@@ -141,48 +265,34 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.translate(GfVec3f(x, y, z), timeCode());
+	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
+	proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
 }
 
 Ufe::Vector3d UsdTransform3d::translation() const
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	auto translate = api.translate(timeCode());
+	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
+	auto translate = proc.Translation();
 	return Ufe::Vector3d(translate[0], translate[1], translate[2]);
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2013
+#error oijewfiwef
 Ufe::Vector3d UsdTransform3d::rotation() const
 {
-	double x{0}, y{0}, z{0};
-	const TfToken rotXYZ("xformOp:rotateXYZ");
-	if (fPrim.HasAttribute(rotXYZ))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3f v;
-		if (fPrim.GetAttribute(rotXYZ).Get<GfVec3f>(&v,getTime(path())))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
+	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, timeCode());
+	auto quat = proc.Rotation();
+
+	// UFE only supports XYZ rotation orders, so convert from quat to euler 
+	auto r = MayaUsdUtils::QuatToEulerXYZ(quat);
+	auto v = Ufe::Vector3d(r[0], r[1], r[2]);
 }
 
 Ufe::Vector3d UsdTransform3d::scale() const
 {
-	double x{0}, y{0}, z{0};
-	const TfToken scaleTok("xformOp:scale");
-	if (fPrim.HasAttribute(scaleTok))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3f v;
-		if (fPrim.GetAttribute(scaleTok).Get<GfVec3f>(&v,getTime(path())))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
+	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, timeCode());
+	auto scale = proc.Scale();
+	return Ufe::Vector3d(scale[0], scale[1], scale[2]);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
@@ -193,9 +303,9 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, do
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	auto order = api.rotateOrder();
-	api.rotate(GfVec3f(x, y, z), order, timeCode());
+	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, timeCode());
+	GfQuatd quat = MayaUsdUtils::QuatFromEulerXYZ(GfVec3d(x, y, z));
+	proc.SetRotate(quat, CurrentManipulatorSpace());
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2013
@@ -224,8 +334,8 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.scale(GfVec3f(x, y, z), timeCode());
+	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, timeCode());
+	proc.SetScale(GfVec3d(x, y, z), CurrentManipulatorSpace());
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
@@ -236,15 +346,15 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.rotatePivot(GfVec3f(x, y, z), timeCode());
+	//MayaUsdUtils::MayaTransformAPI api(fPrim);
+	//api.rotatePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	auto value = api.rotatePivot(timeCode());
-	return Ufe::Vector3d(value[0], value[1], value[2]);
+	//MayaUsdUtils::MayaTransformAPI api(fPrim);
+	//auto value = api.rotatePivot(timeCode());
+	return Ufe::Vector3d(0, 0, 0);//value[0], value[1], value[2]);
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
@@ -255,25 +365,27 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
 
 void UsdTransform3d::scalePivotTranslate(double x, double y, double z)
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	api.scalePivot(GfVec3f(x, y, z), timeCode());
+	//MayaUsdUtils::MayaTransformAPI api(fPrim);
+	//api.scalePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const
 {
-	MayaUsdUtils::MayaTransformAPI api(fPrim);
-	auto value = api.scalePivot(timeCode());
-	return Ufe::Vector3d(value[0], value[1], value[2]);
+	//MayaUsdUtils::MayaTransformAPI api(fPrim);
+	//auto value = api.scalePivot(timeCode());
+	return Ufe::Vector3d(0, 0, 0);//value[0], value[1], value[2]);
 }
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const
 {
-	return primToUfeXform(fPrim, timeCode());
+	auto m = primToUfeXform(fPrim, timeCode());
+	return m;
 }
  
 Ufe::Matrix4d UsdTransform3d::segmentExclusiveMatrix() const
 {
-	return primToUfeExclusiveXform(fPrim, timeCode());
+	auto m = primToUfeExclusiveXform(fPrim, timeCode());
+	return m;
 }
 
 } // namespace ufe

@@ -450,19 +450,202 @@ inline d256 matrixToQuat(const d256 iframe[4])
 
 } // end anon
 
+
+/// there is room for improvement here!
+MAYA_USD_UTILS_PUBLIC
+GfVec3d QuatToEulerXYZ(const GfQuatd q)
+{
+  GfVec3f rotate;
+  extractEuler(loadu4d(&q), RotationOrder::kXYZ, rotate);
+  return GfVec3d(rotate[0], rotate[1], rotate[2]) * (180.0 / M_PI);
+}
+
+MAYA_USD_UTILS_PUBLIC
+GfQuatd QuatFromEulerXYZ(const GfVec3d& degrees)
+{
+  GfVec3d h = degrees * (M_PI / 360.0);
+  auto ha = set4d(h[0], h[1], h[2], 0.0);
+  auto q = Quat_from_EulerXYZ(ha);
+  GfQuatd Q;
+  storeu4d(&Q, q);
+  return Q;
+}
+
+TfToken TransformOpProcessor::primaryRotateSuffix;
+TfToken TransformOpProcessor::primaryScaleSuffix;
+TfToken TransformOpProcessor::primaryTranslateSuffix;
+
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opName, const TransformOpProcessor::ManipulatorMode mode, const UsdTimeCode& tc)
   : _prim(prim)
 {
+  _manipMode = mode;
   _ops = UsdGeomXformable(prim).GetOrderedXformOps(&_resetsXformStack);
-  const auto count = _ops.size();
-  for(_opIndex = 0; _opIndex < count; ++_opIndex)
+  const size_t opCount = _ops.size();
+
+  const TfToken empty(""); 
+  if(opName == empty)
   {
-    if(_ops[_opIndex].GetOpName() == opName)
+    switch(mode)
+    {
+    case TransformOpProcessor::kRotate:
+      {
+        for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+        {
+          // early out for user specified suffix
+          if(_ops[_opIndex].HasSuffix(primaryRotateSuffix))
+          {
+            auto type = _ops[_opIndex].GetOpType();
+            if(type != UsdGeomXformOp::TypeTransform &&
+               type != UsdGeomXformOp::TypeTranslate &&
+               type != UsdGeomXformOp::TypeScale)
+            { 
+              break;
+            }
+          }
+        }
+
+        // if no special case found
+        if(_opIndex == opCount)
+        {
+          for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+          {
+            // early out for user specified suffix
+            if(_ops[_opIndex].HasSuffix(primaryRotateSuffix))
+            {
+              auto type = _ops[_opIndex].GetOpType();
+              if(type != UsdGeomXformOp::TypeTranslate &&
+                 type != UsdGeomXformOp::TypeScale)
+              { 
+                break;
+              }
+            }
+
+            // if we have an op with no suiffix, use that
+            if(_ops[_opIndex].GetOpName() == TfToken("xformOp:orient") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateX") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateY") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZ") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXYZ") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXZY") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYXZ") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYZX") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZXY") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZYX") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXYZ:rotate") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXZY:rotate") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYXZ:rotate") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYZX:rotate") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZXY:rotate") || 
+              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZYX:rotate"))
+            {
+              break;
+            }
+          }
+          // if nothing found, see if we have a matrix we can modify
+          if(_opIndex == opCount)
+          {
+            for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+            {
+              if(_ops[_opIndex].GetOpType() == UsdGeomXformOp::TypeTransform)
+                break;
+            }
+          }
+        }
+      }
       break;
+
+    case TransformOpProcessor::kScale:
+      {
+        for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+        {
+          // early out for user specified suffix
+          if(_ops[_opIndex].HasSuffix(primaryScaleSuffix))
+          {
+            auto type = _ops[_opIndex].GetOpType();
+            if(type == UsdGeomXformOp::TypeScale || type == UsdGeomXformOp::TypeTransform)
+            { 
+              break;
+            }
+          }
+        }
+        // if no special case found
+        if(_opIndex == opCount)
+        {
+          for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+          {
+            if(_ops[_opIndex].GetOpName() == TfToken("xformOp:scale") || 
+                _ops[_opIndex].GetOpName() == TfToken("xformOp:scale:scale"))
+            {
+              break;
+            }
+          }
+          // if nothing found, see if we have a matrix we can modify
+          if(_opIndex == opCount)
+          {
+            for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+            {
+              if(_ops[_opIndex].GetOpType() == UsdGeomXformOp::TypeTransform)
+                break;
+            }
+          }
+        }
+      }
+      break;
+    case TransformOpProcessor::kTranslate:
+      {
+        for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+        {
+          // early out for user specified suffix
+          if(_ops[_opIndex].HasSuffix(primaryTranslateSuffix))
+          {
+            auto type = _ops[_opIndex].GetOpType();
+            if(type == UsdGeomXformOp::TypeTranslate || type == UsdGeomXformOp::TypeTransform) 
+            { 
+              break;
+            }
+          }
+        }
+        // if no special case found
+        if(_opIndex == opCount)
+        {
+          for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+          {
+            if(_ops[_opIndex].GetOpName() == TfToken("xformOp:translate") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:translate:translate"))
+            {
+              break;
+            }
+          }
+          // if nothing found, see if we have a matrix we can modify
+          if(_opIndex == opCount)
+          {
+            for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+            {
+              if(_ops[_opIndex].GetOpType() == UsdGeomXformOp::TypeTransform)
+                break;
+            }
+          }
+        }
+      }
+      break;
+
+    case TransformOpProcessor::kGuess:
+      {
+        throw std::runtime_error("Cannot guess the type of an un-named xformOp");
+      }
+    }
   }
-  if(_opIndex == count)
+  else
+  {
+    for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+    {
+      if(_ops[_opIndex].GetOpName() == opName)
+        break;
+    }
+  }
+  if(_opIndex == opCount)
   {
     throw std::runtime_error(std::string("unable to find xform op on prim: ") + opName.GetString());
   }
@@ -654,6 +837,7 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
   if(!_resetsXformStack)
   {
     alignas(32) auto _parentFrame = cache.GetParentToWorldTransform(_prim);
+    this->_parentFrame = _parentFrame;
     multiply4x4((d256*)&_worldFrame, (const d256*)&_coordFrame, (const d256*)&_parentFrame);
     _invWorldFrame = _worldFrame.GetInverse();
     _invCoordFrame = _coordFrame.GetInverse();
@@ -667,15 +851,16 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
     const d256 y = set4d(0.0, 1.0, 0.0, 0.0);
     const d256 z = set4d(0.0, 0.0, 1.0, 0.0);
     const d256 w = set4d(0.0, 0.0, 0.0, 1.0);
-    store4d(_worldFrame[0], x);
-    store4d(_invWorldFrame[0], x);
-    store4d(_worldFrame[1], y);
-    store4d(_invWorldFrame[1], y);
-    store4d(_worldFrame[2], z);
-    store4d(_invWorldFrame[2], z);
-    store4d(_worldFrame[3], w);
-    store4d(_invWorldFrame[3], w);
+    storeu4d(_worldFrame[0], x);
+    storeu4d(_invWorldFrame[0], x);
+    storeu4d(_worldFrame[1], y);
+    storeu4d(_invWorldFrame[1], y);
+    storeu4d(_worldFrame[2], z);
+    storeu4d(_invWorldFrame[2], z);
+    storeu4d(_worldFrame[3], w);
+    storeu4d(_invWorldFrame[3], w);
     _qworldFrame = w;
+    this->_parentFrame.SetIdentity();
     _invCoordFrame = _coordFrame.GetInverse();
     _qcoordFrame = matrixToQuat((const d256*)&_coordFrame);
   }
@@ -1001,7 +1186,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         };
         op().Get((GfMatrix4d*)omatrix, _timeCode);
 
-        d256 rotateMatrix[4], rmatrix[4] = {load4d(_worldFrame[0]), load4d(_worldFrame[1]), load4d(_worldFrame[2]), zero4d()};
+        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_worldFrame[0]), loadu4d(_worldFrame[1]), loadu4d(_worldFrame[2]), zero4d()};
         quatToMatrix(offset, rotateMatrix);
         d256 translateToAddBackIn = omatrix[3];
         rotateMatrix[3] = omatrix[3] = zero4d();
@@ -1010,7 +1195,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         rmatrix[3] = zero4d();
         multiply(rotateMatrix, rmatrix, rotateMatrix);
         // add translation back in here
-        rotateMatrix[3] = load4d(_worldFrame[3]);
+        rotateMatrix[3] = loadu4d(_worldFrame[3]);
         // bang into local space
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
         rmatrix[3] = translateToAddBackIn;
@@ -1028,7 +1213,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         };
         op().Get((GfMatrix4d*)omatrix, _timeCode);
 
-        d256 rotateMatrix[4], rmatrix[4] = {load4d(_coordFrame[0]), load4d(_coordFrame[1]), load4d(_coordFrame[2]), zero4d()};
+        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()};
         quatToMatrix(offset, rotateMatrix);
         d256 translateToAddBackIn = omatrix[3];
         rotateMatrix[3] = omatrix[3] = zero4d();
@@ -1037,7 +1222,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         rmatrix[3] = zero4d();
         multiply(rotateMatrix, rmatrix, rotateMatrix);
         // add translation back in here
-        rotateMatrix[3] = load4d(_coordFrame[3]);
+        rotateMatrix[3] = loadu4d(_coordFrame[3]);
         // bang into local space
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
         rmatrix[3] = translateToAddBackIn;
@@ -1064,7 +1249,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       break;
     case kWorld:
       {
-        d256 rotateMatrix[4], rmatrix[4] = {load4d(_worldFrame[0]), load4d(_worldFrame[1]), load4d(_worldFrame[2]), zero4d()}, omatrix[4];
+        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_worldFrame[0]), loadu4d(_worldFrame[1]), loadu4d(_worldFrame[2]), zero4d()}, omatrix[4];
         quatToMatrix(offset, rotateMatrix);
         quatToMatrix(original, omatrix);
         rotateMatrix[3] = omatrix[3] = zero4d();
@@ -1073,7 +1258,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         rmatrix[3] = zero4d();
         multiply(rotateMatrix, rmatrix, rotateMatrix);
         // add translation back in here
-        rotateMatrix[3] = load4d(_worldFrame[3]);
+        rotateMatrix[3] = loadu4d(_worldFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
         d256 ctest = cross(rmatrix[0], rmatrix[1]);
         if(dot3(ctest, rmatrix[2]) < 0)
@@ -1083,7 +1268,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       break;
     case kParent:
       {
-        d256 rotateMatrix[4], rmatrix[4] = {load4d(_coordFrame[0]), load4d(_coordFrame[1]), load4d(_coordFrame[2]), zero4d()}, omatrix[4];
+        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()}, omatrix[4];
         quatToMatrix(offset, rotateMatrix);
         quatToMatrix(original, omatrix);
         rotateMatrix[3] = omatrix[3] = zero4d();
@@ -1091,7 +1276,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         // remove translation
         rmatrix[3] = zero4d();
         multiply(rotateMatrix, rmatrix, rotateMatrix);
-        rotateMatrix[3] = load4d(_worldFrame[3]);
+        rotateMatrix[3] = loadu4d(_worldFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invCoordFrame);
         d256 ctest = cross(rmatrix[0], rmatrix[1]);
         if(dot3(ctest, rmatrix[2]) < 0)
@@ -1892,7 +2077,9 @@ GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForIndex(const std::vect
   auto iter = ops.begin();
   auto last = ops.begin() + index;
   if(last > ops.end()) 
+  {
     throw;
+  }
 
   // the computed coordinate frame - initially the identity
   d256 frame[4] = {
@@ -2097,10 +2284,10 @@ GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForIndex(const std::vect
     }
   }
   GfMatrix4d r;
-  store4d(r[0], frame[0]);
-  store4d(r[1], frame[1]);
-  store4d(r[2], frame[2]);
-  store4d(r[3], frame[3]);
+  storeu4d(r[0], frame[0]);
+  storeu4d(r[1], frame[1]);
+  storeu4d(r[2], frame[2]);
+  storeu4d(r[3], frame[3]);
   return r;
 }
 
@@ -2657,7 +2844,7 @@ GfQuatd TransformOpProcessor::Rotation() const
   if(CanRotate())
   {
     GfQuatd rotate;
-    store4d(&rotate, _Rotation(op(), _timeCode));
+    storeu4d(&rotate, _Rotation(op(), _timeCode));
     return rotate;
   }
   return GfQuatd(1.0, 0.0, 0.0, 0.0);
@@ -2731,7 +2918,7 @@ bool TransformOpProcessorEx::SetRotate(const GfQuatd& orientation, Space space)
 {
   if(CanRotate())
   {
-    d256 final_orient = load4d(&orientation);
+    d256 final_orient = loadu4d(&orientation);
     d256 rotate = _Rotation(op(), _timeCode);
     if(space == kTransform)
     {
