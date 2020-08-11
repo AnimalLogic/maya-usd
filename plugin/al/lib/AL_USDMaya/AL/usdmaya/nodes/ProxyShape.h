@@ -869,7 +869,7 @@ private:
   /// If we then later create a USD transform node (because we're bringing in all of them, or just a selection of them),
   /// then we must make sure that we don't end up duplicating paths. This map is use to store a LUT of the paths that
   /// must always exist, and never get deleted.
-  typedef std::map<SdfPath, TransformReference>  TransformReferenceMap;
+  typedef std::unordered_map<SdfPath, TransformReference, SdfPath::Hash>  TransformReferenceMap;
   TransformReferenceMap m_requiredPaths;
 
 
