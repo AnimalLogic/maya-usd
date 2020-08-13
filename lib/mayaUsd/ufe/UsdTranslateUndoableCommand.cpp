@@ -20,10 +20,14 @@
 #include <mayaUsd/base/debugCodes.h>
 
 #include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsdUtils/SIMD.h>
 #include <iostream>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
+
+extern MayaUsdUtils::TransformOpProcessor::Space CurrentTranslateManipulatorSpace();
+extern MayaUsdUtils::TransformOpProcessor::Space CurrentManipulatorSpace();
 
 static bool ExistingOpHasSamples(const UsdGeomXformOp& op)
 {
@@ -40,6 +44,7 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
 	fPath(item->path()),
 	fTimeCode(timeCode)
 {
+    std::cout << "CREATE UsdTranslateUndoableCommand" << std::endl;
     try 
     {
         MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode);
@@ -144,7 +149,47 @@ void UsdTranslateUndoableCommand::undo()
 void UsdTranslateUndoableCommand::redo()
 {
 }
+// rotate an offset vector by the coordinate frame
+inline MayaUsdUtils::d256 rotate(const MayaUsdUtils::d256 offset, const MayaUsdUtils::d256 frame[4])
+{
+  const MayaUsdUtils::d256 xxx = MayaUsdUtils::permute4d<0, 0, 0, 0>(offset);
+  const MayaUsdUtils::d256 yyy = MayaUsdUtils::permute4d<1, 1, 1, 1>(offset);
+  const MayaUsdUtils::d256 zzz = MayaUsdUtils::permute4d<2, 2, 2, 2>(offset);
+  return fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], MayaUsdUtils::mul4d(xxx, frame[0])));
+}
 
+// rotate an offset vector by the coordinate frame
+inline MayaUsdUtils::d256 transform4d(const MayaUsdUtils::d256 offset, const MayaUsdUtils::d256 frame[4])
+{
+  const MayaUsdUtils::d256 xxx = MayaUsdUtils::permute4d<0, 0, 0, 0>(offset);
+  const MayaUsdUtils::d256 yyy = MayaUsdUtils::permute4d<1, 1, 1, 1>(offset);
+  const MayaUsdUtils::d256 zzz = MayaUsdUtils::permute4d<2, 2, 2, 2>(offset);
+  const MayaUsdUtils::d256 www = MayaUsdUtils::permute4d<3, 3, 3, 3>(offset);
+  return fmadd4d(www, frame[3], fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], MayaUsdUtils::mul4d(xxx, frame[0]))));
+}
+
+// frame *= childTransform
+inline void multiply4x4(MayaUsdUtils::d256 frame[4], const MayaUsdUtils::d256 childTransform[4])
+{
+  const MayaUsdUtils::d256 mx = transform4d(childTransform[0], frame);
+  const MayaUsdUtils::d256 my = transform4d(childTransform[1], frame);
+  const MayaUsdUtils::d256 mz = transform4d(childTransform[2], frame);
+  frame[3] = transform4d(childTransform[3], frame);
+  frame[0] = mx;
+  frame[1] = my;
+  frame[2] = mz;
+}
+// frame *= childTransform
+inline void multiply4x4(MayaUsdUtils::d256 output[4], const MayaUsdUtils::d256 childTransform[4], const MayaUsdUtils::d256 parentTransform[4])
+{
+  const MayaUsdUtils::d256 mx = transform4d(childTransform[0], parentTransform);
+  const MayaUsdUtils::d256 my = transform4d(childTransform[1], parentTransform);
+  const MayaUsdUtils::d256 mz = transform4d(childTransform[2], parentTransform);
+  output[3] = transform4d(childTransform[3], parentTransform);
+  output[0] = mx;
+  output[1] = my;
+  output[2] = mz;
+}
 //------------------------------------------------------------------------------
 // Ufe::TranslateUndoableCommand overrides
 //------------------------------------------------------------------------------
@@ -152,19 +197,61 @@ void UsdTranslateUndoableCommand::redo()
 bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
 {
     fNewValue = GfVec3d(x, y, z);
-
-    // do nothing
-    if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
-    {
-        return true;
-    }
+    std::cout << "\ntranslate" <<std::endl;
+    std::cout << "new " << fNewValue[0] << ' ' << fNewValue[1] << ' ' << fNewValue[2] << '\n';
+    std::cout << "prev " << fPrevValue[0] << ' ' << fPrevValue[1] << ' ' << fPrevValue[2] << '\n';
     try
     {
         MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, fTimeCode);
-        auto diff = fNewValue - proc.Translation();
-        proc.Translate(diff);
+        GfMatrix4d m = MayaUsdUtils::TransformOpProcessor::EvaluateCoordinateFrameForIndex(proc.ops(), proc.ops().size(), fTimeCode);
+        switch(CurrentTranslateManipulatorSpace())
+        {
+        case MayaUsdUtils::TransformOpProcessor::kPreTransform:
+            {
+                // rotate by transform ops prior to the translate
+                auto r = rotate(_mm256_setr_pd(fNewValue[0], fNewValue[1], fNewValue[2], 0), (MayaUsdUtils::d256*)&proc.CoordinateFrame());
+                auto diff = GfVec3d(r[0], r[1], r[2]) - proc.Translation();
+                proc.Translate(diff);
+            }   
+            break;
+
+        case MayaUsdUtils::TransformOpProcessor::kPostTransform:
+            {
+                //------------------------------------------------------------------------------------------------------
+                // first evaluate the difference according to maya (effectively this is in parent space)
+                MayaUsdUtils::d256 diff = MayaUsdUtils::sub4d(MayaUsdUtils::set4d(fNewValue[0], fNewValue[1], fNewValue[2], 0), MayaUsdUtils::loadu4d(m[3]));
+                diff[3] = 0;
+
+                // rotate into coordinate frame of xform
+                diff = rotate(diff, (MayaUsdUtils::d256*)&m);
+                
+                // should nicely be handled here
+                proc.Translate(GfVec3d(diff[0], diff[1], diff[2]), MayaUsdUtils::TransformOpProcessor::kPreTransform);
+                //------------------------------------------------------------------------------------------------------
+            }   
+            break;
+
+        case MayaUsdUtils::TransformOpProcessor::kWorld:
+            {                
+                // first evaluate the difference according to maya (effectively this is in parent space)
+                MayaUsdUtils::d256 diff = MayaUsdUtils::sub4d(MayaUsdUtils::set4d(fNewValue[0], fNewValue[1], fNewValue[2], 0), MayaUsdUtils::loadu4d(m[3]));
+                diff[3] = 0;
+
+                // rotate into coordinate frame of xform
+                //diff = rotate(diff, (MayaUsdUtils::d256*)&m);
+                //diff = rotate(diff, (MayaUsdUtils::d256*)&proc.CoordinateFrame());
+                
+                // should nicely be handled here
+                proc.Translate(GfVec3d(diff[0], diff[1], diff[2]), MayaUsdUtils::TransformOpProcessor::kPreTransform);
+            }
+            break;
+
+        case MayaUsdUtils::TransformOpProcessor::kTransform:
+            proc.Translate(fNewValue - proc.Translation());
+            break;
+        }
     }
-    catch(std::exception e)
+    catch(const std::exception& e)
     {
         return false;
     }

@@ -22,7 +22,8 @@
 
 #define AL_USDMAYA_VERSION_MAJOR 1
 #define AL_USDMAYA_VERSION_MINOR 1
-#define AL_USDMAYA_VERSION_PATCH 6
+#define AL_USDMAYA_VERSION_PATCH 7
+
 #define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
                                xstr(AL_USDMAYA_VERSION_MINOR) "." \
                                xstr(AL_USDMAYA_VERSION_PATCH)

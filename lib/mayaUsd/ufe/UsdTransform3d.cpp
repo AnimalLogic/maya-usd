@@ -35,6 +35,9 @@
 
 MAYAUSD_NS_DEF {
 namespace ufe {
+namespace {
+const TfToken kEmptyToken("");
+}
 
 #define USE_TRANSFORM_OPS 1
 
@@ -42,7 +45,7 @@ namespace ufe {
 	ActiveTool GetActiveTool()
 	{
 		MString result;
-		MGlobal::executeCommand("currentCtx", result);
+		MGlobal::executeCommand("currentCtx", result, false, false);
 		if(result == "RotateSuperContext")
 			return ActiveTool::kRotate;
 		if(result == "moveSuperContext")
@@ -52,6 +55,28 @@ namespace ufe {
 		return ActiveTool::kSelect;
 	}
 
+	MayaUsdUtils::TransformOpProcessor::Space CurrentTranslateManipulatorSpace()
+	{
+		int result = 0;
+		MGlobal::executeCommand("manipMoveContext -q -mode \"Move\"", result, false, false);
+		switch(result)
+		{
+		case 0: 
+			{
+				// So for some reason, the xy/xz/yz planes, and x/y/z manips all return local space.
+				// However, the central box works in world space. 
+				int cah;
+				MGlobal::executeCommand("manipMoveContext -q -cah \"Move\"", cah, false, false);
+				return cah != 3 ? MayaUsdUtils::TransformOpProcessor::kPostTransform : MayaUsdUtils::TransformOpProcessor::kWorld;
+			}
+			break;
+
+		case 1: return MayaUsdUtils::TransformOpProcessor::kPreTransform;
+		case 2: return MayaUsdUtils::TransformOpProcessor::kWorld;
+		default: break;
+		}
+		return MayaUsdUtils::TransformOpProcessor::kTransform;
+	}
 
 	MAYAUSD_CORE_PUBLIC
 	MayaUsdUtils::TransformOpProcessor::Space CurrentManipulatorSpace()
@@ -60,13 +85,13 @@ namespace ufe {
 		switch(GetActiveTool())
 		{
 		case ActiveTool::kRotate:
-			MGlobal::executeCommand("manipRotateContext -q -mode $currManipRotatePropertiesCtx", result);
+			MGlobal::executeCommand("manipRotateContext -q -mode \"Rotate\"", result, false, false);
 			break;
 		case ActiveTool::kTranslate:
-			MGlobal::executeCommand("manipMoveContext -q -mode $currManipTranslatePropertiesCtx", result);
+			MGlobal::executeCommand("manipMoveContext -q -mode \"Move\"", result, false, false);
 			break;
 		case ActiveTool::kScale:
-			MGlobal::executeCommand("manipScaleContext -q -mode $currManipScalePropertiesCtx", result);
+			MGlobal::executeCommand("manipScaleContext -q -mode \"Scale\"", result, false, false);
 			break;
 		default:
 			break;
@@ -74,8 +99,8 @@ namespace ufe {
 
 		switch(result)
 		{
-		case 0:
-		case 1: return MayaUsdUtils::TransformOpProcessor::kTransform;
+		case 0: return MayaUsdUtils::TransformOpProcessor::kPostTransform;
+		case 1: return MayaUsdUtils::TransformOpProcessor::kPreTransform;
 		case 2: return MayaUsdUtils::TransformOpProcessor::kWorld;
 		// Given the lack of a coordinate frame in UFE, we can only handle local/world frames :(
 		/* 
@@ -105,26 +130,44 @@ namespace {
 		#if USE_TRANSFORM_OPS
 		try
 		{		
+			auto space = CurrentManipulatorSpace();
 			switch(GetActiveTool())
 			{
 			case ActiveTool::kRotate:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, time);
-					return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+					if(MayaUsdUtils::TransformOpProcessor::kWorld == space || 
+					   MayaUsdUtils::TransformOpProcessor::kTransform == space)
+					{
+						MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kRotate, time);
+						return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+					}
 				}
 				break;
 
 			case ActiveTool::kTranslate:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, time);
-					return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+					if(MayaUsdUtils::TransformOpProcessor::kWorld == space || 
+					   MayaUsdUtils::TransformOpProcessor::kTransform == space)
+					{
+						MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kTranslate, time);
+						return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+					}
+					if(MayaUsdUtils::TransformOpProcessor::kPreTransform == space || 
+					   MayaUsdUtils::TransformOpProcessor::kPostTransform == space)
+					{
+						// use defaults
+					}
 				}
 				break;
 
 			case ActiveTool::kScale:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, time);
-					return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+					if(MayaUsdUtils::TransformOpProcessor::kWorld == space || 
+					   MayaUsdUtils::TransformOpProcessor::kTransform == space)
+					{
+						MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kScale, time);
+						return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
+					}
 				}
 				break;
 
@@ -154,21 +197,21 @@ namespace {
 			{
 			case ActiveTool::kRotate:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, time);
+					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kRotate, time);
 					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
 				}
 				break;
 
 			case ActiveTool::kTranslate:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, time);
+					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kTranslate, time);
 					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
 				}
 				break;
 
 			case ActiveTool::kScale:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, time);
+					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kScale, time);
 					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
 				}
 				break;
@@ -265,19 +308,48 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
+	std::cout << "translate: " << x << ' ' << y << ' ' << z << '\n';
 	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
-	proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
+	switch(CurrentManipulatorSpace())
+	{
+	case MayaUsdUtils::TransformOpProcessor::kWorld:
+		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
+		break;
+	case MayaUsdUtils::TransformOpProcessor::kPreTransform:
+		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
+		break;
+	case MayaUsdUtils::TransformOpProcessor::kTransform:
+		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
+		break;
+	case MayaUsdUtils::TransformOpProcessor::kPostTransform:
+		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
+		break;
+	}
 }
 
 Ufe::Vector3d UsdTransform3d::translation() const
 {
-	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
-	auto translate = proc.Translation();
-	return Ufe::Vector3d(translate[0], translate[1], translate[2]);
+	std::cout << "translation?\n";
+	switch(CurrentManipulatorSpace())
+	{
+	case MayaUsdUtils::TransformOpProcessor::kWorld:
+	case MayaUsdUtils::TransformOpProcessor::kTransform:
+		{
+			MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
+			auto translate = proc.Translation();
+			return Ufe::Vector3d(translate[0], translate[1], translate[2]);
+		}
+		break;
+	default:
+		break;
+	}
+	bool reset;
+	std::vector<UsdGeomXformOp> ops = UsdGeomXformable(fPrim).GetOrderedXformOps(&reset);
+	GfMatrix4d m = MayaUsdUtils::TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, ops.size(), timeCode());
+	return Ufe::Vector3d(m[3][0], m[3][1], m[3][2]);
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2013
-#error oijewfiwef
 Ufe::Vector3d UsdTransform3d::rotation() const
 {
 	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, timeCode());
@@ -285,7 +357,7 @@ Ufe::Vector3d UsdTransform3d::rotation() const
 
 	// UFE only supports XYZ rotation orders, so convert from quat to euler 
 	auto r = MayaUsdUtils::QuatToEulerXYZ(quat);
-	auto v = Ufe::Vector3d(r[0], r[1], r[2]);
+	return Ufe::Vector3d(r[0], r[1], r[2]) * 180.0/M_PI;
 }
 
 Ufe::Vector3d UsdTransform3d::scale() const

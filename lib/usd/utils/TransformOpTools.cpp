@@ -20,11 +20,20 @@
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/base/gf/rotation.h>
 #include <iostream>
+#include <execinfo.h>
 
 namespace MayaUsdUtils {
 
 namespace 
+{void stacktrace_to_cout()
 {
+  void** ptrs = (void**)alloca(sizeof(void*) * 16);
+  const std::size_t count = backtrace(ptrs, 16);
+  if(count)
+  {
+    backtrace_symbols_fd(ptrs, count, STDOUT_FILENO);
+  }
+}
 
 //---------------------------------------------------------------------------------------------
 // Note: If needed, it's possible to sneak a bit more performance from this code. I stopped 
@@ -511,34 +520,23 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
         {
           for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
-            // early out for user specified suffix
-            if(_ops[_opIndex].HasSuffix(primaryRotateSuffix))
-            {
-              auto type = _ops[_opIndex].GetOpType();
-              if(type != UsdGeomXformOp::TypeTranslate &&
-                 type != UsdGeomXformOp::TypeScale)
-              { 
-                break;
-              }
-            }
-
             // if we have an op with no suiffix, use that
             if(_ops[_opIndex].GetOpName() == TfToken("xformOp:orient") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateX") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateY") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZ") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXYZ") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXZY") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYXZ") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYZX") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZXY") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZYX") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXYZ:rotate") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXZY:rotate") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYXZ:rotate") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYZX:rotate") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZXY:rotate") || 
-              _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZYX:rotate"))
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateX") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateY") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZ") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXYZ") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXZY") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYXZ") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYZX") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZXY") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZYX") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXYZ:rotate") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateXZY:rotate") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYXZ:rotate") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateYZX:rotate") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZXY:rotate") || 
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:rotateZYX:rotate"))
             {
               break;
             }
@@ -576,7 +574,7 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
           for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
             if(_ops[_opIndex].GetOpName() == TfToken("xformOp:scale") || 
-                _ops[_opIndex].GetOpName() == TfToken("xformOp:scale:scale"))
+               _ops[_opIndex].GetOpName() == TfToken("xformOp:scale:scale"))
             {
               break;
             }
@@ -762,6 +760,8 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
 
   // evaluate the initial guess for the coordinate frame 
   _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
+  _postFrame = EvaluateCoordinateFrameForRange(_ops, _opIndex + 1, _ops.size(), _timeCode);
+  _invPostFrame = _postFrame.GetInverse();
 
   // If we have a matrix transformation, depending on the type of manip used, 
   // we may have to offset the coordinate frame slightly
@@ -870,6 +870,7 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
 MAYA_USD_UTILS_PUBLIC
 bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space space)
 {
+  stacktrace_to_cout();
   auto xformOp = op();
   // check to make sure this transform op can be translated!
   if(_manipMode != kTranslate)
@@ -886,12 +887,16 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
   }
 
   d256 temp = set4d(translateChange[0], translateChange[1], translateChange[2], 0);
+  std::cout << "translateChange " << temp[0] << ' ' << temp[1] << ' ' << temp[2] << '\n';
   switch(space)
   {
   case kTransform: break;
   case kWorld: temp = transform4d(temp, (const d256*)&_invWorldFrame); break;
-  case kParent: temp = transform4d(temp, (const d256*)&_invCoordFrame); break;
+  case kPreTransform: temp = transform4d(temp, (const d256*)&_invCoordFrame); break;
+  case kPostTransform: temp = transform4d(temp, (const d256*)&_invPostFrame); break;
   }
+
+  std::cout << "temp " << temp[0] << ' ' << temp[1] << ' ' << temp[2] << '\n';
 
   // if the change is close to zero, ignore it. 
   {
@@ -914,6 +919,7 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
     case UsdGeomXformOp::PrecisionDouble:
       {
         xformOp.Get((GfVec3d*)&original, _timeCode);
+  std::cout << "original " << original[0] << ' ' << original[1] << ' ' << original[2] << '\n';
       }
       break;
 
@@ -943,6 +949,7 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
       {
         void* ptr = &temp;
         xformOp.Set(*(GfVec3d*)ptr, _timeCode);
+        std::cout << "after " << temp[0] << ' ' << temp[1] << ' ' << temp[2] << '\n';
       }
       break;
 
@@ -998,7 +1005,8 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
   {
   case kTransform: break;
   case kWorld:
-  case kParent:
+  case kPreTransform:
+  case kPostTransform:
     {
       if(!isClose(scaleChange[0], scaleChange[1]) || 
          !isClose(scaleChange[0], scaleChange[2]))
@@ -1202,7 +1210,8 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
       }
       break;
-    case kParent:
+
+    case kPreTransform:
       {
         // grab original matrix
         d256 omatrix[4] = {
@@ -1225,6 +1234,34 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         rotateMatrix[3] = loadu4d(_coordFrame[3]);
         // bang into local space
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
+        rmatrix[3] = translateToAddBackIn;
+        op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
+      }
+      break;
+
+    case kPostTransform:
+      {
+        // grab original matrix
+        d256 omatrix[4] = {
+          set4d(1.0, 0.0, 0.0, 0.0),
+          set4d(0.0, 1.0, 0.0, 0.0),
+          set4d(0.0, 0.0, 1.0, 0.0),
+          set4d(0.0, 0.0, 0.0, 1.0)
+        };
+        op().Get((GfMatrix4d*)omatrix, _timeCode);
+
+        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()};
+        quatToMatrix(offset, rotateMatrix);
+        d256 translateToAddBackIn = omatrix[3];
+        rotateMatrix[3] = omatrix[3] = zero4d();
+        multiply(rmatrix, omatrix, rmatrix);
+        // remove translation
+        rmatrix[3] = zero4d();
+        multiply(rotateMatrix, rmatrix, rotateMatrix);
+        // add translation back in here
+        rotateMatrix[3] = loadu4d(_coordFrame[3]);
+        // bang into local space
+        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invPostFrame);
         rmatrix[3] = translateToAddBackIn;
         op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
       }
@@ -1266,7 +1303,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         extractEuler(rmatrix, order , rot);
       }
       break;
-    case kParent:
+    case kPreTransform:
       {
         d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()}, omatrix[4];
         quatToMatrix(offset, rotateMatrix);
@@ -1278,6 +1315,24 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         multiply(rotateMatrix, rmatrix, rotateMatrix);
         rotateMatrix[3] = loadu4d(_worldFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invCoordFrame);
+        d256 ctest = cross(rmatrix[0], rmatrix[1]);
+        if(dot3(ctest, rmatrix[2]) < 0)
+          rmatrix[2] = sub4d(zero4d(), rmatrix[2]);
+        extractEuler(rmatrix, order , rot);
+      }
+      break;
+    case kPostTransform:
+      {
+        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()}, omatrix[4];
+        quatToMatrix(offset, rotateMatrix);
+        quatToMatrix(original, omatrix);
+        rotateMatrix[3] = omatrix[3] = zero4d();
+        multiply(rmatrix, omatrix, rmatrix);
+        // remove translation
+        rmatrix[3] = zero4d();
+        multiply(rotateMatrix, rmatrix, rotateMatrix);
+        rotateMatrix[3] = loadu4d(_worldFrame[3]);
+        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invPostFrame);
         d256 ctest = cross(rmatrix[0], rmatrix[1]);
         if(dot3(ctest, rmatrix[2]) < 0)
           rmatrix[2] = sub4d(zero4d(), rmatrix[2]);
@@ -1308,10 +1363,10 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       new_rotation = multiplyQuat(offset, new_rotation);
       new_rotation = multiplyQuat(quatInvert(_qworldFrame), new_rotation);
       break;
-    case kParent:
+    case kPreTransform:
       new_rotation = multiplyQuat(_qcoordFrame, original);
       new_rotation = multiplyQuat(offset, new_rotation);
-      new_rotation = multiplyQuat(quatInvert(_qcoordFrame), original);
+      new_rotation = multiplyQuat(quatInvert(_qcoordFrame), new_rotation);
       break;
     }
     return new_rotation;
@@ -2072,11 +2127,11 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
 ///          - successive rotations will be grouped into 1 quaternion
 ///         This will then be evaluated 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForIndex(const std::vector<UsdGeomXformOp>& ops, uint32_t index, const UsdTimeCode& timeCode)
+GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForRange(const std::vector<UsdGeomXformOp>& ops, uint32_t start, uint32_t end, const UsdTimeCode& timeCode)
 {
-  auto iter = ops.begin();
-  auto last = ops.begin() + index;
-  if(last > ops.end()) 
+  auto iter = ops.begin() + start;
+  auto last = ops.begin() + end;
+  if(last > ops.end() || iter > ops.end()) 
   {
     throw;
   }
@@ -2890,12 +2945,12 @@ bool TransformOpProcessorEx::SetTranslate(const GfVec3d& position, Space space)
       d256 world_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
       return TransformOpProcessor::Translate(GfVec3d(world_offset[0], world_offset[1], world_offset[2]), kWorld);
     }
-    if(space == kParent)
+    if(space == kPreTransform)
     {
       d256* pcoordFrame = (d256*)&_coordFrame;
       d256 worldPos = transform(translate, pcoordFrame);
       d256 parent_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
-      return TransformOpProcessor::Translate(GfVec3d(parent_offset[0], parent_offset[1], parent_offset[2]), kParent);
+      return TransformOpProcessor::Translate(GfVec3d(parent_offset[0], parent_offset[1], parent_offset[2]), kPreTransform);
     }
   }
   return false;
@@ -2931,7 +2986,7 @@ bool TransformOpProcessorEx::SetRotate(const GfQuatd& orientation, Space space)
       d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
       return TransformOpProcessor::Rotate(GfQuatd(world_offset[0], world_offset[1], world_offset[2], world_offset[3]), space);
     }
-    if(space == kParent)
+    if(space == kPreTransform)
     {
       d256 world_rotate = multiplyQuat(rotate, _qcoordFrame);
       d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));

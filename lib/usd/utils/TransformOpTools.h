@@ -51,11 +51,30 @@ public:
     kScale,
     kGuess //< for most ops, this will just work. For matrix ops, you'll need to be more specific
   };
+
+  // Given that a single xform op can be a part of an xformOp stack, it implies that there are 4 
+  // possible coordinate frames you may want to define the translation/rotation ops in. 
+  //
+  // World:              [stack after op][-- xform op --][stack before op][parent world matrix]
+  //                                                                offset is applied here ---^
+  //
+  // Parent:             [stack after op][-- xform op --][stack before op][parent world matrix]
+  // [PreTransform]                             offset is applied here ---^
+  //
+  // Transform:          [stack after op][-- xform op --][stack before op][parent world matrix]
+  //               offset is applied directly ---^
+  //
+  // Object:             [stack after op][-- xform op --][stack before op][parent world matrix]
+  // [PostTransform]    ^--- offset is applied here
+  // 
   enum Space
   {
-    kTransform,
     kWorld,
-    kParent
+    kPreTransform,
+    kTransform,
+    kPostTransform,
+    kParent = kPreTransform,
+    kObject = kPostTransform,
   };
 
   MAYA_USD_UTILS_PUBLIC
@@ -181,17 +200,39 @@ public:
     { return _parentFrame; }
 
   /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  const GfMatrix4d& PostTransformFrame() const 
+    { return _postFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   const GfMatrix4d& CoordinateFrame() const 
     { return _coordFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  const GfMatrix4d& InvCoordinateFrame() const 
+    { return _invCoordFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  const GfMatrix4d& InvPostTransformFrame() const 
+    { return _invPostFrame; }
+
+  /// given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the op at the given index. 
+  /// This does not evaluate the xform op at that index (i.e. If the first op in ops is a translate, then requesting
+  /// index zero will return the identity)
+  /// I should really extract this method and pass to Pixar. The code is more performant than UsdGeomXformable::GetLocalTransformation.
+  inline
+  static GfMatrix4d EvaluateCoordinateFrameForIndex(const std::vector<UsdGeomXformOp>& ops, uint32_t index, const UsdTimeCode& timeCode)
+    { return EvaluateCoordinateFrameForRange(ops, 0, index, timeCode); }
 
   /// given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the op at the given index. 
   /// This does not evaluate the xform op at that index (i.e. If the first op in ops is a translate, then requesting
   /// index zero will return the identity)
   /// I should really extract this method and pass to Pixar. The code is more performant than UsdGeomXformable::GetLocalTransformation.
   MAYA_USD_UTILS_PUBLIC
-  static GfMatrix4d EvaluateCoordinateFrameForIndex(const std::vector<UsdGeomXformOp>& ops, uint32_t index, const UsdTimeCode& timeCode);
+  static GfMatrix4d EvaluateCoordinateFrameForRange(const std::vector<UsdGeomXformOp>& ops, uint32_t start, uint32_t end, const UsdTimeCode& timeCode);
 
+  const std::vector<UsdGeomXformOp>& ops() const { return _ops; }
   UsdGeomXformOp op() const { return _ops[_opIndex]; }
+  uint32_t opIndex() const { return _opIndex; }
 
 protected:
   // helper methods to extract scale/rotation/translation from the transform op
@@ -201,8 +242,10 @@ protected:
   GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
   GfMatrix4d _parentFrame;
+  GfMatrix4d _postFrame;
   GfMatrix4d _invCoordFrame;
   GfMatrix4d _invWorldFrame;
+  GfMatrix4d _invPostFrame;
   __m256d _qcoordFrame;
   __m256d _qworldFrame;
   __m256d _qparentFrame;
