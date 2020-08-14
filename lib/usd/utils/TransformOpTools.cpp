@@ -500,23 +500,26 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
     {
     case TransformOpProcessor::kRotate:
       {
-        for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+        if(!primaryRotateSuffix.IsEmpty())
         {
-          // early out for user specified suffix
-          if(_ops[_opIndex].HasSuffix(primaryRotateSuffix))
+          for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
-            auto type = _ops[_opIndex].GetOpType();
-            if(type != UsdGeomXformOp::TypeTransform &&
-               type != UsdGeomXformOp::TypeTranslate &&
-               type != UsdGeomXformOp::TypeScale)
-            { 
-              break;
+            // early out for user specified suffix
+            if(_ops[_opIndex].HasSuffix(primaryRotateSuffix))
+            {
+              auto type = _ops[_opIndex].GetOpType();
+              if(type != UsdGeomXformOp::TypeTransform &&
+                type != UsdGeomXformOp::TypeTranslate &&
+                type != UsdGeomXformOp::TypeScale)
+              { 
+                break;
+              }
             }
           }
         }
 
         // if no special case found
-        if(_opIndex == opCount)
+        if(_opIndex == opCount || primaryRotateSuffix.IsEmpty())
         {
           for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
@@ -556,20 +559,23 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
 
     case TransformOpProcessor::kScale:
       {
-        for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+        if(!primaryScaleSuffix.IsEmpty())
         {
-          // early out for user specified suffix
-          if(_ops[_opIndex].HasSuffix(primaryScaleSuffix))
+          for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
-            auto type = _ops[_opIndex].GetOpType();
-            if(type == UsdGeomXformOp::TypeScale || type == UsdGeomXformOp::TypeTransform)
-            { 
-              break;
+            // early out for user specified suffix
+            if(_ops[_opIndex].HasSuffix(primaryScaleSuffix))
+            {
+              auto type = _ops[_opIndex].GetOpType();
+              if(type == UsdGeomXformOp::TypeScale || type == UsdGeomXformOp::TypeTransform)
+              { 
+                break;
+              }
             }
           }
         }
         // if no special case found
-        if(_opIndex == opCount)
+        if(_opIndex == opCount || primaryScaleSuffix.IsEmpty())
         {
           for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
@@ -593,20 +599,24 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
       break;
     case TransformOpProcessor::kTranslate:
       {
-        for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
+        if(!primaryTranslateSuffix.IsEmpty())
         {
-          // early out for user specified suffix
-          if(_ops[_opIndex].HasSuffix(primaryTranslateSuffix))
+          for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
-            auto type = _ops[_opIndex].GetOpType();
-            if(type == UsdGeomXformOp::TypeTranslate || type == UsdGeomXformOp::TypeTransform) 
-            { 
-              break;
+            // early out for user specified suffix
+            if(_ops[_opIndex].HasSuffix(primaryTranslateSuffix))
+            {
+              auto type = _ops[_opIndex].GetOpType();
+              if(type == UsdGeomXformOp::TypeTranslate || type == UsdGeomXformOp::TypeTransform) 
+              { 
+                break;
+              }
             }
           }
         }
+
         // if no special case found
-        if(_opIndex == opCount)
+        if(_opIndex == opCount || primaryTranslateSuffix.IsEmpty())
         {
           for(_opIndex = 0; _opIndex < opCount; ++_opIndex)
           {
@@ -887,7 +897,6 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
   }
 
   d256 temp = set4d(translateChange[0], translateChange[1], translateChange[2], 0);
-  std::cout << "translateChange " << temp[0] << ' ' << temp[1] << ' ' << temp[2] << '\n';
   switch(space)
   {
   case kTransform: break;
@@ -895,8 +904,6 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
   case kPreTransform: temp = transform4d(temp, (const d256*)&_invCoordFrame); break;
   case kPostTransform: temp = transform4d(temp, (const d256*)&_invPostFrame); break;
   }
-
-  std::cout << "temp " << temp[0] << ' ' << temp[1] << ' ' << temp[2] << '\n';
 
   // if the change is close to zero, ignore it. 
   {
@@ -919,7 +926,6 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
     case UsdGeomXformOp::PrecisionDouble:
       {
         xformOp.Get((GfVec3d*)&original, _timeCode);
-  std::cout << "original " << original[0] << ' ' << original[1] << ' ' << original[2] << '\n';
       }
       break;
 
@@ -949,7 +955,6 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
       {
         void* ptr = &temp;
         xformOp.Set(*(GfVec3d*)ptr, _timeCode);
-        std::cout << "after " << temp[0] << ' ' << temp[1] << ' ' << temp[2] << '\n';
       }
       break;
 

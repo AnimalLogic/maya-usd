@@ -192,7 +192,7 @@ namespace {
 	{
 		#if USE_TRANSFORM_OPS
 		try
-		{		
+		{
 			switch(GetActiveTool())
 			{
 			case ActiveTool::kRotate:
@@ -204,8 +204,14 @@ namespace {
 
 			case ActiveTool::kTranslate:
 				{
+					auto space = CurrentTranslateManipulatorSpace();
 					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kTranslate, time);
-					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
+					if(space != MayaUsdUtils::TransformOpProcessor::kWorld && 
+					   space != MayaUsdUtils::TransformOpProcessor::kPreTransform)
+					{
+						return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
+					}
+					return convertFromUsd(proc.ParentFrame());
 				}
 				break;
 
@@ -308,7 +314,6 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-	std::cout << "translate: " << x << ' ' << y << ' ' << z << '\n';
 	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
 	switch(CurrentManipulatorSpace())
 	{
@@ -329,7 +334,6 @@ void UsdTransform3d::translate(double x, double y, double z)
 
 Ufe::Vector3d UsdTransform3d::translation() const
 {
-	std::cout << "translation?\n";
 	switch(CurrentManipulatorSpace())
 	{
 	case MayaUsdUtils::TransformOpProcessor::kWorld:
