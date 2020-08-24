@@ -662,6 +662,13 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         rprimId = temp;
     }
 #endif
+
+    auto prim = _proxyShapeData->ProxyShape()->getUsdStage()->GetPrimAtPath(rprimId);
+    if(!prim || prim.IsInstanceProxy())
+    {
+        rprimId = rprimId.GetParentPath();
+    }
+
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     Ufe::SceneItem::Ptr si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
