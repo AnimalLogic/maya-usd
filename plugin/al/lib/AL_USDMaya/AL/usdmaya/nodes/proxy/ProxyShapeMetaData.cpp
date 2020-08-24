@@ -190,13 +190,6 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
               --lastTaggedPrim;
             }
           }
-
-          // If prim has exclusion tag or is a descendent of a prim with it, create as Maya geo
-          if (excludeGeo || primHasExcludedParent(prim))
-          {
-            VtValue schemaName(fileio::ALExcludedPrimSchema.GetString());
-            prim.SetCustomDataByKey(fileio::ALSchemaType, schemaName);
-          }
         }
 
         // build up new unselectable list
@@ -377,13 +370,6 @@ void ProxyShape::findPrimsWithMetaData()
         {
           m_excludedTaggedGeometry.push_back(prim.GetPrimPath());
         }
-      }
-
-      // If prim has exclusion tag or is a descendent of a prim with it, create as Maya geo
-      if (excludeGeo || primHasExcludedParent(prim))
-      {
-        VtValue schemaName(fileio::ALExcludedPrimSchema.GetString());
-        prim.SetCustomDataByKey(fileio::ALSchemaType, schemaName);
       }
 
       TfToken selectabilityPropertyToken;
