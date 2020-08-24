@@ -655,13 +655,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
     rprimId = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
 #else
-    if (drawInstID > 0) {
-        rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
+    auto temp = _sceneDelegate->GetPathForInstanceIndex(rprimId, std::max(0, usdInstID), nullptr);
+    if(!temp.IsEmpty())
+    {
+        // only update if the scene delegate returned a valid path
+        rprimId = temp;
     }
 #endif
-
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
-
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     Ufe::SceneItem::Ptr si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
