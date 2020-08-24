@@ -23,6 +23,7 @@
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
 #include <pxr/usd/usd/usdFileFormat.h>
+#include "pxr/usd/ar/resolver.h"
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MDGModifier.h>
@@ -557,27 +558,12 @@ void LayerManager::loadAllLayers()
         // another process might sneak in and create a layer with the same identifier, which could cause
         // an error. This seems unlikely, but we have a discussion with Pixar to find a way to avoid this.
 
-        SdfFileFormatConstPtr fileFormat;
-        if(TfStringStartsWith(serializedVal, "#usda "))
+        auto fileFormat = SdfFileFormat::FindByExtension(ArGetResolver().GetExtension(identifierVal));
+        if (!fileFormat)
         {
-          // In order to make the layer reloadable by SdfLayer::Reload(), we need the
-          // correct file format from identifier.
-          if(TfStringEndsWith(identifierVal, ".usd"))
-          {
-            fileFormat = SdfFileFormat::FindById(UsdUsdFileFormatTokens->Id);
-          }
-          else if(TfStringEndsWith(identifierVal, ".usdc"))
-          {
-            fileFormat = SdfFileFormat::FindById(UsdUsdcFileFormatTokens->Id);
-          }
-          else
-          {
-            fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
-          }
-        }
-        else
-        {
-          fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+          MGlobal::displayError(MString("Cannot determine file format for identifier '") + identifierVal.c_str()
+                        + "' for plug " + idPlug.partialName(true));
+          continue;
         }
 
         // In order to make the layer reloadable by SdfLayer::Reload(), we hack the identifier 
