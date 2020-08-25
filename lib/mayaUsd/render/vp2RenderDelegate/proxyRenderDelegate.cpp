@@ -662,6 +662,22 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         rprimId = temp;
     }
 #endif
+
+    {
+        const std::string& str = rprimId.GetString();
+        if(!str.empty())
+        {
+            // strip the proxy shape prefix from path.
+            // From this we can query the prim to see if it's an instance proxy, in which case select the parent
+            SdfPath itemPath(str.c_str() + str.find_first_of('/', 1));
+            auto prim = _proxyShapeData->ProxyShape()->getUsdStage()->GetPrimAtPath(itemPath);
+            if(!prim || prim.IsInstanceProxy())
+            {
+                rprimId = rprimId.GetParentPath();
+            }
+        }
+    }
+
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     Ufe::SceneItem::Ptr si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
