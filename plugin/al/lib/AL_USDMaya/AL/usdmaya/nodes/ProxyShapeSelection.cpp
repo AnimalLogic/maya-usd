@@ -481,7 +481,7 @@ static void createMayaNode(
 {
    MFnDagNode fn;
 
-   bool isUsdXFormable = usdPrim.IsA<UsdGeomXformable>();
+   bool isUsdXFormable = usdPrim.IsA<UsdGeomXformable>() && !usdPrim.IsInstanceProxy();;
 
    enum MayaNodeTypeCreated { customMayaTransforn, AL_USDMayaScope, AL_USDMayaTransform };
 
