@@ -25,15 +25,6 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MTime.h>
 #include <maya/MProfiler.h>
-namespace {
-const int ProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "LayerManager", "LayerManager"
-#else
-    "LayerManager"
-#endif
-);
-}
 
 #if MAYA_API_VERSION >= 20180600
 #include <maya/MPointArray.h>
@@ -546,13 +537,33 @@ class ProxyDrawOverrideSelectionHelper
 {
 public:
 
-  static SdfPath path_ting(const SdfPath& a, const SdfPath& b, const int c)
+  static SdfPath callback(const SdfPath& a, const SdfPath& b, const int c)
   {
-    m_paths.push_back(a);
+    if(m_stage)
+    {
+      auto p = m_stage->GetPrimAtPath(a);
+      // if we encounter an instance proxy, select it's parent prim instead!
+      // Modifying an InstanceProxy will cause an exception to be thrown.
+      if(p.IsInstanceProxy())
+      {
+        m_paths.push_back(a.GetParentPath());
+        return a.GetParentPath();
+      }
+      else
+      {
+        m_paths.push_back(a);
+      }
+    }
+    else
+    {
+      m_paths.push_back(a);
+    }
     return a;
   }
+  static UsdStageRefPtr m_stage;
   static SdfPathVector m_paths;
 };
+UsdStageRefPtr ProxyDrawOverrideSelectionHelper::m_stage;
 SdfPathVector ProxyDrawOverrideSelectionHelper::m_paths;
 
 
@@ -648,6 +659,8 @@ bool ProxyDrawOverride::userSelect(
         ProfilerCategory,
         MProfiler::kColorE_L3,
         "UsdImaging::TestIntersectionBatch");
+
+    ProxyDrawOverrideSelectionHelper::m_stage = proxyShape->usdStage();
     hitSelected = engine->TestIntersectionBatch(
             GfMatrix4d(worldViewMatrix.matrix),
             GfMatrix4d(projectionMatrix.matrix),
@@ -655,8 +668,10 @@ bool ProxyDrawOverride::userSelect(
             rootPath,
             params,
             resolution,
-            ProxyDrawOverrideSelectionHelper::path_ting,
+            ProxyDrawOverrideSelectionHelper::callback,
             &hitBatch);
+
+    ProxyDrawOverrideSelectionHelper::m_stage = UsdStageRefPtr();
   }
   auto selected = false;
 
