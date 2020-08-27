@@ -25,15 +25,6 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MTime.h>
 #include <maya/MProfiler.h>
-namespace {
-const int ProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "LayerManager", "LayerManager"
-#else
-    "LayerManager"
-#endif
-);
-}
 
 #if MAYA_API_VERSION >= 20180600
 #include <maya/MPointArray.h>

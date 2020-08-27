@@ -170,7 +170,6 @@ bool vec3AreAllTheSame(const float* array, size_t count)
     return true;
   }
 #ifdef __AVX2__
-
   const float x = array[0];
   const float y = array[1];
   const float z = array[2];
@@ -217,9 +216,9 @@ bool vec3AreAllTheSame(const float* array, size_t count)
     const f128 a = loadu4f(array + 3 * count8 + 0);
     const f128 b = loadu4f(array + 3 * count8 + 4);
     const f128 c = loadu4f(array + 3 * count8 + 8);
-    const f128 cmpa = cmpne4f(extract4f(first8[0], 0), a);
-    const f128 cmpb = cmpne4f(extract4f(first8[0], 1), b);
-    const f128 cmpc = cmpne4f(extract4f(first8[1], 0), c);
+    const f128 cmpa = cmpne4f(extract4f<0>(first8[0]), a);
+    const f128 cmpb = cmpne4f(extract4f<1>(first8[0]), b);
+    const f128 cmpc = cmpne4f(extract4f<0>(first8[1]), c);
     const f128 cmp = or4f(or4f(cmpa, cmpb), cmpc);
     if(movemask4f(cmp))
       return false;
@@ -242,7 +241,6 @@ bool vec3AreAllTheSame(const float* array, size_t count)
   return true;
 
 #elif defined(__SSE__)
-
   const float x = array[0];
   const float y = array[1];
   const float z = array[2];
@@ -505,11 +503,11 @@ bool vec3AreAllTheSame(const double* array, size_t count)
     return true;
   }
 
-  // load 8 vec3s
+  // load 2 vec3s
   const d128 first4[3] = {
-      loadu2d(array + 0),
-      loadu2d(array + 2),
-      loadu2d(array + 4)
+    loadu2d(array + 0),
+    loadu2d(array + 2),
+    loadu2d(array + 4)
   };
 
   // now test groups of 8 x 3D vectors
@@ -524,7 +522,9 @@ bool vec3AreAllTheSame(const double* array, size_t count)
     const d128 cmpc = cmpne2d(first4[2], c);
     const d128 cmp = or2d(or2d(cmpa, cmpb), cmpc);
     if(movemask2d(cmp))
+    {
       return false;
+    }
   }
 
   // and now the remaining three
@@ -542,7 +542,9 @@ bool vec3AreAllTheSame(const double* array, size_t count)
   const double z = array[2];
   for(size_t i = 3, n = count * 3; i < n; i += 3)
   {
-    if(x != array[i] || y != array[i + 1] || z != array[i + 2])
+    if(x != array[i] || 
+       y != array[i + 1] || 
+       z != array[i + 2])
     {
       return false;
     }
@@ -611,7 +613,7 @@ bool compareArray(
   {
     return false;
   }
-#ifdef __AVX2__
+#if defined(__AVX2__)
   const f256 eps8 = splat8f(eps);
   const size_t count8 = count0 & ~0x7ULL;
   size_t i = 0;

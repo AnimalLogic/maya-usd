@@ -1521,8 +1521,8 @@ void interleaveIndexedUvData(float* output, const float* u, const float* v, cons
     const i128 I = loadu4i(indices + i);
 
     // mask out into 2 pairs of 64 bit indices, and scale values by 4 (using shift)
-    const i128 I02 = lshift64(and4i(mask, I), 2);
-    const i128 I13 = lshift64(and4i(mask, shiftBytesRight(I, 4)), 2);
+    const i128 I02 = lshift64<2>(and4i(mask, I));
+    const i128 I13 = lshift64<2>(and4i(mask, shiftBytesRight(I, 4)));
 
     // get addresses by adding the base offset
     const i128 U02 = add2i64(I02, uptr);

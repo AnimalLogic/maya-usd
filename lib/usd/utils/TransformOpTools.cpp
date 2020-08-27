@@ -14,26 +14,15 @@
 // limitations under the License.
 //
 
-#include "TransformOpTools.h"
 #include "SIMD.h"
+#include "TransformOpTools.h"
 
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/base/gf/rotation.h>
 #include <iostream>
-#include <execinfo.h>
 
 namespace MayaUsdUtils {
-
-namespace 
-{void stacktrace_to_cout()
-{
-  void** ptrs = (void**)alloca(sizeof(void*) * 16);
-  const std::size_t count = backtrace(ptrs, 16);
-  if(count)
-  {
-    backtrace_symbols_fd(ptrs, count, STDOUT_FILENO);
-  }
-}
+namespace {
 
 //---------------------------------------------------------------------------------------------
 // Note: If needed, it's possible to sneak a bit more performance from this code. I stopped 
@@ -217,8 +206,13 @@ inline d256 cross(d256 b, d256 c)
   return fmadd4d(B1, C1, mul4d(B2, C2));
 }
 
-inline void extractEuler(const d256 mat[4], RotationOrder rotOrder, GfVec3f& rot)
+inline void extractEuler(const d256 M[4], RotationOrder rotOrder, GfVec3f& rot)
 {
+  double mat[4][4];
+  store4d(mat[0], M[0]);
+  store4d(mat[1], M[1]);
+  store4d(mat[2], M[2]);
+  store4d(mat[3], M[3]);
   const int mod3[6] = {0, 1, 2, 0, 1, 2};
   const int k1 = int(rotOrder) > 2 ? 2 : 1;
   const int k2 = 3 - k1;
@@ -349,7 +343,7 @@ inline d256 rotate(const d256 offset, const d256 frame[4])
 inline double dot3(d256 a, d256 b)
 {
   d256 ab = mul4d(a, b);
-  return ab[0] + ab[1] + ab[2];
+  return get<0>(ab) + get<1>(ab) + get<2>(ab);
 }
 
 // rotate an offset vector by the coordinate frame
@@ -448,12 +442,12 @@ inline d256 matrixToQuat(const d256 iframe[4])
   frame[1] = cross(iframe[2], iframe[0]);
   frame[2] = cross(iframe[0], iframe[1]);
 
-  double W = 1.0 + frame[0][0] + frame[1][1] + frame[2][2];
+  double W = 1.0 + get<0>(frame[0]) + get<1>(frame[1]) + get<2>(frame[2]);
   W = std::sqrt(W);
-  const double qx = (frame[1][2] - frame[2][1]);
-  const double qy = (frame[2][0] - frame[0][2]);
+  const double qx = (get<2>(frame[1]) - get<1>(frame[2]));
+  const double qy = (get<0>(frame[2]) - get<2>(frame[0]));
   const double s = (0.5 / W);
-  const double qz = (frame[0][1] - frame[1][0]);
+  const double qz = (get<1>(frame[0]) - get<0>(frame[1]));
   return set4d(qx * s, qy * s, qz * s, W * 0.5);
 }
 
@@ -880,7 +874,6 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
 MAYA_USD_UTILS_PUBLIC
 bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space space)
 {
-  stacktrace_to_cout();
   auto xformOp = op();
   // check to make sure this transform op can be translated!
   if(_manipMode != kTranslate)
@@ -984,9 +977,10 @@ bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space
       set4d(0.0, 0.0, 1.0, 0.0),
       set4d(0.0, 0.0, 0.0, 1.0)
     };
-    xformOp.Get((GfMatrix4d*)matrix, _timeCode);
+    void* ptr = matrix;
+    xformOp.Get((GfMatrix4d*)ptr, _timeCode);
     matrix[3] = add4d(temp, matrix[3]);
-    xformOp.Set(*(GfMatrix4d*)matrix, _timeCode);
+    xformOp.Set(*(GfMatrix4d*)ptr, _timeCode);
   }
   else
   {
@@ -1088,7 +1082,8 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
     {
     case UsdGeomXformOp::PrecisionDouble:
       {
-        xformOp.Set(*(GfVec3d*)&temp, _timeCode);
+        void* ptr = &temp;
+        xformOp.Set(*(GfVec3d*)ptr, _timeCode);
       }
       break;
 
@@ -1118,11 +1113,12 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
       set4d(0.0, 0.0, 1.0, 0.0),
       set4d(0.0, 0.0, 0.0, 1.0)
     };
-    xformOp.Get((GfMatrix4d*)matrix, _timeCode);
+    void* ptr = matrix;
+    xformOp.Get((GfMatrix4d*)ptr, _timeCode);
     matrix[0] = mul4d(permute4d<0,0,0,0>(temp), matrix[0]);
     matrix[1] = mul4d(permute4d<1,1,1,1>(temp), matrix[1]);
     matrix[2] = mul4d(permute4d<2,2,2,2>(temp), matrix[2]);
-    xformOp.Set(*(GfMatrix4d*)matrix, _timeCode);
+    xformOp.Set(*(GfMatrix4d*)ptr, _timeCode);
   }
   else
   {
@@ -1179,13 +1175,14 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           set4d(0.0, 0.0, 1.0, 0.0),
           set4d(0.0, 0.0, 0.0, 1.0)
         };
-        op().Get((GfMatrix4d*)matrix, _timeCode);
+        void* ptr = matrix;
+        op().Get((GfMatrix4d*)ptr, _timeCode);
         d256 rmatrix[4];
         quatToMatrix(offset, rmatrix);
         matrix[0] = rotate(matrix[0], rmatrix);
         matrix[1] = rotate(matrix[1], rmatrix);
         matrix[2] = rotate(matrix[2], rmatrix);
-        op().Set(*(GfMatrix4d*)matrix, _timeCode);
+        op().Set(*(GfMatrix4d*)ptr, _timeCode);
       }
       break;
     case kWorld:
@@ -1212,7 +1209,8 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         // bang into local space
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
         rmatrix[3] = translateToAddBackIn;
-        op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
+        void* ptr = rmatrix;
+        op().Set(*(GfMatrix4d*)ptr, _timeCode);
       }
       break;
 
@@ -1240,7 +1238,8 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         // bang into local space
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invWorldFrame);
         rmatrix[3] = translateToAddBackIn;
-        op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
+        void* ptr = rmatrix;
+        op().Set(*(GfMatrix4d*)ptr, _timeCode);
       }
       break;
 
@@ -1268,7 +1267,8 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         // bang into local space
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invPostFrame);
         rmatrix[3] = translateToAddBackIn;
-        op().Set(*(GfMatrix4d*)rmatrix, _timeCode);
+        void* ptr = rmatrix;
+        op().Set(*(GfMatrix4d*)ptr, _timeCode);
       }
       break;
       
@@ -1419,7 +1419,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       auto new_rotation = process1AxisRotation(orig_quat, temp, space);
       
       // and back to degrees
-      const double xrotate = std::atan2(new_rotation[0], new_rotation[3]) * (360.0 / M_PI);
+      const double xrotate = std::atan2(get<0>(new_rotation), get<3>(new_rotation)) * (360.0 / M_PI);
       original = xrotate;
 
       switch(precision)
@@ -1472,7 +1472,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       auto new_rotation = process1AxisRotation(orig_quat, temp, space);
       
       // and back to degrees
-      const double yrotate = std::atan2(new_rotation[1], new_rotation[3]) * (360.0 / M_PI);
+      const double yrotate = std::atan2(get<1>(new_rotation), get<3>(new_rotation)) * (360.0 / M_PI);
       original = yrotate;
 
       switch(precision)
@@ -1525,7 +1525,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
       auto new_rotation = process1AxisRotation(orig_quat, temp, space);
       
       // and back to degrees
-      const double zrotate = std::atan2(new_rotation[2], new_rotation[3]) * (360.0 / M_PI);
+      const double zrotate = std::atan2(get<2>(new_rotation), get<3>(new_rotation)) * (360.0 / M_PI);
       original = zrotate;
 
       switch(precision)
@@ -1788,25 +1788,27 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           d256 original = set4d(0, 0, 0, 1.0);
           xformOp.Get((GfQuatd*)&original, _timeCode);
           original = multiplyQuat(original, temp);
-          xformOp.Set(*(GfQuatd*)&original, _timeCode);
+          void* ptr = &original;
+          xformOp.Set(*(GfQuatd*)ptr, _timeCode);
         }
         break;
 
       case UsdGeomXformOp::PrecisionFloat:
         {
           f128 original = set4f(0, 0, 0, 1.0f);
-          xformOp.Get((GfQuatf*)&original, _timeCode);
+          void* ptr = &original;
+          xformOp.Get((GfQuatf*)ptr, _timeCode);
           original = cvt4d_to_4f(multiplyQuat(cvt4f_to_4d(original), temp));
-          xformOp.Set(*(GfQuatf*)&original, _timeCode);
+          xformOp.Set(*(GfQuatf*)ptr, _timeCode);
         }
         break;
 
       case UsdGeomXformOp::PrecisionHalf:
         {
           i128 original = zero4i();
-          xformOp.Get((GfQuath*)&original, _timeCode);
-          original = cvtph4(cvt4d_to_4f(multiplyQuat(cvt4f_to_4d(cvtph4(original)), temp)));
           void* ptr = &original;
+          xformOp.Get((GfQuath*)ptr, _timeCode);
+          original = cvtph4(cvt4d_to_4f(multiplyQuat(cvt4f_to_4d(cvtph4(original)), temp)));
           xformOp.Set(*(GfQuath*)ptr, _timeCode);
         }
         break;
@@ -2165,13 +2167,16 @@ GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForRange(const std::vect
         d256 offset = zero4d();
         do
         {
+          std::cout << "offseta " << get<0>(offset) << ' ' << get<1>(offset) << ' ' << get<2>(offset) << '\n';
           offset = add4d(offset, _Translation(*iter, timeCode));
+          std::cout << "offsetb " << get<0>(offset) << ' ' << get<1>(offset) << ' ' << get<2>(offset) << '\n';
           ++iter;
         }
         while(iter != last && iter->GetOpType() == UsdGeomXformOp::TypeTranslate);
 
         // the 'w' value in offset is nonsense at this point. Replace it with 1.0. 
         offset = select4d<1, 1, 1, 0>(offset, splat4d(1.0));
+        std::cout << "offsetc " << get<0>(offset) << ' ' << get<1>(offset) << ' ' << get<2>(offset) << ' ' << get<3>(offset) << '\n';
 
         // if these translations are the very first in the stack, 
         // just assign the resulting translation directly, rather 
@@ -2486,7 +2491,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             GfHalf v;
             op.Get(&v, timeCode);
-            return _cvtsh_ss(v.bits()) * (M_PI / 180.0) * 0.5;
+            return cvtph1(v.bits()) * (M_PI / 180.0) * 0.5;
           }
           break;
         }
@@ -2667,6 +2672,7 @@ d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeC
       case UsdGeomXformOp::PrecisionDouble:
         {
           op.Get((GfVec3d*)&result, timeCode);
+          //std::cout << "getd " << result.a[0] << ' ' << result.a[1] << ' ' << result.b[0] << '\n';
         }
         break;
 
@@ -2674,7 +2680,9 @@ d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeC
         {
           f128 v;
           op.Get((GfVec3f*)&v, timeCode);
+          //std::cout << "getf " << v[0] << ' ' << v[1] << ' ' << v[2] << '\n';
           result = cvt4f_to_4d(v);
+          //std::cout << "getf2 " << result.a[0] << ' ' << result.a[1] << ' ' << result.b[0] << '\n';
         }
         break;
 
@@ -2684,6 +2692,7 @@ d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeC
           op.Get((GfVec3h*)&v, timeCode);
           auto temp = cvtph4(v);
           result = cvt4f_to_4d(temp);
+          //std::cout << "geth " << result.a[0] << ' ' << result.a[1] << ' ' << result.b[0] << '\n';
         }
         break;
       }
@@ -2916,7 +2925,7 @@ GfVec3d TransformOpProcessor::Translation() const
   if(CanTranslate())
   {
     const d256 translate = _Translation(op(), _timeCode);
-    return GfVec3d(translate[0], translate[1], translate[2]);
+    return GfVec3d(get<0>(translate), get<1>(translate), get<2>(translate));
   }
   return GfVec3d(0.0);
 }
@@ -2927,7 +2936,7 @@ GfVec3d TransformOpProcessor::Scale() const
   if(CanScale())
   {
     const d256 scale = _Scale(op(), _timeCode);
-    return GfVec3d(scale[0], scale[1], scale[2]);
+    return GfVec3d(get<0>(scale), get<1>(scale), get<2>(scale));
   }
   return GfVec3d(1.0);
 }
@@ -2941,21 +2950,21 @@ bool TransformOpProcessorEx::SetTranslate(const GfVec3d& position, Space space)
     if(space == kTransform)
     {
       d256 offset = sub4d(set4d(position[0], position[1], position[2], 0), translate);
-      return TransformOpProcessor::Translate(GfVec3d(offset[0], offset[1], offset[2]), space);
+      return TransformOpProcessor::Translate(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), space);
     }
     if(space == kWorld)
     {
       d256* pworldFrame = (d256*)&_worldFrame;
       d256 worldPos = transform(translate, pworldFrame);
       d256 world_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
-      return TransformOpProcessor::Translate(GfVec3d(world_offset[0], world_offset[1], world_offset[2]), kWorld);
+      return TransformOpProcessor::Translate(GfVec3d(get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), kWorld);
     }
     if(space == kPreTransform)
     {
       d256* pcoordFrame = (d256*)&_coordFrame;
       d256 worldPos = transform(translate, pcoordFrame);
       d256 parent_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
-      return TransformOpProcessor::Translate(GfVec3d(parent_offset[0], parent_offset[1], parent_offset[2]), kPreTransform);
+      return TransformOpProcessor::Translate(GfVec3d(get<0>(parent_offset), get<1>(parent_offset), get<2>(parent_offset)), kPreTransform);
     }
   }
   return false;
@@ -2968,7 +2977,7 @@ bool TransformOpProcessorEx::SetScale(const GfVec3d& scale, Space space)
   {
     d256 original = _Scale(op(), _timeCode);
     d256 offset = div4d(set4d(scale[0], scale[1], scale[2], 0.0), original); 
-    return TransformOpProcessor::Scale(GfVec3d(offset[0], offset[1], offset[2]), kWorld);
+    return TransformOpProcessor::Scale(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), kWorld);
   }
   return false;
 }
@@ -2983,19 +2992,19 @@ bool TransformOpProcessorEx::SetRotate(const GfQuatd& orientation, Space space)
     if(space == kTransform)
     {
       d256 offset = multiplyQuat(rotate, quatInvert(final_orient));
-      return TransformOpProcessor::Rotate(GfQuatd(offset[0], offset[1], offset[2], offset[3]), space);
+      return TransformOpProcessor::Rotate(GfQuatd(get<3>(offset), get<0>(offset), get<1>(offset), get<2>(offset)), space);
     }
     if(space == kWorld)
     {
       d256 world_rotate = multiplyQuat(rotate, _qworldFrame);
       d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
-      return TransformOpProcessor::Rotate(GfQuatd(world_offset[0], world_offset[1], world_offset[2], world_offset[3]), space);
+      return TransformOpProcessor::Rotate(GfQuatd(get<3>(world_offset), get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), space);
     }
     if(space == kPreTransform)
     {
       d256 world_rotate = multiplyQuat(rotate, _qcoordFrame);
       d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
-      return TransformOpProcessor::Rotate(GfQuatd(world_offset[0], world_offset[1], world_offset[2], world_offset[3]), space);
+      return TransformOpProcessor::Rotate(GfQuatd(get<3>(world_offset), get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), space);
     }
   }
   return false;

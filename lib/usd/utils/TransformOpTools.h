@@ -24,7 +24,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usd/usdGeom/xformCache.h>
-#include <immintrin.h>
+#include "SIMD.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -236,9 +236,9 @@ public:
 
 protected:
   // helper methods to extract scale/rotation/translation from the transform op
-  static __m256d _Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
-  static __m256d _Rotation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
-  static __m256d _Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
+  static d256 _Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
+  static d256 _Rotation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
+  static d256 _Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode);
   GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
   GfMatrix4d _parentFrame;
@@ -246,9 +246,9 @@ protected:
   GfMatrix4d _invCoordFrame;
   GfMatrix4d _invWorldFrame;
   GfMatrix4d _invPostFrame;
-  __m256d _qcoordFrame;
-  __m256d _qworldFrame;
-  __m256d _qparentFrame;
+  d256 _qcoordFrame;
+  d256 _qworldFrame;
+  d256 _qparentFrame;
   std::vector<UsdGeomXformOp> _ops;
   uint32_t _opIndex;
   UsdTimeCode _timeCode = UsdTimeCode::Default();
