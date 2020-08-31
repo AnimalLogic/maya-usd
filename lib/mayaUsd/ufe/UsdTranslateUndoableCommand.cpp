@@ -154,7 +154,9 @@ inline MayaUsdUtils::d256 rotate(const MayaUsdUtils::d256 offset, const MayaUsdU
   const MayaUsdUtils::d256 xxx = MayaUsdUtils::permute4d<0, 0, 0, 0>(offset);
   const MayaUsdUtils::d256 yyy = MayaUsdUtils::permute4d<1, 1, 1, 1>(offset);
   const MayaUsdUtils::d256 zzz = MayaUsdUtils::permute4d<2, 2, 2, 2>(offset);
-  return fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], MayaUsdUtils::mul4d(xxx, frame[0])));
+  return MayaUsdUtils::fmadd4d(zzz, frame[2], 
+         MayaUsdUtils::fmadd4d(yyy, frame[1], 
+         MayaUsdUtils::mul4d(xxx, frame[0])));
 }
 
 // rotate an offset vector by the coordinate frame
@@ -164,7 +166,10 @@ inline MayaUsdUtils::d256 transform4d(const MayaUsdUtils::d256 offset, const May
   const MayaUsdUtils::d256 yyy = MayaUsdUtils::permute4d<1, 1, 1, 1>(offset);
   const MayaUsdUtils::d256 zzz = MayaUsdUtils::permute4d<2, 2, 2, 2>(offset);
   const MayaUsdUtils::d256 www = MayaUsdUtils::permute4d<3, 3, 3, 3>(offset);
-  return fmadd4d(www, frame[3], fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], MayaUsdUtils::mul4d(xxx, frame[0]))));
+  return MayaUsdUtils::fmadd4d(www, frame[3], 
+         MayaUsdUtils::fmadd4d(zzz, frame[2], 
+         MayaUsdUtils::fmadd4d(yyy, frame[1], 
+         MayaUsdUtils::mul4d(xxx, frame[0]))));
 }
 
 // frame *= childTransform
