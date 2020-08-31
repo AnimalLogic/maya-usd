@@ -74,7 +74,7 @@ public:
     kTransform,
     kPostTransform,
     kParent = kPreTransform,
-    kObject = kPostTransform,
+    kObject = kPostTransform
   };
 
   MAYA_USD_UTILS_PUBLIC

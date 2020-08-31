@@ -24,6 +24,21 @@
 namespace MayaUsdUtils {
 namespace {
 
+template<typename T> inline T radiansToDegrees(const T& rad) { return rad * T(180.0 / M_PI); }
+template<typename T> inline T degreesToRadians(const T& rad) { return rad * T(M_PI / 180.0); }
+template<typename T> inline T halfAngleToDegrees(const T& rad) { return rad * T(360.0 / M_PI); }
+template<typename T> inline T degreesToHalfAngle(const T& rad) { return rad * T(M_PI / 360.0); }
+
+template<> inline GfVec3d radiansToDegrees(const GfVec3d& rad) { return rad * double(180.0 / M_PI); }
+template<> inline GfVec3d degreesToRadians(const GfVec3d& rad) { return rad * double(M_PI / 180.0); }
+template<> inline GfVec3d halfAngleToDegrees(const GfVec3d& rad) { return rad * double(360.0 / M_PI); }
+template<> inline GfVec3d degreesToHalfAngle(const GfVec3d& rad) { return rad * double(M_PI / 360.0); }
+
+template<> inline d256 radiansToDegrees(const d256& rad) { return mul4d(rad, splat4d(180.0 / M_PI)); }
+template<> inline d256 degreesToRadians(const d256& rad) { return mul4d(rad, splat4d(M_PI / 180.0)); }
+template<> inline d256 halfAngleToDegrees(const d256& rad) { return mul4d(rad, splat4d(360.0 / M_PI)); }
+template<> inline d256 degreesToHalfAngle(const d256& rad) { return mul4d(rad, splat4d(M_PI / 360.0)); }
+
 //---------------------------------------------------------------------------------------------
 // Note: If needed, it's possible to sneak a bit more performance from this code. I stopped 
 // short of adding a vectorised sincos() implementation, but that would be possible....
@@ -228,14 +243,14 @@ inline void extractEuler(const d256 M[4], RotationOrder rotOrder, GfVec3f& rot)
   if (std::fabs(mat[row][col] - 1) < epsilon)
   {
     rot[row] = std::atan2(s*mat[rowSin][colCos], mat[rowSin][colSin]);
-    rot[rowSin] = s*M_PI/2;
+    rot[rowSin] = s*M_PI/2.0;
     rot[rowCos] = 0;
   }
   else
   if (std::fabs(mat[row][col] + 1) < epsilon)
   {    
     rot[row] = std::atan2(-s*mat[rowSin][colCos], mat[rowSin][colSin]);
-    rot[rowSin] = -s*M_PI/2;
+    rot[rowSin] = -s*M_PI/2.0;
     rot[rowCos] = 0;
   }
   else
@@ -460,13 +475,13 @@ GfVec3d QuatToEulerXYZ(const GfQuatd q)
 {
   GfVec3f rotate;
   extractEuler(loadu4d(&q), RotationOrder::kXYZ, rotate);
-  return GfVec3d(rotate[0], rotate[1], rotate[2]) * (180.0 / M_PI);
+  return radiansToDegrees(GfVec3d(rotate[0], rotate[1], rotate[2]));
 }
 
 MAYA_USD_UTILS_PUBLIC
 GfQuatd QuatFromEulerXYZ(const GfVec3d& degrees)
 {
-  GfVec3d h = degrees * (M_PI / 360.0);
+  GfVec3d h = degreesToHalfAngle(degrees);
   auto ha = set4d(h[0], h[1], h[2], 0.0);
   auto q = Quat_from_EulerXYZ(ha);
   GfQuatd Q;
@@ -1414,12 +1429,12 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         break;
       }
       // convert to half angle radians
-      auto half_angle = original * (M_PI / 360.0);
+      auto half_angle = degreesToHalfAngle(original);
       auto orig_quat = set4d(std::sin(half_angle), 0, 0, std::cos(half_angle));
       auto new_rotation = process1AxisRotation(orig_quat, temp, space);
       
       // and back to degrees
-      const double xrotate = std::atan2(get<0>(new_rotation), get<3>(new_rotation)) * (360.0 / M_PI);
+      const double xrotate = halfAngleToDegrees(std::atan2(get<0>(new_rotation), get<3>(new_rotation)));
       original = xrotate;
 
       switch(precision)
@@ -1467,12 +1482,12 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         break;
       }
       // convert to half angle radians
-      auto half_angle = original * (M_PI / 360.0);
+      auto half_angle = degreesToHalfAngle(original);
       auto orig_quat = set4d(0, std::sin(half_angle), 0, std::cos(half_angle));
       auto new_rotation = process1AxisRotation(orig_quat, temp, space);
       
       // and back to degrees
-      const double yrotate = std::atan2(get<1>(new_rotation), get<3>(new_rotation)) * (360.0 / M_PI);
+      const double yrotate = halfAngleToDegrees(std::atan2(get<1>(new_rotation), get<3>(new_rotation)));
       original = yrotate;
 
       switch(precision)
@@ -1520,12 +1535,12 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         break;
       }
       // convert to half angle radians
-      auto half_angle = original * (M_PI / 360.0);
+      auto half_angle = degreesToHalfAngle(original);
       auto orig_quat = set4d(0, 0, std::sin(half_angle), std::cos(half_angle));
       auto new_rotation = process1AxisRotation(orig_quat, temp, space);
       
       // and back to degrees
-      const double zrotate = std::atan2(get<2>(new_rotation), get<3>(new_rotation)) * (360.0 / M_PI);
+      const double zrotate = halfAngleToDegrees(std::atan2(get<2>(new_rotation), get<3>(new_rotation)));
       original = zrotate;
 
       switch(precision)
@@ -1553,7 +1568,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         {
           d256 original = zero4d();
           xformOp.Get((GfVec3d*)&original, _timeCode);
-          original = Quat_from_EulerXYZ(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerXYZ(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kXYZ);
           xformOp.Set(GfVec3d(rot), _timeCode);
         }
@@ -1564,7 +1579,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           f128 forig = zero4f();
           xformOp.Get((GfVec3f*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(forig);
-          original = Quat_from_EulerXYZ(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerXYZ(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kXYZ);
           xformOp.Set(GfVec3f(rot), _timeCode);
         }
@@ -1575,7 +1590,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 forig = zero4i();
           xformOp.Get((GfVec3h*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(cvtph4(forig));
-          original = Quat_from_EulerXYZ(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerXYZ(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kXYZ);
           xformOp.Set(GfVec3h(rot), _timeCode);
         }
@@ -1592,7 +1607,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         {
           d256 original = zero4d();
           xformOp.Get((GfVec3d*)&original, _timeCode);
-          original = Quat_from_EulerXZY(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerXZY(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kXZY);
           xformOp.Set(GfVec3d(rot), _timeCode);
         }
@@ -1603,7 +1618,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           f128 forig = zero4f();
           xformOp.Get((GfVec3f*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(forig);
-          original = Quat_from_EulerXZY(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerXZY(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kXZY);
           xformOp.Set(rot, _timeCode);
         }
@@ -1614,7 +1629,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 forig = zero4i();
           xformOp.Get((GfVec3h*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(cvtph4(forig));
-          original = Quat_from_EulerXZY(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerXZY(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kXZY);
           xformOp.Set(GfVec3h(rot), _timeCode);
         }
@@ -1631,7 +1646,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         {
           d256 original = zero4d();
           xformOp.Get((GfVec3d*)&original, _timeCode);
-          original = Quat_from_EulerYXZ(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerYXZ(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kYXZ);
           xformOp.Set(GfVec3d(rot), _timeCode);
         }
@@ -1642,7 +1657,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           f128 forig = zero4f();
           xformOp.Get((GfVec3f*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(forig);
-          original = Quat_from_EulerYXZ(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerYXZ(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kYXZ);
           xformOp.Set(rot, _timeCode);
         }
@@ -1653,7 +1668,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 forig = zero4i();
           xformOp.Get((GfVec3h*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(cvtph4(forig));
-          original = Quat_from_EulerYXZ(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerYXZ(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kYXZ);
           xformOp.Set(GfVec3h(rot), _timeCode);
         }
@@ -1670,7 +1685,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         {
           d256 original = zero4d();
           xformOp.Get((GfVec3d*)&original, _timeCode);
-          original = Quat_from_EulerYZX(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerYZX(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kYZX);
           xformOp.Set(GfVec3d(rot), _timeCode);
         }
@@ -1681,7 +1696,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           f128 forig = zero4f();
           xformOp.Get((GfVec3f*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(forig);
-          original = Quat_from_EulerYZX(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerYZX(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kYZX);
           xformOp.Set(rot, _timeCode);
         }
@@ -1692,7 +1707,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 forig = zero4i();
           xformOp.Get((GfVec3h*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(cvtph4(forig));
-          original = Quat_from_EulerYZX(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerYZX(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kYZX);
           xformOp.Set(GfVec3h(rot), _timeCode);
         }
@@ -1709,7 +1724,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         {
           d256 original = zero4d();
           xformOp.Get((GfVec3d*)&original, _timeCode);
-          original = Quat_from_EulerZXY(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerZXY(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kZXY);
           xformOp.Set(GfVec3d(rot), _timeCode);
         }
@@ -1720,7 +1735,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           f128 forig = zero4f();
           xformOp.Get((GfVec3f*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(forig);
-          original = Quat_from_EulerZXY(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerZXY(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kZXY);
           xformOp.Set(rot, _timeCode);
         }
@@ -1731,7 +1746,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 forig = zero4i();
           xformOp.Get((GfVec3h*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(cvtph4(forig));
-          original = Quat_from_EulerZXY(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerZXY(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kZXY);
           xformOp.Set(GfVec3h(rot), _timeCode);
         }
@@ -1748,7 +1763,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
         {
           d256 original = zero4d();
           xformOp.Get((GfVec3d*)&original, _timeCode);
-          original = Quat_from_EulerZYX(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerZYX(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kZYX);
           xformOp.Set(GfVec3d(rot), _timeCode);
         }
@@ -1759,7 +1774,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           f128 forig = zero4f();
           xformOp.Get((GfVec3f*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(forig);
-          original = Quat_from_EulerZYX(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerZYX(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kZYX);
           xformOp.Set(rot, _timeCode);
         }
@@ -1770,7 +1785,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
           i128 forig = zero4i();
           xformOp.Get((GfVec3h*)&forig, _timeCode);
           d256 original = cvt4f_to_4d(cvtph4(forig));
-          original = Quat_from_EulerZYX(mul4d(original, splat4d(M_PI / 360.0)));
+          original = Quat_from_EulerZYX(degreesToHalfAngle(original));
           auto rot = process3AxisRotation(original, temp, space, RotationOrder::kZYX);
           xformOp.Set(GfVec3h(rot), _timeCode);
         }
@@ -1841,7 +1856,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
           {
             double original = 0;
             xformOp.Get(&original, _timeCode);
-            original += radianChange * (180.0 / M_PI);
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1850,7 +1865,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
           {
             float original = 0;
             xformOp.Get(&original, _timeCode);
-            original += radianChange * float(180.0 / M_PI);
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1859,7 +1874,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
           {
             GfHalf original = 0;
             xformOp.Get(&original, _timeCode);
-            original += radianChange * float(180.0 / M_PI);
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1877,7 +1892,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
           {
             GfVec3d original(0);
             xformOp.Get(&original, _timeCode);
-            original[0] += radianChange * (180.0 / M_PI);
+            original[0] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1886,7 +1901,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
           {
             GfVec3f original(0);
             xformOp.Get(&original, _timeCode);
-            original[0] += radianChange * (180.0 / M_PI);
+            original[0] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1895,7 +1910,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
           {
             GfVec3h original(0);
             xformOp.Get(&original, _timeCode);
-            original[0] += radianChange * (180.0 / M_PI);
+            original[0] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1942,7 +1957,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
           {
             double original = 0;
             xformOp.Get(&original, _timeCode);
-            original += radianChange * (180.0 / M_PI);
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1951,7 +1966,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
           {
             float original = 0;
             xformOp.Get(&original, _timeCode);
-            original += float(radianChange * (180.0 / M_PI));
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1960,7 +1975,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
           {
             GfHalf original = 0;
             xformOp.Get(&original, _timeCode);
-            original += float(radianChange * (180.0 / M_PI));
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1978,7 +1993,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
           {
             GfVec3d original(0);
             xformOp.Get(&original, _timeCode);
-            original[1] += radianChange * (180.0 / M_PI);
+            original[1] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1987,7 +2002,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
           {
             GfVec3f original(0);
             xformOp.Get(&original, _timeCode);
-            original[1] += radianChange * (180.0 / M_PI);
+            original[1] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -1996,7 +2011,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
           {
             GfVec3h original(0);
             xformOp.Get(&original, _timeCode);
-            original[1] += radianChange * (180.0 / M_PI);
+            original[1] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2043,7 +2058,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
           {
             double original = 0;
             xformOp.Get(&original, _timeCode);
-            original += radianChange * (180.0 / M_PI);
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2052,7 +2067,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
           {
             float original = 0;
             xformOp.Get(&original, _timeCode);
-            original += float(radianChange * (180.0 / M_PI));
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2061,7 +2076,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
           {
             GfHalf original = 0;
             xformOp.Get(&original, _timeCode);
-            original += float(radianChange * (180.0 / M_PI));
+            original += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2079,7 +2094,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
           {
             GfVec3d original(0);
             xformOp.Get(&original, _timeCode);
-            original[2] += radianChange * (180.0 / M_PI);
+            original[2] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2088,7 +2103,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
           {
             GfVec3f original(0);
             xformOp.Get(&original, _timeCode);
-            original[2] += radianChange * (180.0 / M_PI);
+            original[2] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2097,7 +2112,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
           {
             GfVec3h original(0);
             xformOp.Get(&original, _timeCode);
-            original[2] += radianChange * (180.0 / M_PI);
+            original[2] += radiansToDegrees(radianChange);
             xformOp.Set(original, _timeCode);
           }
           break;
@@ -2475,7 +2490,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             double v;
             op.Get(&v, timeCode);
-            return v * (M_PI / 180.0) * 0.5;
+            return degreesToHalfAngle(v);
           }
           break;
 
@@ -2483,7 +2498,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             float v;
             op.Get(&v, timeCode);
-            return v * (M_PI / 180.0) * 0.5;
+            return degreesToHalfAngle(double(v));
           }
           break;
 
@@ -2491,7 +2506,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             GfHalf v;
             op.Get(&v, timeCode);
-            return cvtph1(v.bits()) * (M_PI / 180.0) * 0.5;
+            return degreesToHalfAngle(double(cvtph1(v.bits())));
           }
           break;
         }
@@ -2507,7 +2522,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             d256 v;
             op.Get((GfVec3d*)&v, timeCode);
-            return mul4d(v, splat4d(M_PI / 360.0));
+            return degreesToHalfAngle(v);
           }
           break;
 
@@ -2515,7 +2530,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             f128 v;
             op.Get((GfVec3f*)&v, timeCode);
-            return mul4d(cvt4f_to_4d(v), splat4d(M_PI / 360.0));
+            return degreesToHalfAngle(cvt4f_to_4d(v));
           }
           break;
 
@@ -2523,7 +2538,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
           {
             i128 v;
             op.Get((GfVec3h*)&v, timeCode);
-            return mul4d(cvt4f_to_4d(cvtph4(v)), splat4d(M_PI / 360.0));
+            return degreesToHalfAngle(cvt4f_to_4d(cvtph4(v)));
           }
           break;
         }
@@ -2658,7 +2673,7 @@ d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
 {
-  d256 result = set4d(0.0, 0.0, 0.0, 0.0);
+  d256 result = zero4d();
   const bool isInverse = op.IsInverseOp();
   switch (op.GetOpType())
   {
@@ -2672,7 +2687,6 @@ d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeC
       case UsdGeomXformOp::PrecisionDouble:
         {
           op.Get((GfVec3d*)&result, timeCode);
-          //std::cout << "getd " << result.a[0] << ' ' << result.a[1] << ' ' << result.b[0] << '\n';
         }
         break;
 
@@ -2680,9 +2694,7 @@ d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeC
         {
           f128 v;
           op.Get((GfVec3f*)&v, timeCode);
-          //std::cout << "getf " << v[0] << ' ' << v[1] << ' ' << v[2] << '\n';
           result = cvt4f_to_4d(v);
-          //std::cout << "getf2 " << result.a[0] << ' ' << result.a[1] << ' ' << result.b[0] << '\n';
         }
         break;
 
@@ -2692,7 +2704,6 @@ d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeC
           op.Get((GfVec3h*)&v, timeCode);
           auto temp = cvtph4(v);
           result = cvt4f_to_4d(temp);
-          //std::cout << "geth " << result.a[0] << ' ' << result.a[1] << ' ' << result.b[0] << '\n';
         }
         break;
       }
