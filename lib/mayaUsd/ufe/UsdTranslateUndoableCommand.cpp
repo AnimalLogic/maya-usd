@@ -17,6 +17,10 @@
 
 #include "Utils.h"
 #include "private/Utils.h"
+
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+
 #include <mayaUsd/base/debugCodes.h>
 
 #include <mayaUsdUtils/TransformOpTools.h>
@@ -46,7 +50,7 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
 {
     try 
     {
-        MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode);
+        MayaUsdUtils::TransformOpProcessor proc(prim(), TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode);
         fOp = proc.op();
 		// only write time samples if op already has samples
 		if(!ExistingOpHasSamples(fOp))
@@ -54,11 +58,15 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
 			fTimeCode = UsdTimeCode::Default();
 		}
         fPrevValue = proc.Translation();
+        fCreatedOp = false;
+        fCreatedOrderedAttr = false;
     }
     catch(const std::exception& e)
     {
 		// use default time code if using a new op?
 		fTimeCode = UsdTimeCode::Default();
+        auto xformOpOrderAttr = prim().GetAttribute(TfToken("xformOpOrder"));
+        fCreatedOrderedAttr = xformOpOrderAttr ? !xformOpOrderAttr.HasAuthoredValue() : true;
         
         //
         // So I'm going to make the assumption here that you *probably* want to manipulate the very 
@@ -70,12 +78,16 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
         //                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
         // 
         // 
-        UsdGeomXformable xform(fPrim);
+        UsdGeomXformable xform(prim());
         bool reset;
         std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
         fOp = xform.AddTranslateOp(UsdGeomXformOp::PrecisionDouble);
         ops.insert(ops.begin(), fOp);
         xform.SetXformOpOrder(ops, reset);
+
+        fCreatedOp = true;
+        auto stage = prim().GetStage();
+        fEditTarget = stage->GetEditTarget();
     }
 }
 
@@ -96,51 +108,106 @@ UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
 //------------------------------------------------------------------------------
 void UsdTranslateUndoableCommand::undo()
 {
-    // do nothing
-    if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
+    if(fCreatedOp)
     {
-        return;
-    }
-    switch(fOp.GetOpType())
-    {
-    case UsdGeomXformOp::TypeTranslate:
+        SdfPrimSpecHandle specHandle = fEditTarget.GetPrimSpecForScenePath(prim().GetPath());
+        if(specHandle)
         {
-            switch(fOp.GetPrecision())
-            {
-            case UsdGeomXformOp::PrecisionHalf:
-                {
-                    fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
-                }
-                break;
+            // annoyingly, we have to get the xform ops first, otherwise removal of the 
+            // attribute spec will cause a bother later on.
+            bool reset;
+            auto ops = UsdGeomXformable(prim()).GetOrderedXformOps(&reset);
 
-            case UsdGeomXformOp::PrecisionFloat:
+            auto opName = fOp.GetName(); 
+            {
+                auto attrSpecView = specHandle->GetAttributes();
+                for(auto spec : attrSpecView)
                 {
-                    fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    if(opName == spec->GetName())
+                    {
+                        specHandle->RemoveProperty(spec);
+                        break;
+                    }
                 }
-                break;
-                
-            case UsdGeomXformOp::PrecisionDouble:
+            }
+
+            // if when creating the original translate op we added a new xformOpOrder attribute
+            // as a side effect, be sure we remove that here.
+            if(fCreatedOrderedAttr)
+            {
+                auto attrSpecView = specHandle->GetAttributes();
+                for(auto spec : attrSpecView)
                 {
-                    fOp.Set(fPrevValue, fTimeCode);
+                    if("xformOpOrder" == spec->GetName())
+                    {
+                        specHandle->RemoveProperty(spec);
+                        break;
+                    }
                 }
-                break;
+            }
+            else
+            // otherwise hunt for the xformOp in the list, and remove it.
+            {
+                for(auto it = ops.begin(); it != ops.end(); ++it)
+                {
+                    if(it->GetName() == opName)
+                    {
+                        ops.erase(it);
+                        UsdGeomXformable(prim()).SetXformOpOrder(ops, reset);
+                        break;
+                    }
+                }
             }
         }
-        break;
-
-    case UsdGeomXformOp::TypeTransform:
+    }
+    else
+    {
+        // do nothing
+        if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
         {
-            GfMatrix4d M;
-            fOp.Get(&M, fTimeCode);
-            M[3][0] = fPrevValue[0];
-            M[3][1] = fPrevValue[1];
-            M[3][2] = fPrevValue[2];
-            fOp.Set(M, fTimeCode);
+            return;
         }
-        break;
+        switch(fOp.GetOpType())
+        {
+        case UsdGeomXformOp::TypeTranslate:
+            {
+                switch(fOp.GetPrecision())
+                {
+                case UsdGeomXformOp::PrecisionHalf:
+                    {
+                        fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    }
+                    break;
 
-    default:
-        break;
+                case UsdGeomXformOp::PrecisionFloat:
+                    {
+                        fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    }
+                    break;
+                    
+                case UsdGeomXformOp::PrecisionDouble:
+                    {
+                        fOp.Set(fPrevValue, fTimeCode);
+                    }
+                    break;
+                }
+            }
+            break;
+
+        case UsdGeomXformOp::TypeTransform:
+            {
+                GfMatrix4d M;
+                fOp.Get(&M, fTimeCode);
+                M[3][0] = fPrevValue[0];
+                M[3][1] = fPrevValue[1];
+                M[3][2] = fPrevValue[2];
+                fOp.Set(M, fTimeCode);
+            }
+            break;
+
+        default:
+            break;
+        }
     }
 }
 
@@ -148,6 +215,7 @@ void UsdTranslateUndoableCommand::undo()
 void UsdTranslateUndoableCommand::redo()
 {
 }
+
 // rotate an offset vector by the coordinate frame
 inline MayaUsdUtils::d256 rotate(const MayaUsdUtils::d256 offset, const MayaUsdUtils::d256 frame[4])
 {
@@ -194,6 +262,7 @@ inline void multiply4x4(MayaUsdUtils::d256 output[4], const MayaUsdUtils::d256 c
   output[1] = my;
   output[2] = mz;
 }
+
 //------------------------------------------------------------------------------
 // Ufe::TranslateUndoableCommand overrides
 //------------------------------------------------------------------------------
@@ -203,7 +272,7 @@ bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
     fNewValue = GfVec3d(x, y, z);
     try
     {
-        MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, fTimeCode);
+        MayaUsdUtils::TransformOpProcessor proc(prim(), TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, fTimeCode);
         GfMatrix4d m = MayaUsdUtils::TransformOpProcessor::EvaluateCoordinateFrameForIndex(proc.ops(), proc.ops().size(), fTimeCode);
         switch(CurrentTranslateManipulatorSpace())
         {

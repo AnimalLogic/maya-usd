@@ -16,6 +16,8 @@
 #pragma once
 
 #include <ufe/transform3dUndoableCommands.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/xformOp.h>
@@ -33,7 +35,8 @@ namespace ufe {
 /*!
 	Ability to perform undo to restore the original translate value.
  */
-class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand 
+  : public Ufe::TranslateUndoableCommand
 {
 public:
 	typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
@@ -53,9 +56,9 @@ public:
 	void undo() override;
 	void redo() override;
 	bool translate(double x, double y, double z) override;
-    // Overridden from Ufe::Observer
-    //void operator()(const Ufe::Notification& notification) override;
 
+	UsdPrim prim() const { return fPrim; }
+	Ufe::Path path() const { return fPath; };
 protected:
 
 	UsdPrim fPrim;
@@ -64,6 +67,10 @@ protected:
 	GfVec3d fNewValue;
 	Ufe::Path fPath;
 	UsdTimeCode fTimeCode;
+
+	bool fCreatedOp = false;
+	bool fCreatedOrderedAttr = false;
+	UsdEditTarget fEditTarget;
 
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
 	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);

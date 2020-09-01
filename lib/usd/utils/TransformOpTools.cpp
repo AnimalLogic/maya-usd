@@ -45,14 +45,15 @@ template<> inline d256 degreesToHalfAngle(const d256& rad) { return mul4d(rad, s
 //---------------------------------------------------------------------------------------------
 inline d256 Quat_from_EulerXYZ(const d256 half_angles)
 {
-  alignas(32) double h[4];
-  store4d(h, half_angles);
-  const double sx = std::sin(h[0]);
-  const double cx = std::cos(h[0]);
-  const double sy = std::sin(h[1]);
-  const double cy = std::cos(h[1]);
-  const double sz = std::sin(h[2]);
-  const double cz = std::cos(h[2]);
+  const double x = get<0>(half_angles);
+  const double y = get<1>(half_angles);
+  const double z = get<2>(half_angles);
+  const double sx = std::sin(x);
+  const double cx = std::cos(x);
+  const double sy = std::sin(y);
+  const double cy = std::cos(y);
+  const double sz = std::sin(z);
+  const double cz = std::cos(z);
   const double czcy = cz * cy;
   const double czsy = cz * sy;
   const double szsy = sz * sy;
@@ -67,14 +68,15 @@ inline d256 Quat_from_EulerXYZ(const d256 half_angles)
 
 inline d256 Quat_from_EulerXZY(const d256 half_angles)
 {
-  alignas(32) double h[4];
-  store4d(h, half_angles);
-  const double sx = std::sin(h[0]);
-  const double cx = std::cos(h[0]);
-  const double sy = std::sin(h[1]);
-  const double cy = std::cos(h[1]);
-  const double sz = std::sin(h[2]);
-  const double cz = std::cos(h[2]);
+  const double x = get<0>(half_angles);
+  const double y = get<1>(half_angles);
+  const double z = get<2>(half_angles);
+  const double sx = std::sin(x);
+  const double cx = std::cos(x);
+  const double sy = std::sin(y);
+  const double cy = std::cos(y);
+  const double sz = std::sin(z);
+  const double cz = std::cos(z);
   const double cycz = cy * cz;
   const double cysz = cy * sz;
   const double sycz = sy * cz;
@@ -89,14 +91,15 @@ inline d256 Quat_from_EulerXZY(const d256 half_angles)
 
 inline d256 Quat_from_EulerYXZ(const d256 half_angles)
 {
-  alignas(32) double h[4];
-  store4d(h, half_angles);
-  const double sx = std::sin(h[0]);
-  const double cx = std::cos(h[0]);
-  const double sy = std::sin(h[1]);
-  const double cy = std::cos(h[1]);
-  const double sz = std::sin(h[2]);
-  const double cz = std::cos(h[2]);
+  const double x = get<0>(half_angles);
+  const double y = get<1>(half_angles);
+  const double z = get<2>(half_angles);
+  const double sx = std::sin(x);
+  const double cx = std::cos(x);
+  const double sy = std::sin(y);
+  const double cy = std::cos(y);
+  const double sz = std::sin(z);
+  const double cz = std::cos(z);
   const double czsx = cz * sx;
   const double czcx = cz * cx;
   const double szsx = sz * sx;
@@ -111,14 +114,15 @@ inline d256 Quat_from_EulerYXZ(const d256 half_angles)
 
 inline d256 Quat_from_EulerYZX(const d256 half_angles)
 {
-  alignas(32) double h[4];
-  store4d(h, half_angles);
-  const double sx = std::sin(h[0]);
-  const double cx = std::cos(h[0]);
-  const double sy = std::sin(h[1]);
-  const double cy = std::cos(h[1]);
-  const double sz = std::sin(h[2]);
-  const double cz = std::cos(h[2]);
+  const double x = get<0>(half_angles);
+  const double y = get<1>(half_angles);
+  const double z = get<2>(half_angles);
+  const double sx = std::sin(x);
+  const double cx = std::cos(x);
+  const double sy = std::sin(y);
+  const double cy = std::cos(y);
+  const double sz = std::sin(z);
+  const double cz = std::cos(z);
   const double cxsz = cx * sz;
   const double cxcz = cx * cz;
   const double sxsz = sx * sz;
@@ -133,14 +137,15 @@ inline d256 Quat_from_EulerYZX(const d256 half_angles)
 
 inline d256 Quat_from_EulerZYX(const d256 half_angles)
 {
-  alignas(32) double h[4];
-  store4d(h, half_angles);
-  const double sx = std::sin(h[0]);
-  const double cx = std::cos(h[0]);
-  const double sy = std::sin(h[1]);
-  const double cy = std::cos(h[1]);
-  const double sz = std::sin(h[2]);
-  const double cz = std::cos(h[2]); 
+  const double x = get<0>(half_angles);
+  const double y = get<1>(half_angles);
+  const double z = get<2>(half_angles);
+  const double sx = std::sin(x);
+  const double cx = std::cos(x);
+  const double sy = std::sin(y);
+  const double cy = std::cos(y);
+  const double sz = std::sin(z);
+  const double cz = std::cos(z);
   const double cxsy = cx * sy;
   const double cxcy = cx * cy;
   const double sxsy = sx * sy;
@@ -155,14 +160,15 @@ inline d256 Quat_from_EulerZYX(const d256 half_angles)
 
 inline d256 Quat_from_EulerZXY(const d256 half_angles)
 {
-  alignas(32) double h[4];
-  store4d(h, half_angles);
-  const double sx = std::sin(h[0]);
-  const double cx = std::cos(h[0]);
-  const double sy = std::sin(h[1]);
-  const double cy = std::cos(h[1]);
-  const double sz = std::sin(h[2]);
-  const double cz = std::cos(h[2]); 
+  const double x = get<0>(half_angles);
+  const double y = get<1>(half_angles);
+  const double z = get<2>(half_angles);
+  const double sx = std::sin(x);
+  const double cx = std::cos(x);
+  const double sy = std::sin(y);
+  const double cy = std::cos(y);
+  const double sz = std::sin(z);
+  const double cz = std::cos(z);
   const double cysx = cy * sx;
   const double cycx = cy * cx;
   const double sysx = sy * sx;
@@ -498,6 +504,7 @@ MAYA_USD_UTILS_PUBLIC
 TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opName, const TransformOpProcessor::ManipulatorMode mode, const UsdTimeCode& tc)
   : _prim(prim)
 {
+  _parentFrame.SetIdentity();
   _manipMode = mode;
   _ops = UsdGeomXformable(prim).GetOrderedXformOps(&_resetsXformStack);
   const size_t opCount = _ops.size();

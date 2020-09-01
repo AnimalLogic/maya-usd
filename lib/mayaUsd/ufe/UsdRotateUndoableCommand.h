@@ -69,6 +69,10 @@ protected:
 	Ufe::Path fPath;
 	UsdTimeCode fTimeCode;
 
+	bool fCreatedOp = false;
+	bool fCreatedOrderedAttr = false;
+	UsdEditTarget fEditTarget;
+
 }; // UsdRotateUndoableCommand
 
 } // namespace ufe

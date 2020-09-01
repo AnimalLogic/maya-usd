@@ -18,6 +18,8 @@
 #include "private/Utils.h"
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/base/debugCodes.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 
 #include <mayaUsdUtils/MayaTransformAPI.h>
 #include <mayaUsdUtils/TransformOpTools.h>
@@ -54,6 +56,8 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     {
 		// use default time code if using a new op?
 		fTimeCode = UsdTimeCode::Default();
+        auto xformOpOrderAttr = fPrim.GetAttribute(TfToken("xformOpOrder"));
+        fCreatedOrderedAttr = xformOpOrderAttr ? !xformOpOrderAttr.HasAuthoredValue() : true;
 
         //
         // So I'm going to make the assumption here that you *probably* want to manipulate the very 
@@ -99,6 +103,10 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(
 			// update the xform op order
 	        xform.SetXformOpOrder(ops, reset);
 		}
+
+        fCreatedOp = true;
+        auto stage = fPrim.GetStage();
+        fEditTarget = stage->GetEditTarget();
     }
 }
 
@@ -118,50 +126,105 @@ UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
 
 void UsdScaleUndoableCommand::undo()
 {
-    // do nothing
-    if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
+    if(fCreatedOp)
     {
-        return;
-    }
-    switch(fOp.GetOpType())
-    {
-    case UsdGeomXformOp::TypeScale:
+        SdfPrimSpecHandle specHandle = fEditTarget.GetPrimSpecForScenePath(fPrim.GetPath());
+        if(specHandle)
         {
-            switch(fOp.GetPrecision())
+            // annoyingly, we have to get the xform ops first, otherwise removal of the 
+            // attribute spec will cause a bother later on.
+            bool reset;
+            auto ops = UsdGeomXformable(fPrim).GetOrderedXformOps(&reset);
+
+            auto opName = fOp.GetName(); 
             {
-            case UsdGeomXformOp::PrecisionHalf:
+                auto attrSpecView = specHandle->GetAttributes();
+                for(auto spec : attrSpecView)
                 {
-                    fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    if(opName == spec->GetName())
+                    {
+                        specHandle->RemoveProperty(spec);
+                        break;
+                    }
                 }
-                break;
-            case UsdGeomXformOp::PrecisionFloat:
+            }
+
+            // if when creating the original translate op we added a new xformOpOrder attribute
+            // as a side effect, be sure we remove that here.
+            if(fCreatedOrderedAttr)
+            {
+                auto attrSpecView = specHandle->GetAttributes();
+                for(auto spec : attrSpecView)
                 {
-                    fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    if("xformOpOrder" == spec->GetName())
+                    {
+                        specHandle->RemoveProperty(spec);
+                        break;
+                    }
                 }
-                break;
-            case UsdGeomXformOp::PrecisionDouble:
+            }
+            else
+            // otherwise hunt for the xformOp in the list, and remove it.
+            {
+                for(auto it = ops.begin(); it != ops.end(); ++it)
                 {
-                    fOp.Set(fPrevValue, fTimeCode);
+                    if(it->GetName() == opName)
+                    {
+                        ops.erase(it);
+                        UsdGeomXformable(fPrim).SetXformOpOrder(ops, reset);
+                        break;
+                    }
                 }
-                break;
             }
         }
-        break;
-
-    case UsdGeomXformOp::TypeTransform:
+    }
+    else
+    {
+        // do nothing
+        if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
         {
-            GfMatrix4d M;
-            fOp.Get(&M, fTimeCode);
-			GfVec3d relativeScalar(fNewValue[0] / fPrevValue[0], fNewValue[1] / fPrevValue[1], fNewValue[2] / fPrevValue[2]);
-            M[0][0] *= relativeScalar[0]; M[0][1] *= relativeScalar[0]; M[0][2] *= relativeScalar[0];
-            M[1][0] *= relativeScalar[1]; M[1][1] *= relativeScalar[1]; M[1][2] *= relativeScalar[1];
-            M[2][0] *= relativeScalar[2]; M[2][1] *= relativeScalar[2]; M[2][2] *= relativeScalar[2];
-            fOp.Set(M, fTimeCode);
+            return;
         }
-        break;
+        switch(fOp.GetOpType())
+        {
+        case UsdGeomXformOp::TypeScale:
+            {
+                switch(fOp.GetPrecision())
+                {
+                case UsdGeomXformOp::PrecisionHalf:
+                    {
+                        fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    }
+                    break;
+                case UsdGeomXformOp::PrecisionFloat:
+                    {
+                        fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                    }
+                    break;
+                case UsdGeomXformOp::PrecisionDouble:
+                    {
+                        fOp.Set(fPrevValue, fTimeCode);
+                    }
+                    break;
+                }
+            }
+            break;
 
-    default:
-        break;
+        case UsdGeomXformOp::TypeTransform:
+            {
+                GfMatrix4d M;
+                fOp.Get(&M, fTimeCode);
+                GfVec3d relativeScalar(fNewValue[0] / fPrevValue[0], fNewValue[1] / fPrevValue[1], fNewValue[2] / fPrevValue[2]);
+                M[0][0] *= relativeScalar[0]; M[0][1] *= relativeScalar[0]; M[0][2] *= relativeScalar[0];
+                M[1][0] *= relativeScalar[1]; M[1][1] *= relativeScalar[1]; M[1][2] *= relativeScalar[1];
+                M[2][0] *= relativeScalar[2]; M[2][1] *= relativeScalar[2]; M[2][2] *= relativeScalar[2];
+                fOp.Set(M, fTimeCode);
+            }
+            break;
+
+        default:
+            break;
+        }
     }
 }
 
