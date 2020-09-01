@@ -655,13 +655,30 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
     rprimId = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
 #else
-    if (drawInstID > 0) {
-        rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
+    auto temp = _sceneDelegate->GetPathForInstanceIndex(rprimId, std::max(0, usdInstID), nullptr);
+    if(!temp.IsEmpty())
+    {
+        // only update if the scene delegate returned a valid path
+        rprimId = temp;
     }
 #endif
 
-    const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
+    {
+        const std::string& str = rprimId.GetString();
+        if(!str.empty())
+        {
+            // strip the proxy shape prefix from path.
+            // From this we can query the prim to see if it's an instance proxy, in which case select the parent
+            SdfPath itemPath(str.c_str() + str.find_first_of('/', 1));
+            auto prim = _proxyShapeData->ProxyShape()->getUsdStage()->GetPrimAtPath(itemPath);
+            if(!prim || prim.IsInstanceProxy())
+            {
+                rprimId = rprimId.GetParentPath();
+            }
+        }
+    }
 
+    const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     Ufe::SceneItem::Ptr si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
