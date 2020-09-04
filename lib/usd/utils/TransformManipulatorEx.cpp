@@ -76,7 +76,6 @@ bool TransformManipulatorEx::SetRotate(const GfQuatd& orientation, Space space)
     {
       d256 offset = multiplyQuat(quatInvert(rotate), final_orient);
       GfQuatd Q(get<3>(offset), get<0>(offset), get<1>(offset), get<2>(offset));
-      double* D = (double*)&Q;
       return TransformManipulator::Rotate(Q, space);
     }
     if(space == kWorld)
