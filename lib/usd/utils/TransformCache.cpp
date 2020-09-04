@@ -1,35 +1,11 @@
 
 #include "TransformCache.h"
-#include "TransformOpTools.h"
+#include "TransformEvaluator.h"
+#include "TransformMaths.h"
 #include "SIMD.h"
 #include <stack>
 
 namespace MayaUsdUtils {
-
-namespace {
-
-// rotate an offset vector by the coordinate frame
-inline d256 transform4d(const d256 offset, const d256 frame[4])
-{
-  const d256 xxx = permute4d<0, 0, 0, 0>(offset);
-  const d256 yyy = permute4d<1, 1, 1, 1>(offset);
-  const d256 zzz = permute4d<2, 2, 2, 2>(offset);
-  const d256 www = permute4d<3, 3, 3, 3>(offset);
-  return fmadd4d(www, frame[3], fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], mul4d(xxx, frame[0]))));
-}
-
-// frame *= childTransform
-inline void multiply4x4(d256 output[4], const d256 childTransform[4], const d256 parentTransform[4])
-{
-  const d256 mx = transform4d(childTransform[0], parentTransform);
-  const d256 my = transform4d(childTransform[1], parentTransform);
-  const d256 mz = transform4d(childTransform[2], parentTransform);
-  output[3] = transform4d(childTransform[3], parentTransform);
-  output[0] = mx;
-  output[1] = my;
-  output[2] = mz;
-}
-}
 
 const TransformCache::_MatrixCache& TransformCache::_CacheTransform(UsdPrim prim, UsdTimeCode timeCode)
 {
@@ -88,7 +64,7 @@ const TransformCache::_MatrixCache& TransformCache::_CacheTransform(UsdPrim prim
     // compute local matrix for op
     bool reset;
     auto ops = xform.GetOrderedXformOps(&reset);
-    entry.ls = TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, uint32_t(ops.size()), timeCode);
+    entry.ls = TransformEvaluator::EvaluateCoordinateFrameForIndex(ops, uint32_t(ops.size()), timeCode);
 
     // 
     if(!reset)

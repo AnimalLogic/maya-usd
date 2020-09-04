@@ -22,6 +22,8 @@
 #include <mayaUsd/ufe/UsdTranslateUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <mayaUsdUtils/TransformMaths.h>
+
 #include "private/Utils.h"
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -30,16 +32,11 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
 
-
-#include <mayaUsdUtils/MayaTransformAPI.h>
-
 MAYAUSD_NS_DEF {
 namespace ufe {
 namespace {
 const TfToken kEmptyToken("");
 }
-
-#define USE_TRANSFORM_OPS 1
 
 	MAYAUSD_CORE_PUBLIC
 	ActiveTool GetActiveTool()
@@ -55,7 +52,7 @@ const TfToken kEmptyToken("");
 		return ActiveTool::kSelect;
 	}
 
-	MayaUsdUtils::TransformOpProcessor::Space CurrentTranslateManipulatorSpace()
+	MayaUsdUtils::TransformManipulator::Space CurrentTranslateManipulatorSpace()
 	{
 		int result = 0;
 		MGlobal::executeCommand("manipMoveContext -q -mode \"Move\"", result, false, false);
@@ -67,19 +64,19 @@ const TfToken kEmptyToken("");
 				// However, the central box works in world space. 
 				int cah;
 				MGlobal::executeCommand("manipMoveContext -q -cah \"Move\"", cah, false, false);
-				return cah != 3 ? MayaUsdUtils::TransformOpProcessor::kPostTransform : MayaUsdUtils::TransformOpProcessor::kWorld;
+				return cah != 3 ? MayaUsdUtils::TransformManipulator::kPostTransform : MayaUsdUtils::TransformManipulator::kWorld;
 			}
 			break;
 
-		case 1: return MayaUsdUtils::TransformOpProcessor::kPreTransform;
-		case 2: return MayaUsdUtils::TransformOpProcessor::kWorld;
+		case 1: return MayaUsdUtils::TransformManipulator::kPreTransform;
+		case 2: return MayaUsdUtils::TransformManipulator::kWorld;
 		default: break;
 		}
-		return MayaUsdUtils::TransformOpProcessor::kTransform;
+		return MayaUsdUtils::TransformManipulator::kTransform;
 	}
 
 	MAYAUSD_CORE_PUBLIC
-	MayaUsdUtils::TransformOpProcessor::Space CurrentManipulatorSpace()
+	MayaUsdUtils::TransformManipulator::Space CurrentManipulatorSpace()
 	{
 		int result = 0;
 		switch(GetActiveTool())
@@ -99,9 +96,9 @@ const TfToken kEmptyToken("");
 
 		switch(result)
 		{
-		case 0: return MayaUsdUtils::TransformOpProcessor::kPostTransform;
-		case 1: return MayaUsdUtils::TransformOpProcessor::kPreTransform;
-		case 2: return MayaUsdUtils::TransformOpProcessor::kWorld;
+		case 0: return MayaUsdUtils::TransformManipulator::kPostTransform;
+		case 1: return MayaUsdUtils::TransformManipulator::kPreTransform;
+		case 2: return MayaUsdUtils::TransformManipulator::kWorld;
 		// Given the lack of a coordinate frame in UFE, we can only handle local/world frames :(
 		/* 
 		0 - Object Space
@@ -115,7 +112,7 @@ const TfToken kEmptyToken("");
 		*/
 		default: break;
 		}
-		return MayaUsdUtils::TransformOpProcessor::kTransform;
+		return MayaUsdUtils::TransformManipulator::kTransform;
 	}
 
 namespace {
@@ -127,7 +124,6 @@ namespace {
 
 	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
-		#if USE_TRANSFORM_OPS
 		try
 		{		
 			auto space = CurrentManipulatorSpace();
@@ -135,10 +131,10 @@ namespace {
 			{
 			case ActiveTool::kRotate:
 				{
-					if(MayaUsdUtils::TransformOpProcessor::kWorld == space || 
-					   MayaUsdUtils::TransformOpProcessor::kTransform == space)
+					if(MayaUsdUtils::TransformManipulator::kWorld == space || 
+					   MayaUsdUtils::TransformManipulator::kTransform == space)
 					{
-						MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kRotate, time);
+						MayaUsdUtils::TransformManipulator proc(prim, kEmptyToken, MayaUsdUtils::TransformManipulator::kRotate, time);
 						return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
 					}
 				}
@@ -146,14 +142,14 @@ namespace {
 
 			case ActiveTool::kTranslate:
 				{
-					if(MayaUsdUtils::TransformOpProcessor::kWorld == space || 
-					   MayaUsdUtils::TransformOpProcessor::kTransform == space)
+					if(MayaUsdUtils::TransformManipulator::kWorld == space || 
+					   MayaUsdUtils::TransformManipulator::kTransform == space)
 					{
-						MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kTranslate, time);
+						MayaUsdUtils::TransformManipulator proc(prim, kEmptyToken, MayaUsdUtils::TransformManipulator::kTranslate, time);
 						return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
 					}
-					if(MayaUsdUtils::TransformOpProcessor::kPreTransform == space || 
-					   MayaUsdUtils::TransformOpProcessor::kPostTransform == space)
+					if(MayaUsdUtils::TransformManipulator::kPreTransform == space || 
+					   MayaUsdUtils::TransformManipulator::kPostTransform == space)
 					{
 						// use defaults
 					}
@@ -162,10 +158,10 @@ namespace {
 
 			case ActiveTool::kScale:
 				{
-					if(MayaUsdUtils::TransformOpProcessor::kWorld == space || 
-					   MayaUsdUtils::TransformOpProcessor::kTransform == space)
+					if(MayaUsdUtils::TransformManipulator::kWorld == space || 
+					   MayaUsdUtils::TransformManipulator::kTransform == space)
 					{
-						MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kScale, time);
+						MayaUsdUtils::TransformManipulator proc(prim, kEmptyToken, MayaUsdUtils::TransformManipulator::kScale, time);
 						return convertFromUsd(proc.ManipulatorMatrix() * proc.ParentFrame());
 					}
 				}
@@ -180,7 +176,6 @@ namespace {
 		{
 			std::cerr << e.what() << '\n';
 		}
-		#endif
 
 		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetLocalToWorldTransform(prim);
@@ -190,14 +185,13 @@ namespace {
 
 	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
-		#if USE_TRANSFORM_OPS
 		try
 		{
 			switch(GetActiveTool())
 			{
 			case ActiveTool::kRotate:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kRotate, time);
+					MayaUsdUtils::TransformManipulator proc(prim, kEmptyToken, MayaUsdUtils::TransformManipulator::kRotate, time);
 					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
 				}
 				break;
@@ -205,9 +199,9 @@ namespace {
 			case ActiveTool::kTranslate:
 				{
 					auto space = CurrentTranslateManipulatorSpace();
-					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kTranslate, time);
-					if(space != MayaUsdUtils::TransformOpProcessor::kWorld && 
-					   space != MayaUsdUtils::TransformOpProcessor::kPreTransform)
+					MayaUsdUtils::TransformManipulator proc(prim, kEmptyToken, MayaUsdUtils::TransformManipulator::kTranslate, time);
+					if(space != MayaUsdUtils::TransformManipulator::kWorld && 
+					   space != MayaUsdUtils::TransformManipulator::kPreTransform)
 					{
 						return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
 					}
@@ -217,7 +211,7 @@ namespace {
 
 			case ActiveTool::kScale:
 				{
-					MayaUsdUtils::TransformOpProcessor proc(prim, kEmptyToken, MayaUsdUtils::TransformOpProcessor::kScale, time);
+					MayaUsdUtils::TransformManipulator proc(prim, kEmptyToken, MayaUsdUtils::TransformManipulator::kScale, time);
 					return convertFromUsd(proc.CoordinateFrame() * proc.ParentFrame());
 				}
 				break;
@@ -231,7 +225,7 @@ namespace {
 		{
 			std::cerr << e.what() << '\n';
 		}
-		#endif
+		
 		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetParentToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
@@ -314,19 +308,19 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
+	MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kTranslate, timeCode());
 	switch(CurrentManipulatorSpace())
 	{
-	case MayaUsdUtils::TransformOpProcessor::kWorld:
+	case MayaUsdUtils::TransformManipulator::kWorld:
 		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
 		break;
-	case MayaUsdUtils::TransformOpProcessor::kPreTransform:
+	case MayaUsdUtils::TransformManipulator::kPreTransform:
 		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
 		break;
-	case MayaUsdUtils::TransformOpProcessor::kTransform:
+	case MayaUsdUtils::TransformManipulator::kTransform:
 		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
 		break;
-	case MayaUsdUtils::TransformOpProcessor::kPostTransform:
+	case MayaUsdUtils::TransformManipulator::kPostTransform:
 		proc.SetTranslate(GfVec3d(x, y, z), CurrentManipulatorSpace());
 		break;
 	}
@@ -336,10 +330,10 @@ Ufe::Vector3d UsdTransform3d::translation() const
 {
 	switch(CurrentManipulatorSpace())
 	{
-	case MayaUsdUtils::TransformOpProcessor::kWorld:
-	case MayaUsdUtils::TransformOpProcessor::kTransform:
+	case MayaUsdUtils::TransformManipulator::kWorld:
+	case MayaUsdUtils::TransformManipulator::kTransform:
 		{
-			MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kTranslate, timeCode());
+			MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kTranslate, timeCode());
 			auto translate = proc.Translation();
 			return Ufe::Vector3d(translate[0], translate[1], translate[2]);
 		}
@@ -349,14 +343,14 @@ Ufe::Vector3d UsdTransform3d::translation() const
 	}
 	bool reset;
 	std::vector<UsdGeomXformOp> ops = UsdGeomXformable(fPrim).GetOrderedXformOps(&reset);
-	GfMatrix4d m = MayaUsdUtils::TransformOpProcessor::EvaluateCoordinateFrameForIndex(ops, ops.size(), timeCode());
+	GfMatrix4d m = MayaUsdUtils::TransformManipulator::EvaluateCoordinateFrameForIndex(ops, ops.size(), timeCode());
 	return Ufe::Vector3d(m[3][0], m[3][1], m[3][2]);
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2013
 Ufe::Vector3d UsdTransform3d::rotation() const
 {
-	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, timeCode());
+	MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kRotate, timeCode());
 	auto quat = proc.Rotation();
 
 	// UFE only supports XYZ rotation orders, so convert from quat to euler 
@@ -366,7 +360,7 @@ Ufe::Vector3d UsdTransform3d::rotation() const
 
 Ufe::Vector3d UsdTransform3d::scale() const
 {
-	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, timeCode());
+	MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, timeCode());
 	auto scale = proc.Scale();
 	return Ufe::Vector3d(scale[0], scale[1], scale[2]);
 }
@@ -379,7 +373,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, do
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
-	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, timeCode());
+	MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kRotate, timeCode());
 	GfQuatd quat = MayaUsdUtils::QuatFromEulerXYZ(GfVec3d(x, y, z));
 	proc.SetRotate(quat, CurrentManipulatorSpace());
 }
@@ -410,7 +404,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-	MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, timeCode());
+	MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, timeCode());
 	proc.SetScale(GfVec3d(x, y, z), CurrentManipulatorSpace());
 }
 
@@ -422,15 +416,11 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
-	//MayaUsdUtils::MayaTransformAPI api(fPrim);
-	//api.rotatePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
-	//MayaUsdUtils::MayaTransformAPI api(fPrim);
-	//auto value = api.rotatePivot(timeCode());
-	return Ufe::Vector3d(0, 0, 0);//value[0], value[1], value[2]);
+	return Ufe::Vector3d(0, 0, 0);
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
@@ -441,15 +431,11 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
 
 void UsdTransform3d::scalePivotTranslate(double x, double y, double z)
 {
-	//MayaUsdUtils::MayaTransformAPI api(fPrim);
-	//api.scalePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const
 {
-	//MayaUsdUtils::MayaTransformAPI api(fPrim);
-	//auto value = api.scalePivot(timeCode());
-	return Ufe::Vector3d(0, 0, 0);//value[0], value[1], value[2]);
+	return Ufe::Vector3d(0, 0, 0);
 }
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const

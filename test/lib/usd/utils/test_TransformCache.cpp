@@ -1,5 +1,5 @@
 
-#include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsdUtils/TransformManipulatorEx.h>
 #include <mayaUsdUtils/TransformCache.h>
 
 #include <pxr/usd/usdGeom/xform.h>

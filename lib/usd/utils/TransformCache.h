@@ -29,7 +29,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-/// A class that uses the slightly more efficient TransformOpProcessor matrix evaluation to create an xform cache. 
+/// A class that uses the slightly more efficient TransformEvaluator matrix evaluation to create an xform cache. 
 /// There is no validation performed by this class to see if the prims are from the same stage, so beware!
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 class TransformCache

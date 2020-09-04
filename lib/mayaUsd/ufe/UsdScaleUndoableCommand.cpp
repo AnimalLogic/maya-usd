@@ -21,8 +21,7 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 
-#include <mayaUsdUtils/MayaTransformAPI.h>
-#include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsdUtils/TransformManipulator.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -43,7 +42,7 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(
 {
     try 
     {
-        MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, timeCode);
+        MayaUsdUtils::TransformManipulator proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, timeCode);
         fOp = proc.op();
 		// only write time samples if op already has samples
 		if(!ExistingOpHasSamples(fOp))
@@ -241,7 +240,7 @@ bool UsdScaleUndoableCommand::scale(double x, double y, double z)
     fNewValue = GfVec3d(x, y, z);
     try
     {
-        MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kScale, fTimeCode);
+        MayaUsdUtils::TransformManipulator proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, fTimeCode);
 		auto s = proc.Scale();
 		
 		// do nothing 

@@ -23,7 +23,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsdUtils/TransformManipulatorEx.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,7 +48,7 @@ MAYAUSD_CORE_PUBLIC
 ActiveTool GetActiveTool();
 
 MAYAUSD_CORE_PUBLIC
-MayaUsdUtils::TransformOpProcessor::Space CurrentManipulatorSpace(); 
+MayaUsdUtils::TransformManipulator::Space CurrentManipulatorSpace(); 
 
 //! \brief Interface to transform objects in 3D.
 class MAYAUSD_CORE_PUBLIC UsdTransform3d : public Ufe::Transform3d

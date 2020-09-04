@@ -17,10 +17,10 @@
 
 #include "Utils.h"
 #include "private/Utils.h"
-#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "../base/debugCodes.h"
 
-#include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsdUtils/TransformManipulatorEx.h>
+#include <mayaUsdUtils/TransformMaths.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <iostream>
@@ -53,7 +53,7 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
 {
     try 
     {
-        MayaUsdUtils::TransformOpProcessor proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, timeCode);
+        MayaUsdUtils::TransformManipulator proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kRotate, timeCode);
         fOp = proc.op();
 		// only write time samples if op already has samples
 		if(!ExistingOpHasSamples(fOp))
@@ -111,6 +111,7 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
         fCreatedOp = true;
         auto stage = fPrim.GetStage();
         fEditTarget = stage->GetEditTarget();
+		fPrevValue = GfQuatd(1.0, 0, 0, 0);
     }
 }
 
@@ -182,10 +183,6 @@ void UsdRotateUndoableCommand::undo()
     }
     else
     {
-		if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
-		{
-			return;
-		}
 		switch(fOp.GetOpType())
 		{
 		// invalid types here
@@ -197,7 +194,7 @@ void UsdRotateUndoableCommand::undo()
 			break;
 		}
 
-		MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, fTimeCode);
+		MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kRotate, fTimeCode);
 		proc.SetRotate(fPrevValue);
 	}
 }
@@ -220,7 +217,7 @@ bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 	
 	try
 	{
-		MayaUsdUtils::TransformOpProcessorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformOpProcessor::kRotate, fTimeCode);
+		MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kRotate, fTimeCode);
 		auto currentRotation = proc.Rotation();
 
 		// compute offset between new and current value
@@ -251,7 +248,7 @@ bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 		}
 		else
 		{
-			proc.Rotate(diff, MayaUsdUtils::TransformOpProcessor::kTransform);
+			proc.Rotate(diff, MayaUsdUtils::TransformManipulator::kTransform);
 		}
 	}
 	catch(const std::exception& e)

@@ -15,493 +15,22 @@
 //
 
 #include "SIMD.h"
-#include "TransformOpTools.h"
+#include "TransformManipulator.h"
+#include "TransformMaths.h"
 
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/base/gf/rotation.h>
 #include <iostream>
 
 namespace MayaUsdUtils {
-namespace {
 
-template<typename T> inline T radiansToDegrees(const T& rad) { return rad * T(180.0 / M_PI); }
-template<typename T> inline T degreesToRadians(const T& rad) { return rad * T(M_PI / 180.0); }
-template<typename T> inline T halfAngleToDegrees(const T& rad) { return rad * T(360.0 / M_PI); }
-template<typename T> inline T degreesToHalfAngle(const T& rad) { return rad * T(M_PI / 360.0); }
-
-template<> inline GfVec3d radiansToDegrees(const GfVec3d& rad) { return rad * double(180.0 / M_PI); }
-template<> inline GfVec3d degreesToRadians(const GfVec3d& rad) { return rad * double(M_PI / 180.0); }
-template<> inline GfVec3d halfAngleToDegrees(const GfVec3d& rad) { return rad * double(360.0 / M_PI); }
-template<> inline GfVec3d degreesToHalfAngle(const GfVec3d& rad) { return rad * double(M_PI / 360.0); }
-
-template<> inline d256 radiansToDegrees(const d256& rad) { return mul4d(rad, splat4d(180.0 / M_PI)); }
-template<> inline d256 degreesToRadians(const d256& rad) { return mul4d(rad, splat4d(M_PI / 180.0)); }
-template<> inline d256 halfAngleToDegrees(const d256& rad) { return mul4d(rad, splat4d(360.0 / M_PI)); }
-template<> inline d256 degreesToHalfAngle(const d256& rad) { return mul4d(rad, splat4d(M_PI / 360.0)); }
-
-//---------------------------------------------------------------------------------------------
-// Note: If needed, it's possible to sneak a bit more performance from this code. I stopped 
-// short of adding a vectorised sincos() implementation, but that would be possible....
-//---------------------------------------------------------------------------------------------
-inline d256 Quat_from_EulerXYZ(const d256 half_angles)
-{
-  const double x = get<0>(half_angles);
-  const double y = get<1>(half_angles);
-  const double z = get<2>(half_angles);
-  const double sx = std::sin(x);
-  const double cx = std::cos(x);
-  const double sy = std::sin(y);
-  const double cy = std::cos(y);
-  const double sz = std::sin(z);
-  const double cz = std::cos(z);
-  const double czcy = cz * cy;
-  const double czsy = cz * sy;
-  const double szsy = sz * sy;
-  const double szcy = sz * cy;
-  return set4d(
-     (czcy * sx) - (szsy * cx),
-     (czsy * cx) + (szcy * sx),
-    -(czsy * sx) + (szcy * cx),
-     (czcy * cx) + (szsy * sx)
-  );
-}
-
-inline d256 Quat_from_EulerXZY(const d256 half_angles)
-{
-  const double x = get<0>(half_angles);
-  const double y = get<1>(half_angles);
-  const double z = get<2>(half_angles);
-  const double sx = std::sin(x);
-  const double cx = std::cos(x);
-  const double sy = std::sin(y);
-  const double cy = std::cos(y);
-  const double sz = std::sin(z);
-  const double cz = std::cos(z);
-  const double cycz = cy * cz;
-  const double cysz = cy * sz;
-  const double sycz = sy * cz;
-  const double sysz = sy * sz;
-  return set4d(
-    (cycz * sx) + (sysz * cx),
-    (cysz * sx) + (sycz * cx),
-    (cysz * cx) - (sycz * sx),
-    (cycz * cx) - (sysz * sx)
-  );
-}
-
-inline d256 Quat_from_EulerYXZ(const d256 half_angles)
-{
-  const double x = get<0>(half_angles);
-  const double y = get<1>(half_angles);
-  const double z = get<2>(half_angles);
-  const double sx = std::sin(x);
-  const double cx = std::cos(x);
-  const double sy = std::sin(y);
-  const double cy = std::cos(y);
-  const double sz = std::sin(z);
-  const double cz = std::cos(z);
-  const double czsx = cz * sx;
-  const double czcx = cz * cx;
-  const double szsx = sz * sx;
-  const double szcx = sz * cx;
-  return set4d(
-    (czsx * cy) - (szcx * sy),
-    (czcx * sy) + (szsx * cy),
-    (czsx * sy) + (szcx * cy),
-    (czcx * cy) - (szsx * sy)
-  );
-}
-
-inline d256 Quat_from_EulerYZX(const d256 half_angles)
-{
-  const double x = get<0>(half_angles);
-  const double y = get<1>(half_angles);
-  const double z = get<2>(half_angles);
-  const double sx = std::sin(x);
-  const double cx = std::cos(x);
-  const double sy = std::sin(y);
-  const double cy = std::cos(y);
-  const double sz = std::sin(z);
-  const double cz = std::cos(z);
-  const double cxsz = cx * sz;
-  const double cxcz = cx * cz;
-  const double sxsz = sx * sz;
-  const double sxcz = sx * cz;
-  return set4d(
-    -(cxsz * sy) + (sxcz * cy),
-     (cxcz * sy) - (sxsz * cy),
-     (cxsz * cy) + (sxcz * sy),
-     (cxcz * cy) + (sxsz * sy)
-  );
-}
-
-inline d256 Quat_from_EulerZYX(const d256 half_angles)
-{
-  const double x = get<0>(half_angles);
-  const double y = get<1>(half_angles);
-  const double z = get<2>(half_angles);
-  const double sx = std::sin(x);
-  const double cx = std::cos(x);
-  const double sy = std::sin(y);
-  const double cy = std::cos(y);
-  const double sz = std::sin(z);
-  const double cz = std::cos(z);
-  const double cxsy = cx * sy;
-  const double cxcy = cx * cy;
-  const double sxsy = sx * sy;
-  const double sxcy = sx * cy;
-  return set4d(
-    (cxsy * sz) + (sxcy * cz),
-    (cxsy * cz) - (sxcy * sz),
-    (cxcy * sz) + (sxsy * cz),
-    (cxcy * cz) - (sxsy * sz)
-  );
-}
-
-inline d256 Quat_from_EulerZXY(const d256 half_angles)
-{
-  const double x = get<0>(half_angles);
-  const double y = get<1>(half_angles);
-  const double z = get<2>(half_angles);
-  const double sx = std::sin(x);
-  const double cx = std::cos(x);
-  const double sy = std::sin(y);
-  const double cy = std::cos(y);
-  const double sz = std::sin(z);
-  const double cz = std::cos(z);
-  const double cysx = cy * sx;
-  const double cycx = cy * cx;
-  const double sysx = sy * sx;
-  const double sycx = sy * cx;
-  return set4d(
-     (cysx * cz) + (sycx * sz),
-    -(cysx * sz) + (sycx * cz),
-     (cycx * sz) - (sysx * cz),
-     (cycx * cz) + (sysx * sz)
-  );
-}
-
-
-//-------------------------------------------------------------------------------------------
-// /Autogenerated code.
-//-------------------------------------------------------------------------------------------
-
-//-------------------------------------------------------------------------------------------
-enum class RotationOrder
-{
-  kXYZ, 
-  kYZX, 
-  kZXY, 
-  kXZY, 
-  kYXZ, 
-  kZYX
-};
-
-inline d256 multiplyQuat(const d256 parent, const d256 child)
-{
-  const d256 negw = set4d(0, 0, 0, -0.0);
-  const d256 pWWWW = permute4d<3, 3, 3, 3>(parent);
-  const d256 pXYZX = xor4d(permute4d<0, 1, 2, 0>(parent), negw);
-  const d256 pZXYY = permute4d<2, 0, 1, 1>(parent);
-  const d256 pYZXZ = xor4d(permute4d<1, 2, 0, 2>(parent), negw);
-  const d256 cXYZW = permute4d<0, 1, 2, 3>(child);
-  const d256 cWWWX = permute4d<3, 3, 3, 0>(child);
-  const d256 cYZXY = permute4d<1, 2, 0, 1>(child);
-  const d256 cZXYZ = permute4d<2, 0, 1, 2>(child);
-  d256 rr = fmadd4d(pXYZX, cWWWX, mul4d(pWWWW, cXYZW));
-  rr = fnmadd4d(pZXYY, cYZXY, rr);
-  return fmadd4d(pYZXZ, cZXYZ, rr);
-}
-
-inline d256 cross(d256 b, d256 c)
-{
-  const d256 B1 = permute4d<1, 2, 0, 3>(b);
-  const d256 C1 = permute4d<2, 0, 1, 3>(c);
-  const d256 B2 = permute4d<2, 0, 1, 3>(b);
-  const d256 C2 = permute4d<1, 2, 0, 3>(c);
-
-	// (a)[0] = (b)[1] * (c)[2] - (c)[1] * (b)[2];
-	// (a)[1] = (b)[2] * (c)[0] - (c)[2] * (b)[0];
-	// (a)[2] = (b)[0] * (c)[1] - (c)[0] * (b)[1];
-
-  return fmadd4d(B1, C1, mul4d(B2, C2));
-}
-
-inline void extractEuler(const d256 M[4], RotationOrder rotOrder, GfVec3f& rot)
-{
-  double mat[4][4];
-  store4d(mat[0], M[0]);
-  store4d(mat[1], M[1]);
-  store4d(mat[2], M[2]);
-  store4d(mat[3], M[3]);
-  const int mod3[6] = {0, 1, 2, 0, 1, 2};
-  const int k1 = int(rotOrder) > 2 ? 2 : 1;
-  const int k2 = 3 - k1;
-  const int row = mod3[int(rotOrder)];
-  const int col = mod3[k2 + row];
-  const int colCos = mod3[col + k1];
-  const int colSin = mod3[col + k2];
-  const int rowSin = mod3[row + k1];
-  const int rowCos = mod3[row + k2];
-  const double s  = int(rotOrder) < 3 ? -1.0 : 1.0;
-
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  if (std::fabs(mat[row][col] - 1) < epsilon)
-  {
-    rot[row] = std::atan2(s*mat[rowSin][colCos], mat[rowSin][colSin]);
-    rot[rowSin] = s*M_PI/2.0;
-    rot[rowCos] = 0;
-  }
-  else
-  if (std::fabs(mat[row][col] + 1) < epsilon)
-  {    
-    rot[row] = std::atan2(-s*mat[rowSin][colCos], mat[rowSin][colSin]);
-    rot[rowSin] = -s*M_PI/2.0;
-    rot[rowCos] = 0;
-  }
-  else
-  {
-    rot[row] = std::atan2(-s*mat[rowSin][col], mat[rowCos][col] );
-    rot[rowSin] = std::asin ( s*mat[row][col] );
-    rot[rowCos] = std::atan2(-s*mat[row][colSin], mat[row][colCos] );
-  }
-}
-
-inline d256 quatInvert(d256 quat)
-{
-  return xor4d(quat, set4d(-0.0, -0.0, -0.0, 0.0));
-}
-
-void quatToMatrix(d256 quat, d256 matrix[4])
-{
-  // the standard Quatd to matrix follows this approach:
-  // 
-  //   1 - 2yy - 2zz,      2xy + 2wz,      2xz - 2wy
-  //       2xy - 2wz,  1 - 2xx - 2zz,      2yz + 2wx
-  //       2xz + 2wy,      2yz - 2wx,  1 - 2xx - 2yy
-  // 
-  // Pretty much every term needs to be multiplied by 2, so let's cheat instead! Define the following:
-  // 
-  //   X = x * sqrt(2);
-  //   Y = y * sqrt(2);
-  //   Z = z * sqrt(2);
-  //   W = w * sqrt(2);
-  //
-  // and now we can simplify the equation to:
-  // 
-  //   1 - YY - ZZ,      XY + ZW,      XZ - YW
-  //       XY - ZW,  1 - XX - ZZ,      YZ + XW
-  //       XZ + YW,      YZ - XW,  1 - XX - YY
-  //
-  // Whilst there are lots of common terms here, I'm only going to pre-calculate XY, XZ, and YZ. 
-  // All of the other terms I will calculate using FMA instructions. This does mean I'll be 
-  // duplicating some computations, however fmadd has a higher throughput that add or sub, so it's 
-  // actually just quicker to duplicate those computations! (somewhat counter intuitively!)
-  // 
-  const d256 root2 = splat4d(1.4142135623730950488016887242097);
-  //const d256 one = splat4d(1.0);
-  const d256 XYZW = mul4d(quat, root2);
-
-  d256 X;
-  d256 Y;
-  d256 Z;
-  {
-    auto YXX = permute4d<1, 0, 0, 3>(XYZW);
-    auto YYZ = permute4d<1, 1, 2, 3>(XYZW);
-    auto ZZY = permute4d<2, 2, 1, 3>(XYZW);
-    auto ZWW = permute4d<2, 3, 3, 3>(XYZW);
-    X = mul4d(YXX, YYZ);
-    ZZY = xor4d(ZZY, set4d(0, 0, -0.0, 0));
-    X = fmadd4d(ZZY, ZWW, X);
-    X = xor4d(X, set4d(-0.0, 0, 0, 0));
-    X = add4d(X, set4d(1.0, 0, 0, 0));
-  }
-  {
-    auto XXY = permute4d<0, 0, 1, 3>(XYZW);
-    auto YXZ = permute4d<1, 0, 2, 3>(XYZW);
-    auto ZZX = permute4d<2, 2, 0, 3>(XYZW);
-    auto WZW = permute4d<3, 2, 3, 3>(XYZW);
-    Y = mul4d(XXY, YXZ);
-    ZZX = xor4d(ZZX, set4d(-0.0, 0, 0, 0));
-    Y = fmadd4d(ZZX, WZW, Y);
-    Y = xor4d(Y, set4d(0, -0.0, 0, 0));
-    Y = add4d(Y, set4d(0, 1.0, 0, 0));
-  }
-  {
-    auto XYX = permute4d<0, 1, 0, 3>(XYZW);
-    auto ZZX = permute4d<2, 2, 0, 3>(XYZW);
-    auto YXY = permute4d<1, 0, 1, 3>(XYZW);
-    auto WWY = permute4d<3, 3, 1, 3>(XYZW);
-    Z = mul4d(XYX, ZZX);
-    YXY = xor4d(YXY, set4d(0, -0.0, 0, 0));
-    Z = fmadd4d(YXY, WWY, Z);
-    Z = xor4d(Z, set4d(0, 0, -0.0, 0));
-    Z = add4d(Z, set4d(0, 0, 1.0, 0));
-  }
-  matrix[0] = select4d<1, 1, 1, 0>(X, zero4d());
-  matrix[1] = select4d<1, 1, 1, 0>(Y, zero4d());
-  matrix[2] = select4d<1, 1, 1, 0>(Z, zero4d());
-  matrix[3] = set4d(0, 0, 0, 1.0);
-}
-
-/// there is room for improvement here!
-void extractEuler(const d256 q, RotationOrder rotOrder, GfVec3f& rot)
-{
-  d256 matrix[4];
-  quatToMatrix(q, matrix);
-  extractEuler(matrix, rotOrder, rot);
-}
-
-// rotate an offset vector by the coordinate frame
-inline d256 rotate(const d256 offset, const d256 frame[4])
-{
-  const d256 xxx = permute4d<0, 0, 0, 0>(offset);
-  const d256 yyy = permute4d<1, 1, 1, 1>(offset);
-  const d256 zzz = permute4d<2, 2, 2, 2>(offset);
-  return fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], mul4d(xxx, frame[0])));
-}
-
-inline double dot3(d256 a, d256 b)
-{
-  d256 ab = mul4d(a, b);
-  return get<0>(ab) + get<1>(ab) + get<2>(ab);
-}
-
-// rotate an offset vector by the coordinate frame
-inline d256 fastInverseRotate(const d256 offset, const d256 frame[4])
-{
-  return set4d(dot3(offset, frame[0]), dot3(offset, frame[1]), dot3(offset, frame[2]), 0);
-}
-
-// rotate an offset vector by the coordinate frame
-inline d256 inverseRotate(const d256 offset, const d256 frame[4])
-{
-  d256 len2 = set4d(dot3(frame[0], frame[0]), dot3(frame[1], frame[1]), dot3(frame[2], frame[2]), 0.0);
-  return div4d(set4d(dot3(offset, frame[0]), dot3(offset, frame[1]), dot3(offset, frame[2]), 0), len2);
-}
-
-// transform a point by the coordinate frame
-inline d256 transform(const d256 offset, const d256 frame[4])
-{
-  return add4d(frame[3], rotate(offset, frame));
-}
-
-// transform a point by the inverse coordinate frame
-inline d256 inverseTransform(d256 offset, const d256 frame[4])
-{
-  offset = sub4d(offset, frame[3]);
-  auto r = inverseRotate(offset, frame);
-  return r;
-}
-
-
-// frame *= childTransform
-inline void multiply(d256 frame[4], const d256 childTransform[4])
-{
-  const d256 mx = rotate(childTransform[0], frame);
-  const d256 my = rotate(childTransform[1], frame);
-  const d256 mz = rotate(childTransform[2], frame);
-  frame[3] = transform(childTransform[3], frame);
-  frame[0] = mx;
-  frame[1] = my;
-  frame[2] = mz;
-}
-
-// rotate an offset vector by the coordinate frame
-inline d256 transform4d(const d256 offset, const d256 frame[4])
-{
-  const d256 xxx = permute4d<0, 0, 0, 0>(offset);
-  const d256 yyy = permute4d<1, 1, 1, 1>(offset);
-  const d256 zzz = permute4d<2, 2, 2, 2>(offset);
-  const d256 www = permute4d<3, 3, 3, 3>(offset);
-  return fmadd4d(www, frame[3], fmadd4d(zzz, frame[2], fmadd4d(yyy, frame[1], mul4d(xxx, frame[0]))));
-}
-
-// frame *= childTransform
-inline void multiply4x4(d256 frame[4], const d256 childTransform[4])
-{
-  const d256 mx = transform4d(childTransform[0], frame);
-  const d256 my = transform4d(childTransform[1], frame);
-  const d256 mz = transform4d(childTransform[2], frame);
-  frame[3] = transform4d(childTransform[3], frame);
-  frame[0] = mx;
-  frame[1] = my;
-  frame[2] = mz;
-}
-// frame *= childTransform
-inline void multiply4x4(d256 output[4], const d256 childTransform[4], const d256 parentTransform[4])
-{
-  const d256 mx = transform4d(childTransform[0], parentTransform);
-  const d256 my = transform4d(childTransform[1], parentTransform);
-  const d256 mz = transform4d(childTransform[2], parentTransform);
-  output[3] = transform4d(childTransform[3], parentTransform);
-  output[0] = mx;
-  output[1] = my;
-  output[2] = mz;
-}
-// frame *= childTransform
-inline void multiply(d256 output[4], const d256 childTransform[4], const d256 parentTransform[4])
-{
-  const d256 mx = rotate(childTransform[0], parentTransform);
-  const d256 my = rotate(childTransform[1], parentTransform);
-  const d256 mz = rotate(childTransform[2], parentTransform);
-  output[3] = transform(childTransform[3], parentTransform);
-  output[0] = mx;
-  output[1] = my;
-  output[2] = mz;
-}
-
-inline d256 matrixToQuat(const d256 iframe[4])
-{
-  d256 frame[3];
-
-  // orthogonalise matrix
-  double lx = std::sqrt(dot3(iframe[0], iframe[0]));
-  double lz = std::sqrt(dot3(iframe[2], iframe[2]));
-  frame[0] = div4d(iframe[0], splat4d(lx));
-  frame[2] = div4d(iframe[2], splat4d(lz));
-  frame[1] = cross(iframe[2], iframe[0]);
-  frame[2] = cross(iframe[0], iframe[1]);
-
-  double W = 1.0 + get<0>(frame[0]) + get<1>(frame[1]) + get<2>(frame[2]);
-  W = std::sqrt(W);
-  const double qx = (get<2>(frame[1]) - get<1>(frame[2]));
-  const double qy = (get<0>(frame[2]) - get<2>(frame[0]));
-  const double s = (0.5 / W);
-  const double qz = (get<1>(frame[0]) - get<0>(frame[1]));
-  return set4d(qx * s, qy * s, qz * s, W * 0.5);
-}
-
-} // end anon
-
-
-/// there is room for improvement here!
-MAYA_USD_UTILS_PUBLIC
-GfVec3d QuatToEulerXYZ(const GfQuatd q)
-{
-  GfVec3f rotate;
-  extractEuler(loadu4d(&q), RotationOrder::kXYZ, rotate);
-  return radiansToDegrees(GfVec3d(rotate[0], rotate[1], rotate[2]));
-}
-
-MAYA_USD_UTILS_PUBLIC
-GfQuatd QuatFromEulerXYZ(const GfVec3d& degrees)
-{
-  GfVec3d h = degreesToHalfAngle(degrees);
-  auto ha = set4d(h[0], h[1], h[2], 0.0);
-  auto q = Quat_from_EulerXYZ(ha);
-  GfQuatd Q;
-  storeu4d(&Q, q);
-  return Q;
-}
-
-TfToken TransformOpProcessor::primaryRotateSuffix;
-TfToken TransformOpProcessor::primaryScaleSuffix;
-TfToken TransformOpProcessor::primaryTranslateSuffix;
+TfToken TransformManipulator::primaryRotateSuffix;
+TfToken TransformManipulator::primaryScaleSuffix;
+TfToken TransformManipulator::primaryTranslateSuffix;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opName, const TransformOpProcessor::ManipulatorMode mode, const UsdTimeCode& tc)
+TransformManipulator::TransformManipulator(const UsdPrim prim, const TfToken opName, const TransformManipulator::ManipulatorMode mode, const UsdTimeCode& tc)
   : _prim(prim)
 {
   _parentFrame.SetIdentity();
@@ -514,7 +43,7 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
   {
     switch(mode)
     {
-    case TransformOpProcessor::kRotate:
+    case TransformManipulator::kRotate:
       {
         if(!primaryRotateSuffix.IsEmpty())
         {
@@ -573,7 +102,7 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
       }
       break;
 
-    case TransformOpProcessor::kScale:
+    case TransformManipulator::kScale:
       {
         if(!primaryScaleSuffix.IsEmpty())
         {
@@ -613,7 +142,7 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
         }
       }
       break;
-    case TransformOpProcessor::kTranslate:
+    case TransformManipulator::kTranslate:
       {
         if(!primaryTranslateSuffix.IsEmpty())
         {
@@ -655,7 +184,7 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
       }
       break;
 
-    case TransformOpProcessor::kGuess:
+    case TransformManipulator::kGuess:
       {
         throw std::runtime_error("Cannot guess the type of an un-named xformOp");
       }
@@ -678,7 +207,7 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const TfToken opN
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const uint32_t opIndex, const TransformOpProcessor::ManipulatorMode mode, const UsdTimeCode& tc)
+TransformManipulator::TransformManipulator(const UsdPrim prim, const uint32_t opIndex, const TransformManipulator::ManipulatorMode mode, const UsdTimeCode& tc)
   : _opIndex(opIndex), _prim(prim)
 {
   _ops = UsdGeomXformable(prim).GetOrderedXformOps(&_resetsXformStack);
@@ -690,14 +219,14 @@ TransformOpProcessor::TransformOpProcessor(const UsdPrim prim, const uint32_t op
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-TransformOpProcessor::ManipulatorMode TransformOpProcessor::ManipMode() const
+TransformManipulator::ManipulatorMode TransformManipulator::ManipMode() const
 {
   return _manipMode; 
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::CanRotate() const
+bool TransformManipulator::CanRotate() const
 {
   if(const auto xop = op())
   {
@@ -717,7 +246,7 @@ bool TransformOpProcessor::CanRotate() const
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::CanTranslate() const
+bool TransformManipulator::CanTranslate() const
 {
   if(const auto xop = op())
   {
@@ -735,7 +264,7 @@ bool TransformOpProcessor::CanTranslate() const
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::CanScale() const
+bool TransformManipulator::CanScale() const
 {
   if(const auto xop = op())
   {
@@ -753,7 +282,7 @@ bool TransformOpProcessor::CanScale() const
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache, const TransformOpProcessor::ManipulatorMode mode)
+void TransformManipulator::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache, const TransformManipulator::ManipulatorMode mode)
 {
   _manipMode = mode;
   _timeCode = tc;
@@ -894,7 +423,7 @@ void TransformOpProcessor::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::Translate(const GfVec3d& translateChange, const Space space)
+bool TransformManipulator::Translate(const GfVec3d& translateChange, const Space space)
 {
   auto xformOp = op();
   // check to make sure this transform op can be translated!
@@ -1019,7 +548,7 @@ static inline bool isClose(const double a, const double b)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
+bool TransformManipulator::Scale(const GfVec3d& scaleChange, const Space space)
 {
   // when in strange coordinate frames, scaling can only be safely applied if the XYZ values are uniform
   switch(space)
@@ -1151,7 +680,7 @@ bool TransformOpProcessor::Scale(const GfVec3d& scaleChange, const Space space)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
+bool TransformManipulator::Rotate(const GfQuatd& quatChange, Space space)
 {
   d256 temp = set4d(quatChange.GetImaginary()[0], quatChange.GetImaginary()[1], quatChange.GetImaginary()[2], quatChange.GetReal());
 
@@ -1847,7 +1376,7 @@ bool TransformOpProcessor::Rotate(const GfQuatd& quatChange, Space space)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::RotateX(const double radianChange, Space space)
+bool TransformManipulator::RotateX(const double radianChange, Space space)
 {
   if(space == kTransform)
   {
@@ -1948,7 +1477,7 @@ bool TransformOpProcessor::RotateX(const double radianChange, Space space)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::RotateY(const double radianChange, Space space)
+bool TransformManipulator::RotateY(const double radianChange, Space space)
 {
   if(space == kTransform)
   {
@@ -2049,7 +1578,7 @@ bool TransformOpProcessor::RotateY(const double radianChange, Space space)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
+bool TransformManipulator::RotateZ(const double radianChange, Space space)
 {
   if(space == kTransform)
   {
@@ -2149,784 +1678,7 @@ bool TransformOpProcessor::RotateZ(const double radianChange, Space space)
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-/// \brief  given an ordered set of XformOps, this method will evaluate the coordinate frame for a specifici xform op. 
-///         By and large it will do this by concatonating operations of the same type, e.g. 
-///          - successive translations will be grouped into 1 translation
-///          - successive scales will be grouped into 1 scale
-///          - successive rotations will be grouped into 1 quaternion
-///         This will then be evaluated 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-GfMatrix4d TransformOpProcessor::EvaluateCoordinateFrameForRange(const std::vector<UsdGeomXformOp>& ops, uint32_t start, uint32_t end, const UsdTimeCode& timeCode)
-{
-  auto iter = ops.begin() + start;
-  auto last = ops.begin() + end;
-  if(last > ops.end() || iter > ops.end()) 
-  {
-    throw;
-  }
-
-  // the computed coordinate frame - initially the identity
-  d256 frame[4] = {
-    set4d(1.0, 0.0, 0.0, 0.0),
-    set4d(0.0, 1.0, 0.0, 0.0),
-    set4d(0.0, 0.0, 1.0, 0.0),
-    set4d(0.0, 0.0, 0.0, 1.0)
-  };
-
-  UsdGeomXformOp::Type lastType = UsdGeomXformOp::TypeInvalid;
-  while(iter < last)
-  {
-    switch (iter->GetOpType())
-    {
-    //-------------------------------------------------------------------------------------
-    // accumulate any translations into a single offset value, which we can apply to the 
-    // matrix at the end. 
-    // Note: During this accumulation of the offset, the 'w' value will be garbage. This is
-    // removed prior to applying to the matrix. 
-    //-------------------------------------------------------------------------------------
-    case UsdGeomXformOp::TypeTranslate:
-      {
-        d256 offset = zero4d();
-        do
-        {
-          std::cout << "offseta " << get<0>(offset) << ' ' << get<1>(offset) << ' ' << get<2>(offset) << '\n';
-          offset = add4d(offset, _Translation(*iter, timeCode));
-          std::cout << "offsetb " << get<0>(offset) << ' ' << get<1>(offset) << ' ' << get<2>(offset) << '\n';
-          ++iter;
-        }
-        while(iter != last && iter->GetOpType() == UsdGeomXformOp::TypeTranslate);
-
-        // the 'w' value in offset is nonsense at this point. Replace it with 1.0. 
-        offset = select4d<1, 1, 1, 0>(offset, splat4d(1.0));
-        std::cout << "offsetc " << get<0>(offset) << ' ' << get<1>(offset) << ' ' << get<2>(offset) << ' ' << get<3>(offset) << '\n';
-
-        // if these translations are the very first in the stack, 
-        // just assign the resulting translation directly, rather 
-        // than trying to pointlessly rotate it (and accumulate error in the process).
-        // typically Translate, RotatePivot, and RotatePivotTranslate could be 
-        // evaluated in this way. 
-        if(lastType == UsdGeomXformOp::TypeInvalid)
-        {
-          frame[3] = offset;
-        }
-        else
-        {
-          // If however this translation is in the middle of the transform stack, 
-          // we need to re-orient the offset by the current coordinate frame before
-          // applying the translation.
-          frame[3] = add4d(frame[3], rotate(offset, frame));
-        }
-        lastType = UsdGeomXformOp::TypeTranslate;
-      }
-      break;
-
-    //-------------------------------------------------------------------------------------
-    // starting with a scaling of (1,1,1), successively multiply each scaling value we find
-    // until we end up with a single scaling op to apply. It's unlikely there will be
-    // multiple scales applied in succession, but might as well follow the same pattern.
-    //-------------------------------------------------------------------------------------
-    case UsdGeomXformOp::TypeScale:
-      {
-        d256 scaling = splat4d(1.0);
-        do
-        {
-          scaling = mul4d(scaling, _Scale(*iter, timeCode));
-          ++iter;
-        }
-        while(iter != last && iter->GetOpType() == UsdGeomXformOp::TypeScale);
-
-        // apply scaling to each axis
-        frame[0] = mul4d(permute4d<0, 0, 0, 0>(scaling), frame[0]);
-        frame[1] = mul4d(permute4d<1, 1, 1, 1>(scaling), frame[1]);
-        frame[2] = mul4d(permute4d<2, 2, 2, 2>(scaling), frame[2]);
-
-        lastType = UsdGeomXformOp::TypeScale;
-      }
-      break;
-
-    //-------------------------------------------------------------------------------------
-    // for transforms, just multiply our frame with them and move on. There is no benefit
-    // accumulating transforms in this case. 
-    //-------------------------------------------------------------------------------------
-    case UsdGeomXformOp::TypeTransform:
-      {
-        d256 dmatrix[4];
-        switch(iter->GetPrecision())
-        {
-        case UsdGeomXformOp::PrecisionDouble:
-          {
-            // just grab matrix
-            iter->Get((GfMatrix4d*)dmatrix, timeCode);
-          }
-          break;
-
-        case UsdGeomXformOp::PrecisionFloat:
-          {
-            // USD doesn't appear to support the GfMatrix4f type ?
-            #if 0
-            // grab as float
-            f128 matrix[4];
-            iter->Get((GfMatrix4f*)matrix, timeCode);
-
-            // convert to double
-            dmatrix[0] = cvt4f_to_4d(matrix[0]);
-            dmatrix[1] = cvt4f_to_4d(matrix[1]);
-            dmatrix[2] = cvt4f_to_4d(matrix[2]);
-            dmatrix[3] = cvt4f_to_4d(matrix[3]);
-            #endif
-          }
-          break;
-
-        case UsdGeomXformOp::PrecisionHalf:
-          {
-            // USD doesn't appear to have a GfMatrix4h ?
-            #if 0
-            // grab as half
-            i128 matrix[2];
-            iter->Get((GfMatrix4h*)matrix, timeCode);
-
-            // convert to float
-            f256 fmatrix[2] = {
-              cvtph8(matrix[0]),
-              cvtph8(matrix[1])
-            };
-
-            // convert to double
-            dmatrix[0] = cvt4f_to_4d(extract4f(fmatrix[0], 0));
-            dmatrix[1] = cvt4f_to_4d(extract4f(fmatrix[0], 1));
-            dmatrix[2] = cvt4f_to_4d(extract4f(fmatrix[1], 0));
-            dmatrix[3] = cvt4f_to_4d(extract4f(fmatrix[1], 1));
-            #endif
-          }
-          break;
-        }
-
-        multiply4x4(frame, dmatrix);
-        lastType = UsdGeomXformOp::TypeTransform;
-      }
-      break;
-
-    //-------------------------------------------------------------------------------------
-    // No op. Only handling this case so I can lazily use the default case for rotation.
-    //-------------------------------------------------------------------------------------
-    case UsdGeomXformOp::TypeInvalid:
-      break;
-
-    //-------------------------------------------------------------------------------------
-    // The default case is used to handle all rotation types. Successive rotations are 
-    // accumulated as a quaternion, which is then converted to a matrix, before being 
-    // multiplied with our frame.
-    // Quats have a few advantages here, and possibly some disadvantages. 
-    // 
-    // Pros:
-    // + Pretty trivial to generate a quat from an euler angle triplet directly. 
-    // + Inverting a quat is extremely fast
-    // Cons:
-    // - People seem to be scared of them :)
-    // - Quat mult can end up being slower than a 4x4 matrix mult 
-    // - rotating a vector by a quat is more expensive that rotating by a matrix
-    //
-    // Looking through the various options here, accumulating eulers would be downright daft, 
-    // accumulating as matrices seems very much like overkill, so I went down the quat route.
-    //-------------------------------------------------------------------------------------
-    default:
-      {
-        // util to identify whether an op is a rotation or not.
-        auto isRotation = [](const UsdGeomXformOp& op) {
-          switch(op.GetOpType())
-          {
-          case UsdGeomXformOp::TypeInvalid:
-          case UsdGeomXformOp::TypeTranslate:
-          case UsdGeomXformOp::TypeScale:
-          case UsdGeomXformOp::TypeTransform:
-            return false;
-          default:
-            break;
-          }
-          return true;
-        };
-
-        // grab first rotation as a quat
-        d256 rotation = _Rotation(*iter, timeCode);
-        ++iter;
-
-        // accumulate any additional rotations
-        while(iter != last && isRotation(*iter))
-        {
-          rotation = multiplyQuat(rotation, _Rotation(*iter, timeCode));
-          ++iter;
-        }
-
-        // convert final quat to matrix
-        d256 rotateMatrix[4];
-        quatToMatrix(rotation, rotateMatrix);
-
-        // and transform coordinate frame
-        multiply(frame, rotateMatrix);
-
-        // a bit naughty, but make sure we tag it as something a bit rotationy
-        lastType = UsdGeomXformOp::TypeOrient;
-      }
-      break;
-    }
-  }
-  GfMatrix4d r;
-  storeu4d(r[0], frame[0]);
-  storeu4d(r[1], frame[1]);
-  storeu4d(r[2], frame[2]);
-  storeu4d(r[3], frame[3]);
-  return r;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-d256 TransformOpProcessor::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
-{
-  d256 result = set4d(0, 0, 0, 1.0);
-
-  const bool isInverse = op.IsInverseOp();
-  switch (op.GetOpType())
-  {
-  //-------------------------------------------------------------------------------------
-  // error
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeTranslate:
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // error
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeScale:
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // for transforms, just multiply our frame with them and move on. There is no benefit
-  // accumulating transforms in this case. 
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeTransform:
-    {
-      d256 dmatrix[4] = {
-        set4d(1.0, 0.0, 0.0, 0.0),
-        set4d(0.0, 1.0, 0.0, 0.0),
-        set4d(0.0, 0.0, 1.0, 0.0),
-        set4d(0.0, 0.0, 0.0, 1.0)
-      };
-      switch(op.GetPrecision())
-      {
-      case UsdGeomXformOp::PrecisionDouble:
-        {
-          // just grab matrix
-          op.Get((GfMatrix4d*)dmatrix, timeCode);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionFloat:
-        {
-          // USD doesn't appear to support the GfMatrix4f type ?
-          #if 0
-          // grab as float
-          f128 matrix[4];
-          op.Get((GfMatrix4f*)matrix, timeCode);
-
-          // convert to double
-          dmatrix[0] = cvt4f_to_4d(matrix[0]);
-          dmatrix[1] = cvt4f_to_4d(matrix[1]);
-          dmatrix[2] = cvt4f_to_4d(matrix[2]);
-          dmatrix[3] = cvt4f_to_4d(matrix[3]);
-          #endif
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionHalf:
-        {
-          // USD doesn't appear to have a GfMatrix4h ?
-          #if 0
-          // grab as half
-          i128 matrix[2];
-          op.Get((GfMatrix4h*)matrix, timeCode);
-
-          // convert to float
-          f256 fmatrix[2] = {
-            cvtph8(matrix[0]),
-            cvtph8(matrix[1])
-          };
-
-          // convert to double
-          dmatrix[0] = cvt4f_to_4d(extract4f(fmatrix[0], 0));
-          dmatrix[1] = cvt4f_to_4d(extract4f(fmatrix[0], 1));
-          dmatrix[2] = cvt4f_to_4d(extract4f(fmatrix[1], 0));
-          dmatrix[3] = cvt4f_to_4d(extract4f(fmatrix[1], 1));
-          #endif
-        }
-        break;
-      }
-      result = matrixToQuat(dmatrix);
-    }
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // No op. Only handling this case so I can lazily use the default case for rotation.
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeInvalid:
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // The default case is used to handle all rotation types. Successive rotations are 
-  // accumulated as a quaternion, which is then converted to a matrix, before being 
-  // multiplied with our frame.
-  // Quats have a few advantages here, and possibly some disadvantages. 
-  // 
-  // Pros:
-  // + Pretty trivial to generate a quat from an euler angle triplet directly. 
-  // + Inverting a quat is extremely fast
-  // Cons:
-  // - People seem to be scared of them :)
-  // - Quat mult can end up being slower than a 4x4 matrix mult 
-  // - rotating a vector by a quat is more expensive that rotating by a matrix
-  //
-  // Looking through the various options here, accumulating eulers would be downright daft, 
-  // accumulating as matrices seems very much like overkill, so I went down the quat route.
-  //-------------------------------------------------------------------------------------
-  default:
-    {
-      // extract an angle value in degrees, and convert it into (radians / 2)
-      auto getDouble = [timeCode, op]()
-      {
-        switch(op.GetPrecision())
-        {
-        case UsdGeomXformOp::PrecisionDouble:
-          {
-            double v;
-            op.Get(&v, timeCode);
-            return degreesToHalfAngle(v);
-          }
-          break;
-
-        case UsdGeomXformOp::PrecisionFloat:
-          {
-            float v;
-            op.Get(&v, timeCode);
-            return degreesToHalfAngle(double(v));
-          }
-          break;
-
-        case UsdGeomXformOp::PrecisionHalf:
-          {
-            GfHalf v;
-            op.Get(&v, timeCode);
-            return degreesToHalfAngle(double(cvtph1(v.bits())));
-          }
-          break;
-        }
-        return 0.0;
-      };
-
-      // extract an trio of angle values in degrees, and convert to: (radians / 2)
-      auto getXYZ = [timeCode, op]()
-      {
-        switch(op.GetPrecision())
-        {
-        case UsdGeomXformOp::PrecisionDouble:
-          {
-            d256 v;
-            op.Get((GfVec3d*)&v, timeCode);
-            return degreesToHalfAngle(v);
-          }
-          break;
-
-        case UsdGeomXformOp::PrecisionFloat:
-          {
-            f128 v;
-            op.Get((GfVec3f*)&v, timeCode);
-            return degreesToHalfAngle(cvt4f_to_4d(v));
-          }
-          break;
-
-        case UsdGeomXformOp::PrecisionHalf:
-          {
-            i128 v;
-            op.Get((GfVec3h*)&v, timeCode);
-            return degreesToHalfAngle(cvt4f_to_4d(cvtph4(v)));
-          }
-          break;
-        }
-        return zero4d();
-      };
-
-      // given the various 
-      auto getQuat = [timeCode, getXYZ, getDouble, op]()
-      {
-        auto opType = op.GetOpType();
-        switch(opType)
-        {
-        // splat straight into quat form
-        case UsdGeomXformOp::TypeRotateX: 
-          {
-            const double half_angle = getDouble();
-            const double sa = std::sin(half_angle);
-            const double ca = std::cos(half_angle);
-            return set4d(sa, 0, 0, ca);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateY:
-          {
-            const double half_angle = getDouble();
-            const double sa = std::sin(half_angle);
-            const double ca = std::cos(half_angle);
-            return set4d(0, sa, 0, ca);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateZ:
-          {
-            const double half_angle = getDouble();
-            const double sa = std::sin(half_angle);
-            const double ca = std::cos(half_angle);
-            return set4d(0, 0, sa, ca);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateXYZ: 
-          {
-            const d256 half_angle = getXYZ();
-            return Quat_from_EulerXYZ(half_angle);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateXZY: 
-          {
-            const d256 half_angle = getXYZ();
-            return Quat_from_EulerXZY(half_angle);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateYXZ: 
-          {
-            const d256 half_angle = getXYZ();
-            return Quat_from_EulerYXZ(half_angle);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateYZX: 
-          {
-            const d256 half_angle = getXYZ();
-            return Quat_from_EulerYZX(half_angle);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateZYX: 
-          {
-            const d256 half_angle = getXYZ();
-            return Quat_from_EulerZYX(half_angle);
-          }
-          break;
-
-        case UsdGeomXformOp::TypeRotateZXY: 
-          {
-            const d256 half_angle = getXYZ();
-            return Quat_from_EulerZXY(half_angle);
-          }
-          break;
-
-        // splat straight into quat 
-        case UsdGeomXformOp::TypeOrient: 
-          {
-            switch(op.GetPrecision())
-            {
-            case UsdGeomXformOp::PrecisionDouble:
-              {
-                d256 v;
-                op.Get((GfQuatd*)&v, timeCode);
-                return v;
-              }
-              break;
-
-            case UsdGeomXformOp::PrecisionFloat:
-              {
-                f128 v;
-                op.Get((GfQuatf*)&v, timeCode);
-                return cvt4f_to_4d(v);
-              }
-              break;
-
-            case UsdGeomXformOp::PrecisionHalf:
-              {
-                i128 v;
-                op.Get((GfQuath*)&v, timeCode);
-                auto temp = cvtph4(v);
-                return cvt4f_to_4d(temp);
-              }
-              break;
-            }
-          }
-          break;
-
-        default:
-          break; 
-        }
-        return set4d(0.0, 0.0, 0.0, 1.0);
-      };
-
-      // grab first rotation as a quat
-      result = getQuat();
-    }
-    break;
-  }
-  if(isInverse)
-    result = xor4d(result, set4d(-0.0, -0.0, -0.0, 0));
-  return result;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-d256 TransformOpProcessor::_Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
-{
-  d256 result = zero4d();
-  const bool isInverse = op.IsInverseOp();
-  switch (op.GetOpType())
-  {
-  //-------------------------------------------------------------------------------------
-  // error
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeTranslate:
-    {
-      switch(op.GetPrecision())
-      {
-      case UsdGeomXformOp::PrecisionDouble:
-        {
-          op.Get((GfVec3d*)&result, timeCode);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionFloat:
-        {
-          f128 v;
-          op.Get((GfVec3f*)&v, timeCode);
-          result = cvt4f_to_4d(v);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionHalf:
-        {
-          i128 v;
-          op.Get((GfVec3h*)&v, timeCode);
-          auto temp = cvtph4(v);
-          result = cvt4f_to_4d(temp);
-        }
-        break;
-      }
-    }
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // for transforms, just multiply our frame with them and move on. There is no benefit
-  // accumulating transforms in this case. 
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeTransform:
-    {
-      d256 dmatrix[4] = {
-        set4d(1.0, 0.0, 0.0, 0.0),
-        set4d(0.0, 1.0, 0.0, 0.0),
-        set4d(0.0, 0.0, 1.0, 0.0),
-        set4d(0.0, 0.0, 0.0, 1.0)
-      };
-      switch(op.GetPrecision())
-      {
-      case UsdGeomXformOp::PrecisionDouble:
-        {
-          // just grab matrix
-          op.Get((GfMatrix4d*)dmatrix, timeCode);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionFloat:
-        {
-          // USD doesn't appear to support the GfMatrix4f type ?
-          #if 0
-          // grab as float
-          f128 matrix[4];
-          op.Get((GfMatrix4f*)matrix, timeCode);
-
-          // convert to double
-          dmatrix[0] = cvt4f_to_4d(matrix[0]);
-          dmatrix[1] = cvt4f_to_4d(matrix[1]);
-          dmatrix[2] = cvt4f_to_4d(matrix[2]);
-          dmatrix[3] = cvt4f_to_4d(matrix[3]);
-          #endif
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionHalf:
-        {
-          // USD doesn't appear to have a GfMatrix4h ?
-          #if 0
-          // grab as half
-          i128 matrix[2];
-          op.Get((GfMatrix4h*)matrix, timeCode);
-
-          // convert to float
-          f256 fmatrix[2] = {
-            cvtph8(matrix[0]),
-            cvtph8(matrix[1])
-          };
-
-          // convert to double
-          dmatrix[0] = cvt4f_to_4d(extract4f(fmatrix[0], 0));
-          dmatrix[1] = cvt4f_to_4d(extract4f(fmatrix[0], 1));
-          dmatrix[2] = cvt4f_to_4d(extract4f(fmatrix[1], 0));
-          dmatrix[3] = cvt4f_to_4d(extract4f(fmatrix[1], 1));
-          #endif
-        }
-        break;
-      }
-      // extract translation from matrix
-      result = select4d<1, 1, 1, 0>(dmatrix[3], result);
-    }
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // error
-  //-------------------------------------------------------------------------------------
-  default:
-    break;
-  }
-
-  // negate if inverse op
-  if(isInverse)
-  {
-    result = xor4d(result, set4d(-0.0, -0.0, -0.0, 0.0));
-  }
-  return result;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-d256 TransformOpProcessor::_Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
-{
-  d256 result = set4d(1.0, 1.0, 1.0, 0.0);
-  const bool isInverse = op.IsInverseOp();
-  switch (op.GetOpType())
-  {
-  //-------------------------------------------------------------------------------------
-  // error
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeScale:
-    {
-      switch(op.GetPrecision())
-      {
-      case UsdGeomXformOp::PrecisionDouble:
-        {
-          op.Get((GfVec3d*)&result, timeCode);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionFloat:
-        {
-          f128 v;
-          op.Get((GfVec3f*)&v, timeCode);
-          result = cvt4f_to_4d(v);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionHalf:
-        {
-          i128 v;
-          op.Get((GfVec3h*)&v, timeCode);
-          auto temp = cvtph4(v);
-          result = cvt4f_to_4d(temp);
-        }
-        break;
-      }
-    }
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // for transforms, just multiply our frame with them and move on. There is no benefit
-  // accumulating transforms in this case. 
-  //-------------------------------------------------------------------------------------
-  case UsdGeomXformOp::TypeTransform:
-    {
-      d256 dmatrix[4] = {
-        set4d(1.0, 0.0, 0.0, 0.0),
-        set4d(0.0, 1.0, 0.0, 0.0),
-        set4d(0.0, 0.0, 1.0, 0.0),
-        set4d(0.0, 0.0, 0.0, 1.0)
-      };
-      switch(op.GetPrecision())
-      {
-      case UsdGeomXformOp::PrecisionDouble:
-        {
-          // just grab matrix
-          op.Get((GfMatrix4d*)dmatrix, timeCode);
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionFloat:
-        {
-          // USD doesn't appear to support the GfMatrix4f type ?
-          #if 0
-          // grab as float
-          f128 matrix[4];
-          op.Get((GfMatrix4f*)matrix, timeCode);
-
-          // convert to double
-          dmatrix[0] = cvt4f_to_4d(matrix[0]);
-          dmatrix[1] = cvt4f_to_4d(matrix[1]);
-          dmatrix[2] = cvt4f_to_4d(matrix[2]);
-          dmatrix[3] = cvt4f_to_4d(matrix[3]);
-          #endif
-        }
-        break;
-
-      case UsdGeomXformOp::PrecisionHalf:
-        {
-          // USD doesn't appear to have a GfMatrix4h ?
-          #if 0
-          // grab as half
-          i128 matrix[2];
-          op.Get((GfMatrix4h*)matrix, timeCode);
-
-          // convert to float
-          f256 fmatrix[2] = {
-            cvtph8(matrix[0]),
-            cvtph8(matrix[1])
-          };
-
-          // convert to double
-          dmatrix[0] = cvt4f_to_4d(extract4f(fmatrix[0], 0));
-          dmatrix[1] = cvt4f_to_4d(extract4f(fmatrix[0], 1));
-          dmatrix[2] = cvt4f_to_4d(extract4f(fmatrix[1], 0));
-          dmatrix[3] = cvt4f_to_4d(extract4f(fmatrix[1], 1));
-          #endif
-        }
-        break;
-      }
-
-      d256 testz = cross(dmatrix[0], dmatrix[1]);
-      double sx = dot3(dmatrix[0], dmatrix[0]);
-      double sy = dot3(dmatrix[1], dmatrix[1]);
-      double sz = dot3(dmatrix[2], dmatrix[2]);
-      if(dot3(testz, dmatrix[2]) < 0)
-        sz = -sz;
-      result = sqrt4d(set4d(sx, sy, sz, 0.0));
-    }
-    break;
-
-  //-------------------------------------------------------------------------------------
-  // error
-  //-------------------------------------------------------------------------------------
-  default:
-    break;
-  }
-
-  // negate if inverse op
-  if(isInverse)
-  {
-    result = div4d(splat4d(1.0), result);
-  }
-  return result;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-GfQuatd TransformOpProcessor::Rotation() const
+GfQuatd TransformManipulator::Rotation() const
 {
   if(CanRotate())
   {
@@ -2938,7 +1690,7 @@ GfQuatd TransformOpProcessor::Rotation() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-GfVec3d TransformOpProcessor::Translation() const
+GfVec3d TransformManipulator::Translation() const
 {
   if(CanTranslate())
   {
@@ -2949,7 +1701,7 @@ GfVec3d TransformOpProcessor::Translation() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-GfVec3d TransformOpProcessor::Scale() const
+GfVec3d TransformManipulator::Scale() const
 {
   if(CanScale())
   {
@@ -2957,129 +1709,6 @@ GfVec3d TransformOpProcessor::Scale() const
     return GfVec3d(get<0>(scale), get<1>(scale), get<2>(scale));
   }
   return GfVec3d(1.0);
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-bool TransformOpProcessorEx::SetTranslate(const GfVec3d& position, Space space)
-{
-  if(CanTranslate())
-  {
-    d256 translate = _Translation(op(), _timeCode);
-    if(space == kTransform)
-    {
-      d256 offset = sub4d(set4d(position[0], position[1], position[2], 0), translate);
-      return TransformOpProcessor::Translate(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), space);
-    }
-    if(space == kWorld)
-    {
-      d256* pworldFrame = (d256*)&_worldFrame;
-      d256 worldPos = transform(translate, pworldFrame);
-      d256 world_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
-      return TransformOpProcessor::Translate(GfVec3d(get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), kWorld);
-    }
-    if(space == kPreTransform)
-    {
-      d256* pcoordFrame = (d256*)&_coordFrame;
-      d256 worldPos = transform(translate, pcoordFrame);
-      d256 parent_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
-      return TransformOpProcessor::Translate(GfVec3d(get<0>(parent_offset), get<1>(parent_offset), get<2>(parent_offset)), kPreTransform);
-    }
-  }
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-bool TransformOpProcessorEx::SetScale(const GfVec3d& scale, Space space)
-{
-  if(CanScale())
-  {
-    d256 original = _Scale(op(), _timeCode);
-    d256 offset = div4d(set4d(scale[0], scale[1], scale[2], 0.0), original); 
-    return TransformOpProcessor::Scale(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), kWorld);
-  }
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-bool TransformOpProcessorEx::SetRotate(const GfQuatd& orientation, Space space)
-{
-  if(CanRotate())
-  {
-    d256 final_orient = loadu4d(&orientation);
-    d256 rotate = _Rotation(op(), _timeCode);
-    if(space == kTransform)
-    {
-      d256 offset = multiplyQuat(rotate, quatInvert(final_orient));
-      return TransformOpProcessor::Rotate(GfQuatd(get<3>(offset), get<0>(offset), get<1>(offset), get<2>(offset)), space);
-    }
-    if(space == kWorld)
-    {
-      d256 world_rotate = multiplyQuat(rotate, _qworldFrame);
-      d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
-      return TransformOpProcessor::Rotate(GfQuatd(get<3>(world_offset), get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), space);
-    }
-    if(space == kPreTransform)
-    {
-      d256 world_rotate = multiplyQuat(rotate, _qcoordFrame);
-      d256 world_offset = multiplyQuat(world_rotate, quatInvert(final_orient));
-      return TransformOpProcessor::Rotate(GfQuatd(get<3>(world_offset), get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), space);
-    }
-  }
-  return false;
-}
-
-bool TransformOpProcessorEx::Translate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& translateChange, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.Translate(translateChange, space);
-}
-
-bool TransformOpProcessorEx::Scale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scaleChange, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kScale, timeCode);
-  return proc.Scale(scaleChange, space);
-}
-
-bool TransformOpProcessorEx::RotateX(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.RotateX(radianChange, space);
-}
-
-bool TransformOpProcessorEx::RotateY(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.RotateY(radianChange, space);
-}
-
-bool TransformOpProcessorEx::RotateZ(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const double radianChange, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.RotateZ(radianChange, space);
-}
-
-bool TransformOpProcessorEx::Rotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& quatChange, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.Rotate(quatChange, space);
-}
-
-bool TransformOpProcessorEx::SetTranslate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& position, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.SetTranslate(position, space);
-}
-
-bool TransformOpProcessorEx::SetScale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scale, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.SetScale(scale, space);
-}
-
-bool TransformOpProcessorEx::SetRotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& orientation, Space space)
-{
-  TransformOpProcessorEx proc(prim, rotateAttr, TransformOpProcessorEx::kTranslate, timeCode);
-  return proc.SetRotate(orientation, space);
 }
 
 

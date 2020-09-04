@@ -16,7 +16,6 @@
 #include "UsdRotatePivotTranslateUndoableCommand.h"
 
 #include "private/Utils.h"
-#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "../base/debugCodes.h"
 
 #include <mayaUsdUtils/MayaTransformAPI.h>

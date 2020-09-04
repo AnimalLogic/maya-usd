@@ -28,7 +28,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsdUtils/TransformManipulator.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -44,9 +44,9 @@ MStatus TRSOptions::doIt(const MArgList& args)
 
     if(db.isFlagSet("-cl"))
     {
-        MayaUsdUtils::TransformOpProcessor::primaryTranslateSuffix = 
-        MayaUsdUtils::TransformOpProcessor::primaryScaleSuffix = 
-        MayaUsdUtils::TransformOpProcessor::primaryRotateSuffix = TfToken();
+        MayaUsdUtils::TransformManipulator::primaryTranslateSuffix = 
+        MayaUsdUtils::TransformManipulator::primaryScaleSuffix = 
+        MayaUsdUtils::TransformManipulator::primaryRotateSuffix = TfToken();
     }
 
     if(db.isFlagSet("-tr"))
@@ -54,7 +54,7 @@ MStatus TRSOptions::doIt(const MArgList& args)
         MString str;
         if(db.getFlagArgument("-tr", 0, str))
         {
-            MayaUsdUtils::TransformOpProcessor::primaryTranslateSuffix = TfToken(str.asChar());
+            MayaUsdUtils::TransformManipulator::primaryTranslateSuffix = TfToken(str.asChar());
         }
     }
     
@@ -63,7 +63,7 @@ MStatus TRSOptions::doIt(const MArgList& args)
         MString str;
         if(db.getFlagArgument("-ro", 0, str))
         {
-            MayaUsdUtils::TransformOpProcessor::primaryRotateSuffix = TfToken(str.asChar());
+            MayaUsdUtils::TransformManipulator::primaryRotateSuffix = TfToken(str.asChar());
         }
     }
     
@@ -72,7 +72,7 @@ MStatus TRSOptions::doIt(const MArgList& args)
         MString str;
         if(db.getFlagArgument("-sc", 0, str))
         {
-            MayaUsdUtils::TransformOpProcessor::primaryScaleSuffix = TfToken(str.asChar());
+            MayaUsdUtils::TransformManipulator::primaryScaleSuffix = TfToken(str.asChar());
         }
     }
     return MS::kSuccess;
