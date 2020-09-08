@@ -194,15 +194,15 @@ public:
   // Query Coordinate frames
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  /// return the world space coordinate frame for the transform op (i.e. PreviousOpsInStack * ParentWorld)
   const GfMatrix4d& WorldFrame() const 
     { return _worldFrame; }
 
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  /// return the parent space coordinate frame for the transform op
   const GfMatrix4d& ParentFrame() const 
     { return _parentFrame; }
 
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  /// return the combined transform ops that appear after the xform op being modified
   const GfMatrix4d& PostTransformFrame() const 
     { return _postFrame; }
 
@@ -210,11 +210,11 @@ public:
   const GfMatrix4d& CoordinateFrame() const 
     { return _coordFrame; }
 
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  /// return the inverted coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   const GfMatrix4d& InvCoordinateFrame() const 
     { return _invCoordFrame; }
 
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  /// return the combined inverted transform ops that appear after the xform op being modified
   const GfMatrix4d& InvPostTransformFrame() const 
     { return _invPostFrame; }
 
@@ -223,33 +223,21 @@ public:
   uint32_t opIndex() const { return _opIndex; }
 
   //--------------------------------------------------------------------------------------------------------------------
-  // For Python Bindings
+  // Methods used for Python bindings only
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   GfMatrix4d _WorldFrame() const 
     { return _worldFrame; }
-
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   GfMatrix4d _ParentFrame() const 
     { return _parentFrame; }
-
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   GfMatrix4d _PostTransformFrame() const 
     { return _postFrame; }
-
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   GfMatrix4d _CoordinateFrame() const 
     { return _coordFrame; }
-
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   GfMatrix4d _InvCoordinateFrame() const 
     { return _invCoordFrame; }
-
-  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   GfMatrix4d _InvPostTransformFrame() const 
     { return _invPostFrame; }
-
   std::vector<UsdGeomXformOp> _GetOps() const { return _ops; }
   UsdGeomXformOp _GetOp() const { return _ops[_opIndex]; }
   uint32_t _GetOpIndex() const { return _opIndex; }
