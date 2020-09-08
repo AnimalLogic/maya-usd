@@ -70,15 +70,15 @@ void wrapTransformManipulator()
       .def("ManipMode", &This::ManipMode)
       .def("ManipulatorMatrix", &This::ManipulatorMatrix)
       .def("MayaManipulatorMatrix", &This::MayaManipulatorMatrix)
-      /*
-      .def("ManipulatorFrame", &This::ManipulatorFrame)
-      .def("WorldFrame", &This::WorldFrame)
-      .def("ParentFrame", &This::ParentFrame)
-      .def("PostTransformFrame", &This::PostTransformFrame)
-      .def("CoordinateFrame", &This::CoordinateFrame)
-      .def("InvCoordinateFrame", &This::InvCoordinateFrame)
-      .def("InvPostTransformFrame", &This::InvPostTransformFrame)
-      */
+      .def("WorldFrame", &This::_WorldFrame)
+      .def("ParentFrame", &This::_ParentFrame)
+      .def("PostTransformFrame", &This::_PostTransformFrame)
+      .def("CoordinateFrame", &This::_CoordinateFrame)
+      .def("InvCoordinateFrame", &This::_InvCoordinateFrame)
+      .def("InvPostTransformFrame", &This::_InvPostTransformFrame)
+      .def("GetOps", &This::_GetOps)
+      .def("GetOp", &This::_GetOp)
+      .def("GetOpIndex", &This::_GetOpIndex)
     ;
   }
 }

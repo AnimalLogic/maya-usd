@@ -32,7 +32,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 class alignas(32) TransformManipulator : public TransformEvaluator
 {
 public:
@@ -90,9 +90,10 @@ public:
   void UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache& cache, ManipulatorMode mode = kGuess);
   void UpdateToTime(const UsdTimeCode& tc, ManipulatorMode mode = kGuess) { UsdGeomXformCache cache; UpdateToTime(tc, cache, mode); }
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
-  // given the xform op currently assigned to this processor, can we scale, rotate, and/or translate the op? (In some cases, e.g. matrices, all may be supported)
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
+  // given the xform op currently assigned to this processor, can we scale, rotate, and/or translate the op? 
+  // (In some cases, e.g. matrices, all may be supported)
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// returns true if the current xfrom op can be rotated
   MAYA_USD_UTILS_PUBLIC
@@ -118,9 +119,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   bool CanScale() const;
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
   // Compute the current transform op value - all values in local space
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// returns the current orientation as a quat (If CanRotate() returns false, the identity quat is returned)
   MAYA_USD_UTILS_PUBLIC
@@ -134,9 +135,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   GfVec3d Scale() const;
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
   // Compute the current transform op value. 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// returns the coordinate frame for this manipulator where the transformation is the identity (e.g. the local origin)
   inline const GfMatrix4d& ManipulatorFrame() const
@@ -155,9 +156,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   ManipulatorMode ManipMode() const;
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
   // Apply relative transformations to the Transform Op
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// apply a translation offset to the xform op
   MAYA_USD_UTILS_PUBLIC
@@ -189,9 +190,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   bool Rotate(const GfQuatd& quatChange, Space space);
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
-  // Apply absolute transformation to the Transform Op
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
+  // Query Coordinate frames
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
   const GfMatrix4d& WorldFrame() const 
@@ -220,6 +221,38 @@ public:
   const std::vector<UsdGeomXformOp>& ops() const { return _ops; }
   UsdGeomXformOp op() const { return _ops[_opIndex]; }
   uint32_t opIndex() const { return _opIndex; }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // For Python Bindings
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  GfMatrix4d _WorldFrame() const 
+    { return _worldFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  GfMatrix4d _ParentFrame() const 
+    { return _parentFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  GfMatrix4d _PostTransformFrame() const 
+    { return _postFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  GfMatrix4d _CoordinateFrame() const 
+    { return _coordFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  GfMatrix4d _InvCoordinateFrame() const 
+    { return _invCoordFrame; }
+
+  /// return the coordinate frame for the transform op - i.e. the 'origin' for the manipulator
+  GfMatrix4d _InvPostTransformFrame() const 
+    { return _invPostFrame; }
+
+  std::vector<UsdGeomXformOp> _GetOps() const { return _ops; }
+  UsdGeomXformOp _GetOp() const { return _ops[_opIndex]; }
+  uint32_t _GetOpIndex() const { return _opIndex; }
 
 protected:
   GfMatrix4d _coordFrame;
