@@ -555,11 +555,36 @@ bool TransformManipulator::Scale(const GfVec3d& scaleChange, const Space space)
   // when in strange coordinate frames, scaling can only be safely applied if the XYZ values are uniform
   switch(space)
   {
-  case kTransform: break;
+  case kTransform: /* no problem here, scale away */ break;
+  case kPostTransform: 
+    {
+      // if the scale is non uniform
+      if(!isClose(scaleChange[0], scaleChange[1]) || 
+         !isClose(scaleChange[0], scaleChange[2]))
+      {
+        // then we can still process this, so long as there are no other rotation ops after this scale op
+        for(uint32_t i = _opIndex + 1, count = _ops.size(); i < count; ++i)
+        {
+          switch(_ops[i].GetOpType())
+          {
+          case UsdGeomXformOp::TypeInvalid: 
+          case UsdGeomXformOp::TypeTranslate: 
+          case UsdGeomXformOp::TypeScale:
+            break;
+
+          default:
+            /* must contain a rotation of some kind. I could be pedantic and check to see if identity rotation, but seems overkill */
+            return false;
+          }
+        }
+      }
+      
+    }
+    break;
   case kWorld:
   case kPreTransform:
-  case kPostTransform:
     {
+      // we can't really process this without introducing shear, so let's not bother :)
       if(!isClose(scaleChange[0], scaleChange[1]) || 
          !isClose(scaleChange[0], scaleChange[2]))
       {

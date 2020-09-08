@@ -454,6 +454,13 @@ inline d256 matrixToQuat(const d256 iframe[4])
   return set4d(qx * s, qy * s, qz * s, W * 0.5);
 }
 
+inline d256 normaliseVec3(const d256& v)
+{
+  auto l2 = mul4d(v, v);
+  l2 = splat4d( std::sqrt(get<0>(l2) + get<1>(l2) + get<2>(l2)) );
+  return div4d(v, l2);
+}
+
 } // end anon
 
 /// there is room for improvement here!

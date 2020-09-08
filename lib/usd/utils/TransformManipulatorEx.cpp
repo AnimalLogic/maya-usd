@@ -63,11 +63,91 @@ bool TransformManipulatorEx::SetTranslate(const GfVec3d& position, Space space)
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 bool TransformManipulatorEx::SetScale(const GfVec3d& scale, Space space)
 {
+  // Maya's approach here just seems to be to ignore coordinate frame conversions, and it just splats the 
+  // value directly onto the scale attribute. i.e. These are exactly the same:
+  //
+  //    scale -os 3 3 3;
+  //    scale -ws 3 3 3;
+  // 
   if(CanScale())
   {
-    d256 original = _Scale(op(), _timeCode);
-    d256 offset = div4d(set4d(scale[0], scale[1], scale[2], 0.0), original); 
-    return TransformManipulator::Scale(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), space);
+    auto xformOp = op();
+    // check to make sure this transform op can be translated!
+    if(_manipMode != kScale)
+    {
+      if(xformOp.GetOpType() == UsdGeomXformOp::TypeTransform)
+      {
+        // update to time can convert the coordinate frame in this case
+        UpdateToTime(_timeCode, kScale);
+      }
+      else
+      {
+        return false;
+      }
+    }
+
+    d256 temp = set4d(scale[0], scale[1], scale[2], 0.0);
+
+    if(xformOp.GetOpType() == UsdGeomXformOp::TypeScale)
+    {
+      switch(xformOp.GetPrecision())
+      {
+      case UsdGeomXformOp::PrecisionDouble:
+        {
+          void* ptr = &temp;
+          xformOp.Set(*(GfVec3d*)ptr, _timeCode);
+        }
+        break;
+
+      case UsdGeomXformOp::PrecisionFloat:
+        {
+          f128 v = cvt4d_to_4f(temp);
+          void* ptr = &v;
+          xformOp.Set(*(GfVec3f*)ptr, _timeCode);
+        }
+        break;
+
+      case UsdGeomXformOp::PrecisionHalf:
+        {
+          i128 v = cvtph4(cvt4d_to_4f(temp));
+          void* ptr = &v;
+          xformOp.Set(*(GfVec3h*)ptr, _timeCode);
+        }
+        break;
+      }
+    }
+    else
+    if(xformOp.GetOpType() == UsdGeomXformOp::TypeTransform)
+    {
+      d256 matrix[4] = {
+        set4d(1.0, 0.0, 0.0, 0.0),
+        set4d(0.0, 1.0, 0.0, 0.0),
+        set4d(0.0, 0.0, 1.0, 0.0),
+        set4d(0.0, 0.0, 0.0, 1.0)
+      };
+      void* ptr = matrix;
+      xformOp.Get((GfMatrix4d*)ptr, _timeCode);
+      matrix[0] = normaliseVec3(matrix[0]);
+      matrix[1] = normaliseVec3(matrix[1]);
+      matrix[2] = normaliseVec3(matrix[2]);
+
+      // I'm not sure this is the best approach to handling negative scale in this context.
+      // Chances are it might go wrong with negatvie scaling? 
+      d256 ctest = cross(matrix[0], matrix[1]);
+      if(dot3(ctest, matrix[2]) < 0)
+        matrix[2] = sub4d(zero4d(), matrix[2]);
+
+      // scale axes to new values
+      matrix[0] = mul4d(permute4d<0,0,0,0>(temp), matrix[0]);
+      matrix[1] = mul4d(permute4d<1,1,1,1>(temp), matrix[1]);
+      matrix[2] = mul4d(permute4d<2,2,2,2>(temp), matrix[2]);
+      xformOp.Set(*(GfMatrix4d*)ptr, _timeCode);
+    }
+    else
+    {
+      return false;
+    }
+    return true;
   }
   return false;
 }

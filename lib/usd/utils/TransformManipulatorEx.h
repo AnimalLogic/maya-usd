@@ -33,8 +33,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-/// All methods in TransformManipulator deal with relative offsets. This class extends the base and adds support to set xform ops to specific positions
-/// and orientations. All methods in this class are implemented using methods from the base class.  
+/// All methods in TransformManipulator deal with relative offsets. This class extends the base and adds support to set xform ops to absolute positions
+/// and orientations. All methods in this class are (mostly) implemented using methods from the base class.
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 class TransformManipulatorEx : public TransformManipulator
 {

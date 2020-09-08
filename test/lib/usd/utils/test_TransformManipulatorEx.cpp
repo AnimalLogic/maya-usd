@@ -118,14 +118,16 @@ TEST(TransformManipulatorEx, SetScale)
 
     auto S = processor.Scale();
     GfVec3d s;
-    first.Get(&s);
+    cscale.Get(&s);
 
-    EXPECT_NEAR(3.0, S[0], 1e-5f);
-    EXPECT_NEAR(3.0, S[1], 1e-5f);
-    EXPECT_NEAR(3.0, S[2], 1e-5f);
-    EXPECT_NEAR(3.0, s[0], 1e-5f);
-    EXPECT_NEAR(3.0, s[1], 1e-5f);
-    EXPECT_NEAR(3.0, s[2], 1e-5f);
+    // Now I'd expect this to be [3, 3, 3], however Maya ignores are parent scaling, and just sets the value
+    // directly in object space. Basically kWorld, kParent, kObject have no effect.
+    EXPECT_NEAR(6.0, S[0], 1e-5f);
+    EXPECT_NEAR(6.0, S[1], 1e-5f);
+    EXPECT_NEAR(6.0, S[2], 1e-5f);
+    EXPECT_NEAR(6.0, s[0], 1e-5f);
+    EXPECT_NEAR(6.0, s[1], 1e-5f);
+    EXPECT_NEAR(6.0, s[2], 1e-5f);
   }
   {
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
@@ -148,7 +150,7 @@ TEST(TransformManipulatorEx, SetScale)
 
     auto S = processor.Scale();
     GfVec3d s;
-    first.Get(&s);
+    cscale.Get(&s);
 
     EXPECT_NEAR(6.0, S[0], 1e-5f);
     EXPECT_NEAR(6.0, S[1], 1e-5f);
