@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "TransformEvaluator.h"
+#include "TransformCache.h"
 
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/makePyConstructor.h>
@@ -25,16 +25,16 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapTransformEvaluator()
+void wrapTransformCache()
 {  {
-    typedef MayaUsdUtils::TransformEvaluator This;
-    class_<This>("TransformEvaluator", no_init)
-      .def("EvaluateCoordinateFrameForRange", &This::EvaluateCoordinateFrameForRange)
-        .staticmethod("EvaluateCoordinateFrameForRange")
-      .def("EvaluateCoordinateFrameForIndex", &This::EvaluateCoordinateFrameForIndex)
-        .staticmethod("EvaluateCoordinateFrameForIndex")
-      .def("EvaluateMatrix", &This::EvaluateMatrix)
-        .staticmethod("EvaluateMatrix")
+    typedef MayaUsdUtils::TransformCache This;
+    class_<This>("TransformCache")
+      .def("Local", &This::_Local)
+      .def("World", &This::_World)
+      .def("InverseLocal", &This::_InverseLocal)
+      .def("InverseWorld", &This::_InverseWorld)
+      .def("CurrentTime", &This::CurrentTime)
+      .def("GetNumEntries", &This::GetNumEntries)
     ;
   }
 }

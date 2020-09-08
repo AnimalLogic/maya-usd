@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2020 Animal Logic
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSDUTILS_TRANSFOM_CACHE_H_
+#define MAYAUSDUTILS_TRANSFOM_CACHE_H_
 
 #include "Api.h"
 #include <pxr/base/gf/matrix4d.h>
@@ -73,6 +74,18 @@ public:
   MAYA_USD_UTILS_PUBLIC
   size_t GetNumEntries() const;
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // Methods for python bindings only
+  //--------------------------------------------------------------------------------------------------------------------
+  inline
+  const GfMatrix4d _Local(UsdPrim prim, UsdTimeCode timeCode = UsdTimeCode::EarliestTime()) { return Local(prim, timeCode); }
+  inline
+  const GfMatrix4d _World(UsdPrim prim, UsdTimeCode timeCode = UsdTimeCode::EarliestTime()) { return World(prim, timeCode); }
+  inline
+  const GfMatrix4d _InverseLocal(UsdPrim prim, UsdTimeCode timeCode = UsdTimeCode::EarliestTime()) { return InverseLocal(prim, timeCode); }
+  inline
+  const GfMatrix4d _InverseWorld(UsdPrim prim, UsdTimeCode timeCode = UsdTimeCode::EarliestTime()) { return InverseWorld(prim, timeCode); }
+
 private:
   UsdTimeCode _timeCode;
   struct _MatrixCache { GfMatrix4d ls; GfMatrix4d ws; GfMatrix4d ils; GfMatrix4d iws; };
@@ -111,3 +124,5 @@ const GfMatrix4d& TransformCache::InverseWorld(UsdPrim prim, UsdTimeCode timeCod
 
 
 } // MayaUsdUtils
+
+#endif 

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSDUTILS_TRANSFOM_EVALUATION_H_
-#define MAYAUSDUTILS_TRANSFOM_EVALUATION_H_
+#ifndef MAYAUSDUTILS_TRANSFOM_EVALUATOR_H_
+#define MAYAUSDUTILS_TRANSFOM_EVALUATOR_H_
 
 #include "Api.h"
 #include <pxr/base/gf/matrix4d.h>

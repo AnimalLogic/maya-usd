@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2020 Animal Logic
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSDUTILS_TRANSFOM_OP_TOOLS_H_
-#define MAYAUSDUTILS_TRANSFOM_OP_TOOLS_H_
+#ifndef MAYAUSDUTILS_TRANSFOM_MANIPULATOR_EX_H_
+#define MAYAUSDUTILS_TRANSFOM_MANIPULATOR_EX_H_
 
 #include "Api.h"
 #include <pxr/base/gf/vec3f.h>

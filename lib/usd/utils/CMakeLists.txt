@@ -118,6 +118,7 @@ endforeach()
 list(APPEND mayausdutils_python_source
   module.cpp
   wrapMayaTransformAPI.cpp
+  wrapTransformCache.cpp
   wrapTransformEvaluator.cpp
   wrapTransformManipulator.cpp
 )
