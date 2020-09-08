@@ -232,6 +232,7 @@ protected:
   d256 _qcoordFrame;
   d256 _qworldFrame;
   d256 _qparentFrame;
+  d256 _qpostFrame;
   std::vector<UsdGeomXformOp> _ops;
   uint32_t _opIndex;
   UsdTimeCode _timeCode = UsdTimeCode::Default();

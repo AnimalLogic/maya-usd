@@ -242,7 +242,7 @@ bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 		else
 		if(is_zero(diff.GetImaginary()[0]) && is_zero(diff.GetImaginary()[1]))
 		{	
-			// turn this back into an y rotation value
+			// turn this back into an z rotation value
 			double ang = 2.0 * std::atan2(diff.GetImaginary()[2], diff.GetReal());
 			proc.RotateZ(ang);
 		}

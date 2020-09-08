@@ -317,6 +317,7 @@ void TransformManipulator::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
   _coordFrame = EvaluateCoordinateFrameForIndex(_ops, _opIndex, _timeCode);
   _postFrame = EvaluateCoordinateFrameForRange(_ops, _opIndex + 1, _ops.size(), _timeCode);
   _invPostFrame = _postFrame.GetInverse();
+  _qpostFrame = matrixToQuat((const d256*)&_postFrame);
 
   // If we have a matrix transformation, depending on the type of manip used, 
   // we may have to offset the coordinate frame slightly
@@ -366,6 +367,7 @@ void TransformManipulator::UpdateToTime(const UsdTimeCode& tc, UsdGeomXformCache
     }
   }
 
+  // If you happen to be throwing from one of these exceptions, it means the xform op 
   switch(_manipMode)
   {
   default:
@@ -446,7 +448,7 @@ bool TransformManipulator::Translate(const GfVec3d& translateChange, const Space
   case kTransform: break;
   case kWorld: temp = transform4d(temp, (const d256*)&_invWorldFrame); break;
   case kPreTransform: temp = transform4d(temp, (const d256*)&_invCoordFrame); break;
-  case kPostTransform: temp = transform4d(temp, (const d256*)&_invPostFrame); break;
+  case kPostTransform: temp = transform4d(temp, (const d256*)&_postFrame); break;
   }
 
   // if the change is close to zero, ignore it. 
@@ -804,22 +806,11 @@ bool TransformManipulator::Rotate(const GfQuatd& quatChange, Space space)
           set4d(0.0, 0.0, 0.0, 1.0)
         };
         op().Get((GfMatrix4d*)omatrix, _timeCode);
+        //d256 rotateMatrix[4],  rmatrix[4] = {loadu4d(_postFrame[0]), loadu4d(_postFrame[1]), loadu4d(_postFrame[2]), zero4d()};
+        //quatToMatrix(offset, rotateMatrix);
+        //multiply(rotateMatrix, rmatrix, rotateMatrix);
+        //multiply(rmatrix, omatrix, rotateMatrix);
 
-        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()};
-        quatToMatrix(offset, rotateMatrix);
-        d256 translateToAddBackIn = omatrix[3];
-        rotateMatrix[3] = omatrix[3] = zero4d();
-        multiply(rmatrix, omatrix, rmatrix);
-        // remove translation
-        rmatrix[3] = zero4d();
-        multiply(rotateMatrix, rmatrix, rotateMatrix);
-        // add translation back in here
-        rotateMatrix[3] = loadu4d(_coordFrame[3]);
-        // bang into local space
-        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invPostFrame);
-        rmatrix[3] = translateToAddBackIn;
-        void* ptr = rmatrix;
-        op().Set(*(GfMatrix4d*)ptr, _timeCode);
       }
       break;
       
@@ -879,20 +870,20 @@ bool TransformManipulator::Rotate(const GfQuatd& quatChange, Space space)
       break;
     case kPostTransform:
       {
-        d256 rotateMatrix[4], rmatrix[4] = {loadu4d(_coordFrame[0]), loadu4d(_coordFrame[1]), loadu4d(_coordFrame[2]), zero4d()}, omatrix[4];
+        d256 rotateMatrix[4], frameMatrix[4] = {loadu4d(_postFrame[0]), loadu4d(_postFrame[1]), loadu4d(_postFrame[2]), zero4d()}, originalMatrix[4];
         quatToMatrix(offset, rotateMatrix);
-        quatToMatrix(original, omatrix);
-        rotateMatrix[3] = omatrix[3] = zero4d();
-        multiply(rmatrix, omatrix, rmatrix);
-        // remove translation
-        rmatrix[3] = zero4d();
-        multiply(rotateMatrix, rmatrix, rotateMatrix);
-        rotateMatrix[3] = loadu4d(_worldFrame[3]);
-        multiply4x4(rmatrix, rotateMatrix, (d256*)&_invPostFrame);
-        d256 ctest = cross(rmatrix[0], rmatrix[1]);
-        if(dot3(ctest, rmatrix[2]) < 0)
-          rmatrix[2] = sub4d(zero4d(), rmatrix[2]);
-        extractEuler(rmatrix, order , rot);
+        quatToMatrix(original, originalMatrix);
+        rotateMatrix[3] = originalMatrix[3] = zero4d();
+        // compute object space rotation
+        multiply(frameMatrix, frameMatrix, originalMatrix);
+        // apply child rotation
+        multiply(rotateMatrix, rotateMatrix, frameMatrix);
+        // remove effect of post xform ops 
+        multiply4x4(rotateMatrix, (d256*)&_invPostFrame, rotateMatrix);
+        d256 ctest = cross(rotateMatrix[0], rotateMatrix[1]);
+        if(dot3(ctest, rotateMatrix[2]) < 0)
+          rotateMatrix[2] = sub4d(zero4d(), rotateMatrix[2]);
+        extractEuler(rotateMatrix, order , rot);
       }
       break;
       
@@ -923,6 +914,9 @@ bool TransformManipulator::Rotate(const GfQuatd& quatChange, Space space)
       new_rotation = multiplyQuat(_qcoordFrame, original);
       new_rotation = multiplyQuat(offset, new_rotation);
       new_rotation = multiplyQuat(quatInvert(_qcoordFrame), new_rotation);
+      break;
+    case kPostTransform:
+      new_rotation = multiplyQuat(original, multiplyQuat(_qpostFrame, offset));
       break;
     }
     return new_rotation;

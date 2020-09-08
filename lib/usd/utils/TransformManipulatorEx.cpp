@@ -29,24 +29,31 @@ bool TransformManipulatorEx::SetTranslate(const GfVec3d& position, Space space)
 {
   if(CanTranslate())
   {
+    d256 pos = set4d(position[0], position[1], position[2], 1.0);
     d256 translate = _Translation(op(), _timeCode);
+    if(space == kObject)
+    {
+      d256* m = (d256*)&_postFrame;
+      d256 offset = sub4d(transform(pos, m), translate);
+      return TransformManipulator::Translate(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), kTransform);
+    }
     if(space == kTransform)
     {
-      d256 offset = sub4d(set4d(position[0], position[1], position[2], 0), translate);
-      return TransformManipulator::Translate(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), space);
+      d256 offset = sub4d(pos, translate);
+      return TransformManipulator::Translate(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), kTransform);
     }
     if(space == kWorld)
     {
       d256* pworldFrame = (d256*)&_worldFrame;
       d256 worldPos = transform(translate, pworldFrame);
-      d256 world_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
+      d256 world_offset = sub4d(pos, worldPos); 
       return TransformManipulator::Translate(GfVec3d(get<0>(world_offset), get<1>(world_offset), get<2>(world_offset)), kWorld);
     }
     if(space == kPreTransform)
     {
       d256* pcoordFrame = (d256*)&_coordFrame;
       d256 worldPos = transform(translate, pcoordFrame);
-      d256 parent_offset = sub4d(set4d(position[0], position[1], position[2], 1.0), worldPos); 
+      d256 parent_offset = sub4d(pos, worldPos); 
       return TransformManipulator::Translate(GfVec3d(get<0>(parent_offset), get<1>(parent_offset), get<2>(parent_offset)), kPreTransform);
     }
   }
@@ -60,7 +67,7 @@ bool TransformManipulatorEx::SetScale(const GfVec3d& scale, Space space)
   {
     d256 original = _Scale(op(), _timeCode);
     d256 offset = div4d(set4d(scale[0], scale[1], scale[2], 0.0), original); 
-    return TransformManipulator::Scale(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), kWorld);
+    return TransformManipulator::Scale(GfVec3d(get<0>(offset), get<1>(offset), get<2>(offset)), space);
   }
   return false;
 }
@@ -72,6 +79,12 @@ bool TransformManipulatorEx::SetRotate(const GfQuatd& orientation, Space space)
   {
     d256 final_orient = loadu4d(&orientation);
     d256 rotate = _Rotation(op(), _timeCode);
+    if(space == kPostTransform)
+    {
+      d256 offset = multiplyQuat(quatInvert(rotate), final_orient);
+      GfQuatd Q(get<3>(offset), get<0>(offset), get<1>(offset), get<2>(offset));
+      return TransformManipulator::Rotate(Q, space);
+    }
     if(space == kTransform)
     {
       d256 offset = multiplyQuat(quatInvert(rotate), final_orient);
@@ -94,15 +107,15 @@ bool TransformManipulatorEx::SetRotate(const GfQuatd& orientation, Space space)
   return false;
 }
 
-bool TransformManipulatorEx::Translate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& translateChange, Space space)
+bool TransformManipulatorEx::Translate(UsdPrim prim, TfToken translateAttr, UsdTimeCode timeCode, const GfVec3d& translateChange, Space space)
 {
-  TransformManipulatorEx proc(prim, rotateAttr, TransformManipulatorEx::kTranslate, timeCode);
+  TransformManipulatorEx proc(prim, translateAttr, TransformManipulatorEx::kTranslate, timeCode);
   return proc.Translate(translateChange, space);
 }
 
-bool TransformManipulatorEx::Scale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scaleChange, Space space)
+bool TransformManipulatorEx::Scale(UsdPrim prim, TfToken scaleAttr, UsdTimeCode timeCode, const GfVec3d& scaleChange, Space space)
 {
-  TransformManipulatorEx proc(prim, rotateAttr, TransformManipulatorEx::kScale, timeCode);
+  TransformManipulatorEx proc(prim, scaleAttr, TransformManipulatorEx::kScale, timeCode);
   return proc.Scale(scaleChange, space);
 }
 
@@ -126,19 +139,19 @@ bool TransformManipulatorEx::RotateZ(UsdPrim prim, TfToken rotateAttr, UsdTimeCo
 
 bool TransformManipulatorEx::Rotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& quatChange, Space space)
 {
-  TransformManipulatorEx proc(prim, rotateAttr, TransformManipulatorEx::kTranslate, timeCode);
+  TransformManipulatorEx proc(prim, rotateAttr, TransformManipulatorEx::kRotate, timeCode);
   return proc.Rotate(quatChange, space);
 }
 
-bool TransformManipulatorEx::SetTranslate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& position, Space space)
+bool TransformManipulatorEx::SetTranslate(UsdPrim prim, TfToken translateAttr, UsdTimeCode timeCode, const GfVec3d& position, Space space)
 {
-  TransformManipulatorEx proc(prim, rotateAttr, TransformManipulatorEx::kTranslate, timeCode);
+  TransformManipulatorEx proc(prim, translateAttr, TransformManipulatorEx::kTranslate, timeCode);
   return proc.SetTranslate(position, space);
 }
 
-bool TransformManipulatorEx::SetScale(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfVec3d& scale, Space space)
+bool TransformManipulatorEx::SetScale(UsdPrim prim, TfToken scaleAttr, UsdTimeCode timeCode, const GfVec3d& scale, Space space)
 {
-  TransformManipulatorEx proc(prim, rotateAttr, TransformManipulatorEx::kTranslate, timeCode);
+  TransformManipulatorEx proc(prim, scaleAttr, TransformManipulatorEx::kScale, timeCode);
   return proc.SetScale(scale, space);
 }
 

@@ -59,6 +59,25 @@ public:
   bool SetRotate(const GfQuatd& orientation, Space space = kTransform);
 
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  // Compute the current transform op value - all values in local space
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  /// returns the current orientation as a quat (If CanRotate() returns false, the identity quat is returned)
+  inline
+  GfQuatd Rotation() const
+    { return TransformManipulator::Rotation(); }
+
+  /// returns the current translation as a vec3 (If CanTranslate() returns false, [0,0,0] is returned)
+  inline
+  GfVec3d Translation() const
+    { return TransformManipulator::Translation(); }
+
+  /// returns the current scale as a vec3 (If CanScale() returns false, [1,1,1] is returned)
+  inline
+  GfVec3d Scale() const
+    { return TransformManipulator::Scale(); }
+
+  //--------------------------------------------------------------------------------------------------------------------------------------------------------
   // static 'one-hit' versions
   //--------------------------------------------------------------------------------------------------------------------------------------------------------
 

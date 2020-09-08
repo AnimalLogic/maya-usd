@@ -145,6 +145,59 @@ mayaUsd_add_test(${TARGET_NAME}
 
 
 
+set(TARGET_NAME TransformManipulatorEx)
+
+add_executable(${TARGET_NAME})
+
+target_include_directories(${TARGET_NAME} 
+    PUBLIC
+        ${MAYA_INCLUDE_DIRS}
+)
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME}
+    PRIVATE
+        main.cpp
+        test_TransformManipulatorEx.cpp
+)
+
+# -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
+    PRIVATE 
+        GTest::GTest
+        mayaUsdUtils
+        tf
+        usd
+        ${MAYA_Foundation_LIBRARY}
+        ${Boost_PYTHON_LIBRARY}
+        ${python_LIBRARIES}
+)
+
+# -----------------------------------------------------------------------------
+# environment variables
+# -----------------------------------------------------------------------------
+add_definitions(
+  -DAL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data"
+)
+
+# -----------------------------------------------------------------------------
+# unit tests
+# -----------------------------------------------------------------------------
+mayaUsd_add_test(${TARGET_NAME}
+    COMMAND $<TARGET_FILE:${TARGET_NAME}>
+)
+
+
+
+
 
 set(TARGET_NAME TransformCache)
 

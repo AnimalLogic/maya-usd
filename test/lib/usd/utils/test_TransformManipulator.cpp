@@ -4456,3 +4456,335 @@ TEST(TransformManipulator, negative_non_uniform_scale_and_translate_world2)
   }
 }
 #endif
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space translation using double precision
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_translated)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("first"));
+  UsdGeomXformOp second = xform.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("second"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("third"));
+
+  first.Set(GfVec3d(15, 30, 45));
+  second.Set(GfVec3d(2, 2, 2));
+  third.Set(GfVec3d(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 1);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kTranslate, processor.ManipMode());
+  
+  // 
+  EXPECT_TRUE(processor.Translate(GfVec3d(3, 4, 5), MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3d translate;
+  second.Get(&translate);
+  EXPECT_NEAR(4.411486, translate[0], 1e-5f);
+  EXPECT_NEAR(7.30331, translate[1], 1e-5f);
+  EXPECT_NEAR(6.007449, translate[2], 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space translation using float precision
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_translatef)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("first"));
+  UsdGeomXformOp second = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("second"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("third"));
+
+  first.Set(GfVec3f(15, 30, 45));
+  second.Set(GfVec3f(2, 2, 2));
+  third.Set(GfVec3f(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 1);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kTranslate, processor.ManipMode());
+  
+  // 
+  EXPECT_TRUE(processor.Translate(GfVec3d(3, 4, 5), MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3f translate;
+  second.Get(&translate);
+  EXPECT_NEAR(4.411486, translate[0], 1e-5f);
+  EXPECT_NEAR(7.30331, translate[1], 1e-5f);
+  EXPECT_NEAR(6.007449, translate[2], 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space translation using half precision
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_translateh)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("first"));
+  UsdGeomXformOp second = xform.AddTranslateOp(UsdGeomXformOp::PrecisionHalf, TfToken("second"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("third"));
+
+  first.Set(GfVec3h(15, 30, 45));
+  second.Set(GfVec3h(2, 2, 2));
+  third.Set(GfVec3h(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 1);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kTranslate, processor.ManipMode());
+  
+  // 
+  EXPECT_TRUE(processor.Translate(GfVec3d(3, 4, 5), MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3h translate;
+  second.Get(&translate);
+  EXPECT_NEAR(4.411486, translate[0], 2e-3f);
+  EXPECT_NEAR(7.30331, translate[1], 2e-3f);
+  EXPECT_NEAR(6.007449, translate[2], 1e-3f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space rotations using float precision. Proof:
+//
+// $loc1 = `spaceLocator`;
+// $loc2 = `spaceLocator`;
+// $loc3 = `spaceLocator`;
+// $loc4 = `spaceLocator`;
+// 
+// parent $loc2[0] $loc1[0];
+// parent $loc3[0] $loc2[0];
+// 
+// setAttr ($loc2[0] + ".r") 12 24 36;
+// 
+// select -r $loc3[0];
+// select -add $loc4[0];
+// parentConstraint -mo -weight 1;
+// 
+// setAttr ($loc3[0] + ".r") 45 0 0;
+// getAttr ($loc4[0] + ".r"); // 31.258249 27.887712 -11.179626
+// 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_rotated)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("first"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("third"));
+
+  third.Set(GfVec3d(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+  
+  double angle = 45.0 * (M_PI / 360.0);
+  double sa = std::sin(angle);
+  double ca = std::cos(angle);
+  GfQuatd Q(ca, sa, 0, 0);
+
+  // 
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3d R;
+  first.Get(&R);
+  EXPECT_NEAR(31.258249, R[0], 1e-5f);
+  EXPECT_NEAR(27.887712, R[1], 1e-5f);
+  EXPECT_NEAR(-11.179626, R[2], 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space rotations using float precision
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_rotatef)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("first"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("third"));
+
+  //first.Set(GfVec3f(15, 30, 45));
+  third.Set(GfVec3f(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+  
+  double angle = 45.0 * (M_PI / 360.0);
+  double sa = std::sin(angle);
+  double ca = std::cos(angle);
+  GfQuatd Q(ca, sa, 0, 0);
+
+  // 
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3f R;
+  first.Get(&R);
+  EXPECT_NEAR(31.258249, R[0], 1e-5f);
+  EXPECT_NEAR(27.887712, R[1], 1e-5f);
+  EXPECT_NEAR(-11.179626, R[2], 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space rotations using float precision
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_rotateh)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("first"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("third"));
+
+  //first.Set(GfVec3f(15, 30, 45));
+  third.Set(GfVec3h(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+  
+  double angle = 45.0 * (M_PI / 360.0);
+  double sa = std::sin(angle);
+  double ca = std::cos(angle);
+  GfQuatd Q(ca, sa, 0, 0);
+
+  // 
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3h R;
+  first.Get(&R);
+  EXPECT_NEAR(31.258249, R[0], 1e-2f);
+  EXPECT_NEAR(27.887712, R[1], 1e-2f);
+  EXPECT_NEAR(-11.179626, R[2], 1e-2f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space rotations using double precision. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_rotate2d)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("first"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionDouble, TfToken("third"));
+
+  first.Set(GfVec3d(10, 10, 10));
+  third.Set(GfVec3d(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+  
+  double angle = 45.0 * (M_PI / 360.0);
+  double sa = std::sin(angle);
+  double ca = std::cos(angle);
+  GfQuatd Q(ca, sa, 0, 0);
+
+  // 
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3d R;
+  first.Get(&R);
+  EXPECT_NEAR(41.238679, R[0], 1e-5f);
+  EXPECT_NEAR(39.309652, R[1], 1e-5f);
+  EXPECT_NEAR(3.50343, R[2], 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space rotations using float precision. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_rotate2f)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("first"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("third"));
+
+  first.Set(GfVec3f(10, 10, 10));
+  third.Set(GfVec3f(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+  
+  double angle = 45.0 * (M_PI / 360.0);
+  double sa = std::sin(angle);
+  double ca = std::cos(angle);
+  GfQuatd Q(ca, sa, 0, 0);
+
+  // 
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3f R;
+  first.Get(&R);
+  EXPECT_NEAR(41.238679, R[0], 1e-5f);
+  EXPECT_NEAR(39.309652, R[1], 1e-5f);
+  EXPECT_NEAR(3.50343, R[2], 1e-5f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Make sure we can apply an object space rotations using float precision. 
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, os_rotate2h)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp first = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("first"));
+  UsdGeomXformOp third = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionHalf, TfToken("third"));
+
+  first.Set(GfVec3h(10, 10, 10));
+  third.Set(GfVec3h(12, 24, 36));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+  EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+  
+  double angle = 45.0 * (M_PI / 360.0);
+  double sa = std::sin(angle);
+  double ca = std::cos(angle);
+  GfQuatd Q(ca, sa, 0, 0);
+
+  // 
+  EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+
+  GfVec3h R;
+  first.Get(&R);
+  EXPECT_NEAR(41.238679, R[0], 1.2e-1f);
+  EXPECT_NEAR(39.309652, R[1], 1e-2f);
+  EXPECT_NEAR(3.50343, R[2], 1e-2f);
+}
