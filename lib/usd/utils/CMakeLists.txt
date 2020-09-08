@@ -10,15 +10,13 @@ set(MAYAUSDUTILS_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/${TA
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
+        DebugCodes.cpp
+        DiffCore.cpp
+        MayaTransformAPI.cpp
         TransformCache.cpp
         TransformEvaluator.cpp
         TransformManipulator.cpp
         TransformManipulatorEx.cpp
-        MayaTransformAPI.cpp
-        DebugCodes.cpp
-        DiffCore.cpp
-        wrapMayaTransformAPI.cpp
-        module.cpp
         util.cpp
 )
 
@@ -120,6 +118,8 @@ endforeach()
 list(APPEND mayausdutils_python_source
   module.cpp
   wrapMayaTransformAPI.cpp
+  wrapTransformEvaluator.cpp
+  wrapTransformManipulator.cpp
 )
 
 add_library(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
