@@ -17,6 +17,7 @@ target_sources(${TARGET_NAME}
         TransformEvaluator.cpp
         TransformManipulator.cpp
         TransformManipulatorEx.cpp
+        TransformOpInserter.cpp
         util.cpp
 )
 
@@ -70,6 +71,7 @@ set(headers
     TransformManipulator.h
     TransformManipulatorEx.h
     TransformMaths.h
+    TransformOpInserter.h
     util.h
 )
 
@@ -121,6 +123,7 @@ list(APPEND mayausdutils_python_source
   wrapTransformCache.cpp
   wrapTransformEvaluator.cpp
   wrapTransformManipulator.cpp
+  wrapTransformOpInserter.cpp
 )
 
 add_library(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}

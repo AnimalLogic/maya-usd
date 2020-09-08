@@ -8,4 +8,5 @@ TF_WRAP_MODULE
     TF_WRAP(TransformCache);
     TF_WRAP(TransformEvaluator);
     TF_WRAP(TransformManipulator);
+    TF_WRAP(TransformOpInserter);
 }

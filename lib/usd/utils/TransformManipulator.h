@@ -243,6 +243,7 @@ public:
   uint32_t _GetOpIndex() const { return _opIndex; }
 
 protected:
+  void _Construct(const TfToken opName, const UsdTimeCode& tc);
   GfMatrix4d _coordFrame;
   GfMatrix4d _worldFrame;
   GfMatrix4d _parentFrame;

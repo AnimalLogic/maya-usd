@@ -36,12 +36,17 @@ TransformManipulator::TransformManipulator(const UsdPrim prim, const TfToken opN
   _parentFrame.SetIdentity();
   _manipMode = mode;
   _ops = UsdGeomXformable(prim).GetOrderedXformOps(&_resetsXformStack);
-  const size_t opCount = _ops.size();
+  _Construct(opName, tc);
+}
 
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TransformManipulator::_Construct(const TfToken opName, const UsdTimeCode& tc)
+{
+  const size_t opCount = _ops.size();
   const TfToken empty(""); 
   if(opName == empty)
   {
-    switch(mode)
+    switch(_manipMode)
     {
     case TransformManipulator::kRotate:
       {
@@ -202,7 +207,7 @@ TransformManipulator::TransformManipulator(const UsdPrim prim, const TfToken opN
   {
     throw std::runtime_error(std::string("unable to find xform op on prim: ") + opName.GetString());
   }
-  UpdateToTime(tc, mode);
+  UpdateToTime(tc, _manipMode);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
