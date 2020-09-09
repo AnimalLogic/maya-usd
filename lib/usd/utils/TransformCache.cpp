@@ -21,6 +21,7 @@
 
 namespace MayaUsdUtils {
 
+//----------------------------------------------------------------------------------------------------------------------
 const TransformCache::_MatrixCache& TransformCache::_CacheTransform(UsdPrim prim, UsdTimeCode timeCode)
 {
   // if the time code changes, clear the cache
@@ -102,12 +103,14 @@ const TransformCache::_MatrixCache& TransformCache::_CacheTransform(UsdPrim prim
   return it->second;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 /// get the current timecode this cache is caching 
 UsdTimeCode TransformCache::CurrentTime() const
 {
   return _timeCode;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 /// returns how many prim paths are in the cache
 size_t TransformCache::GetNumEntries() const
 {

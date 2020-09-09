@@ -26,25 +26,38 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  A class that can efficiently evaluate a list of UsdGeomXformOp's. 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 class TransformEvaluator
 {
 public:
 
-  /// given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the ops between a given range
+  /// \brief  given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the ops between a given range
+  /// \param  ops the list of transform operations to compute
+  /// \param  start the start index
+  /// \param  end the end index
+  /// \param  timeCode the time to evaluate the matrix at 
   MAYA_USD_UTILS_PUBLIC
-  static GfMatrix4d EvaluateCoordinateFrameForRange(const std::vector<UsdGeomXformOp>& ops, uint32_t start, uint32_t end, const UsdTimeCode& timeCode);
+  static GfMatrix4d EvaluateCoordinateFrameForRange(
+    const std::vector<UsdGeomXformOp>& ops, 
+    uint32_t start, 
+    uint32_t end, 
+    const UsdTimeCode& timeCode);
 
-  /// given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the op at the given index. 
-  /// This does not evaluate the xform op at that index (i.e. If the first op in ops is a translate, then requesting
-  /// index zero will return the identity)
+  /// \brief  given some list of UsdGeomXformOp's, evaluate the coordinate frame needed for the op at the given index. 
+  ///         This does not evaluate the xform op at that index (i.e. If the first op in ops is a translate, then requesting
+  ///         index zero will return the identity)
+  /// \param  ops the list of transform operations to compute
+  /// \param  index the end index
+  /// \param  timeCode the time to evaluate the matrix at 
   inline
   static GfMatrix4d EvaluateCoordinateFrameForIndex(const std::vector<UsdGeomXformOp>& ops, uint32_t index, const UsdTimeCode& timeCode)
     { return EvaluateCoordinateFrameForRange(ops, 0, index, timeCode); }
 
-  /// given some list of UsdGeomXformOp's, evaluate the matrix for the entire stack of xform ops
+  /// \brief  given some list of UsdGeomXformOp's, evaluate the matrix for the entire stack of xform ops
+  /// \param  ops the operations to compute
+  /// \param  timeCode the time at which to evaluate the matrix
   inline
   static GfMatrix4d EvaluateMatrix(const std::vector<UsdGeomXformOp>& ops, const UsdTimeCode& timeCode)
     { return EvaluateCoordinateFrameForRange(ops, 0, ops.size(), timeCode); }

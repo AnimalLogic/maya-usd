@@ -25,7 +25,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
 
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple struct containing the info needed to undo an transform op creation operation
+//----------------------------------------------------------------------------------------------------------------------
 struct TransformOpInserterUndoInfo
 {
   UsdEditTarget fEditTarget;
@@ -39,7 +41,9 @@ struct TransformOpInserterUndoInfo
   bool CreatedOrderedAttr() const { return fCreatedOrderedAttr; }
 };
 
-/// \brief Interface to create xform ops for translate/scale/rotate tools
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Interface to create xform ops for translate/scale/rotate tools
+//----------------------------------------------------------------------------------------------------------------------
 class TransformOpInserter
   : public TfRefBase, public TfWeakBase
 {

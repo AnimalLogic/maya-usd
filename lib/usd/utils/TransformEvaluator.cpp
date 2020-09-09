@@ -23,14 +23,14 @@
 
 namespace MayaUsdUtils {
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  given an ordered set of XformOps, this method will evaluate the coordinate frame for a specifici xform op. 
 ///         By and large it will do this by concatonating operations of the same type, e.g. 
 ///          - successive translations will be grouped into 1 translation
 ///          - successive scales will be grouped into 1 scale
 ///          - successive rotations will be grouped into 1 quaternion
 ///         This will then be evaluated 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 GfMatrix4d TransformEvaluator::EvaluateCoordinateFrameForRange(
   const std::vector<UsdGeomXformOp>& ops, 
   uint32_t start, 
@@ -254,7 +254,7 @@ GfMatrix4d TransformEvaluator::EvaluateCoordinateFrameForRange(
   return r;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 d256 TransformEvaluator::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
 {
   d256 result = set4d(0, 0, 0, 1.0);
@@ -553,7 +553,7 @@ d256 TransformEvaluator::_Rotation(const UsdGeomXformOp& op, const UsdTimeCode& 
   return result;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 d256 TransformEvaluator::_Translation(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
 {
   d256 result = zero4d();
@@ -674,7 +674,7 @@ d256 TransformEvaluator::_Translation(const UsdGeomXformOp& op, const UsdTimeCod
   return result;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 d256 TransformEvaluator::_Scale(const UsdGeomXformOp& op, const UsdTimeCode& timeCode)
 {
   d256 result = set4d(1.0, 1.0, 1.0, 0.0);

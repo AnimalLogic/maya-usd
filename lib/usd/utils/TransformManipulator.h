@@ -33,6 +33,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  A class that is able to manipulate a transform op in a stack (using relative offsets)
+//----------------------------------------------------------------------------------------------------------------------
 class alignas(32) TransformManipulator : public TransformEvaluator
 {
 public:

@@ -32,10 +32,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-/// All methods in TransformManipulator deal with relative offsets. This class extends the base and adds support to set xform ops to absolute positions
-/// and orientations. All methods in this class are (mostly) implemented using methods from the base class.
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  All methods in TransformManipulator deal with relative offsets. This class extends the base and adds support 
+///         to set xform ops to absolute positions and orientations. All methods in this class are (mostly) implemented
+///         using methods from the base class.
+//----------------------------------------------------------------------------------------------------------------------
 class TransformManipulatorEx : public TransformManipulator
 {
 public:
@@ -58,9 +59,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   bool SetRotate(const GfQuatd& orientation, Space space = kTransform);
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
   // Compute the current transform op value - all values in local space
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// returns the current orientation as a quat (If CanRotate() returns false, the identity quat is returned)
   inline
@@ -77,9 +78,9 @@ public:
   GfVec3d Scale() const
     { return TransformManipulator::Scale(); }
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
   // static 'one-hit' versions
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// apply a translation offset to the xform op
   MAYA_USD_UTILS_PUBLIC
@@ -123,9 +124,9 @@ public:
   MAYA_USD_UTILS_PUBLIC
   static bool SetRotate(UsdPrim prim, TfToken rotateAttr, UsdTimeCode timeCode, const GfQuatd& orientation, Space space = kTransform);
 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
   // The static version of Rotate/Translate etc, end up hiding the base class implementations. inline them here. 
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
 
   /// apply a translation offset to the xform op
   inline
