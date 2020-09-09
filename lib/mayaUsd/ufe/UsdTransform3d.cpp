@@ -223,7 +223,6 @@ namespace {
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << e.what() << '\n';
 		}
 		
 		UsdGeomXformCache xformCache(time);

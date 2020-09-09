@@ -24,6 +24,8 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <mayaUsdUtils/TransformOpInserter.h>
+
 using namespace MayaUsd;
 using namespace boost::python;
 
@@ -124,4 +126,8 @@ wrapUtils()
     def("getStage", getStage);
     def("stagePath", stagePath);
     def("ufePathToPrim", ufePathToPrim);
+
+    def("setTransformOpInserter", MAYAUSD_VERSIONED_NS::ufe::setTransformOpInserter);
+    def("getTransformOpInserter", MAYAUSD_VERSIONED_NS::ufe::getTransformOpInserter);
+
 }

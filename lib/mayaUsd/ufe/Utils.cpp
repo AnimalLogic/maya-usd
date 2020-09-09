@@ -67,6 +67,19 @@ extern Ufe::Rtid g_MayaRtid;
 // gateway node type.
 std::unordered_map<std::string, bool> g_GatewayType;
 
+// 
+static MayaUsdUtils::TransformOpInserterRefPtr g_TransformOpInserter = TfCreateRefPtr(new MayaUsdUtils::TransformOpInserter);
+
+void setTransformOpInserter(MayaUsdUtils::TransformOpInserterRefPtr inserter)
+{
+	g_TransformOpInserter = inserter;
+}
+
+MayaUsdUtils::TransformOpInserterRefPtr getTransformOpInserter()
+{
+	return g_TransformOpInserter;
+}
+
 //------------------------------------------------------------------------------
 // Utility Functions
 //------------------------------------------------------------------------------

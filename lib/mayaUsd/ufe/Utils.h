@@ -27,6 +27,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsdUtils/TransformOpInserter.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -91,6 +92,12 @@ inline
 UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item) {
     return std::dynamic_pointer_cast<UsdSceneItem>(item);
 }
+
+MAYAUSD_CORE_PUBLIC
+void setTransformOpInserter(MayaUsdUtils::TransformOpInserterRefPtr inserter);
+
+MAYAUSD_CORE_PUBLIC
+MayaUsdUtils::TransformOpInserterRefPtr getTransformOpInserter();
 
 } // namespace ufe
 } // namespace MayaUsd

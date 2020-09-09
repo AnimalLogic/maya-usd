@@ -43,69 +43,22 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     try 
     {
         MayaUsdUtils::TransformManipulator proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, timeCode);
-        fOp = proc.op();
+        auto op = proc.op();
 		// only write time samples if op already has samples
-		if(!ExistingOpHasSamples(fOp))
+		if(!ExistingOpHasSamples(op))
 		{
 			fTimeCode = UsdTimeCode::Default();
 		}
         fPrevValue = proc.Scale();
+
+	    auto stage = fPrim.GetStage();
+    	fInfo = MayaUsdUtils::TransformOpInserterUndoInfo{ stage->GetEditTarget(), proc.op(), false, false };
     }
     catch(const std::exception& e)
     {
-		// use default time code if using a new op?
-		fTimeCode = UsdTimeCode::Default();
-        auto xformOpOrderAttr = fPrim.GetAttribute(TfToken("xformOpOrder"));
-        fCreatedOrderedAttr = xformOpOrderAttr ? !xformOpOrderAttr.HasAuthoredValue() : true;
-
-        //
-        // So I'm going to make the assumption here that you *probably* want to manipulate the very 
-        // last scale in the xform op stack?
-        // 
-        // uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", 
-        //                                 "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", 
-        //                                 "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", 
-        //                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
-        //                                                                 ^^ This one ^^
-        // 
-        UsdGeomXformable xform(fPrim);
-        bool reset;
-        std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
-        fOp = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat);
-		if(ops.empty())
-		{
-			// do nothing, scale will have just been added, so will be the only op in the stack
-		}
-		else
-		{
-			auto& back = ops.back();
-			auto isInverseOp = back.IsInverseOp();
-			auto isTranslateOp = (back.GetOpType() == UsdGeomXformOp::TypeTranslate);
-			if(isInverseOp && isTranslateOp)
-			{
-				// if we have a scale pivot at the end of the stack, insert before last item
-				if(back.HasSuffix(TfToken("scalePivot")) || back.HasSuffix(TfToken("pivot")))
-				{
-		        	ops.insert(ops.end() - 1, fOp);
-				}
-				else
-				{
-					// default - add to end of transform stack
-					ops.push_back(fOp);
-				}
-			}
-		    else
-			{
-				// default - add to end of transform stack
-				ops.push_back(fOp);
-			}
-			// update the xform op order
-	        xform.SetXformOpOrder(ops, reset);
-		}
-
-        fCreatedOp = true;
-        auto stage = fPrim.GetStage();
-        fEditTarget = stage->GetEditTarget();
+		UsdGeomXformable xform(fPrim);
+		fInfo = getTransformOpInserter()->DoInsertScale(xform);
+		fPrevValue = GfVec3d(1.0, 1.0, 1.0);
     }
 }
 
@@ -125,84 +78,28 @@ UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
 
 void UsdScaleUndoableCommand::undo()
 {
-    if(fCreatedOp)
+	UsdGeomXformable xform(fPrim);
+    if(!getTransformOpInserter()->DoRemoveOp(xform, fInfo))
     {
-        SdfPrimSpecHandle specHandle = fEditTarget.GetPrimSpecForScenePath(fPrim.GetPath());
-        if(specHandle)
-        {
-            // annoyingly, we have to get the xform ops first, otherwise removal of the 
-            // attribute spec will cause a bother later on.
-            bool reset;
-            auto ops = UsdGeomXformable(fPrim).GetOrderedXformOps(&reset);
-
-            auto opName = fOp.GetName(); 
-            {
-                auto attrSpecView = specHandle->GetAttributes();
-                for(auto spec : attrSpecView)
-                {
-                    if(opName == spec->GetName())
-                    {
-                        specHandle->RemoveProperty(spec);
-                        break;
-                    }
-                }
-            }
-
-            // if when creating the original translate op we added a new xformOpOrder attribute
-            // as a side effect, be sure we remove that here.
-            if(fCreatedOrderedAttr)
-            {
-                auto attrSpecView = specHandle->GetAttributes();
-                for(auto spec : attrSpecView)
-                {
-                    if("xformOpOrder" == spec->GetName())
-                    {
-                        specHandle->RemoveProperty(spec);
-                        break;
-                    }
-                }
-            }
-            else
-            // otherwise hunt for the xformOp in the list, and remove it.
-            {
-                for(auto it = ops.begin(); it != ops.end(); ++it)
-                {
-                    if(it->GetName() == opName)
-                    {
-                        ops.erase(it);
-                        UsdGeomXformable(fPrim).SetXformOpOrder(ops, reset);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        // do nothing
-        if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
-        {
-            return;
-        }
-        switch(fOp.GetOpType())
+        switch(fInfo.fOp.GetOpType())
         {
         case UsdGeomXformOp::TypeScale:
             {
-                switch(fOp.GetPrecision())
+                switch(fInfo.fOp.GetPrecision())
                 {
                 case UsdGeomXformOp::PrecisionHalf:
                     {
-                        fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                        fInfo.fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
                     }
                     break;
                 case UsdGeomXformOp::PrecisionFloat:
                     {
-                        fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                        fInfo.fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
                     }
                     break;
                 case UsdGeomXformOp::PrecisionDouble:
                     {
-                        fOp.Set(fPrevValue, fTimeCode);
+                        fInfo.fOp.Set(fPrevValue, fTimeCode);
                     }
                     break;
                 }
@@ -212,12 +109,12 @@ void UsdScaleUndoableCommand::undo()
         case UsdGeomXformOp::TypeTransform:
             {
                 GfMatrix4d M;
-                fOp.Get(&M, fTimeCode);
+                fInfo.fOp.Get(&M, fTimeCode);
                 GfVec3d relativeScalar(fNewValue[0] / fPrevValue[0], fNewValue[1] / fPrevValue[1], fNewValue[2] / fPrevValue[2]);
                 M[0][0] *= relativeScalar[0]; M[0][1] *= relativeScalar[0]; M[0][2] *= relativeScalar[0];
                 M[1][0] *= relativeScalar[1]; M[1][1] *= relativeScalar[1]; M[1][2] *= relativeScalar[1];
                 M[2][0] *= relativeScalar[2]; M[2][1] *= relativeScalar[2]; M[2][2] *= relativeScalar[2];
-                fOp.Set(M, fTimeCode);
+                fInfo.fOp.Set(M, fTimeCode);
             }
             break;
 

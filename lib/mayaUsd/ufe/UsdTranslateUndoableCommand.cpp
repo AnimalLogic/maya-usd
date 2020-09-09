@@ -51,43 +51,22 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
     try 
     {
         MayaUsdUtils::TransformManipulator proc(prim(), TfToken(""), MayaUsdUtils::TransformManipulator::kTranslate, timeCode);
-        fOp = proc.op();
+        auto op = proc.op();
 		// only write time samples if op already has samples
-		if(!ExistingOpHasSamples(fOp))
+		if(!ExistingOpHasSamples(op))
 		{
 			fTimeCode = UsdTimeCode::Default();
 		}
         fPrevValue = proc.Translation();
-        fCreatedOp = false;
-        fCreatedOrderedAttr = false;
+        
+	    auto stage = fPrim.GetStage();
+    	fInfo = MayaUsdUtils::TransformOpInserterUndoInfo{ stage->GetEditTarget(), op, false, false };
     }
     catch(const std::exception& e)
     {
-		// use default time code if using a new op?
-		fTimeCode = UsdTimeCode::Default();
-        auto xformOpOrderAttr = prim().GetAttribute(TfToken("xformOpOrder"));
-        fCreatedOrderedAttr = xformOpOrderAttr ? !xformOpOrderAttr.HasAuthoredValue() : true;
-        
-        //
-        // So I'm going to make the assumption here that you *probably* want to manipulate the very 
-        // first translate in the xform op stack?
-        // 
-        // uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", 
-        //                                 "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", 
-        //                                 "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", 
-        //                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
-        // 
-        // 
-        UsdGeomXformable xform(prim());
-        bool reset;
-        std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
-        fOp = xform.AddTranslateOp(UsdGeomXformOp::PrecisionDouble);
-        ops.insert(ops.begin(), fOp);
-        xform.SetXformOpOrder(ops, reset);
-
-        fCreatedOp = true;
-        auto stage = prim().GetStage();
-        fEditTarget = stage->GetEditTarget();
+		UsdGeomXformable xform(fPrim);
+		fInfo = getTransformOpInserter()->DoInsertTranslate(xform);
+		fPrevValue = GfVec3d(0, 0, 0);
     }
 }
 
@@ -108,86 +87,30 @@ UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
 //------------------------------------------------------------------------------
 void UsdTranslateUndoableCommand::undo()
 {
-    if(fCreatedOp)
+	UsdGeomXformable xform(fPrim);
+    if(!getTransformOpInserter()->DoRemoveOp(xform, fInfo))
     {
-        SdfPrimSpecHandle specHandle = fEditTarget.GetPrimSpecForScenePath(prim().GetPath());
-        if(specHandle)
-        {
-            // annoyingly, we have to get the xform ops first, otherwise removal of the 
-            // attribute spec will cause a bother later on.
-            bool reset;
-            auto ops = UsdGeomXformable(prim()).GetOrderedXformOps(&reset);
-
-            auto opName = fOp.GetName(); 
-            {
-                auto attrSpecView = specHandle->GetAttributes();
-                for(auto spec : attrSpecView)
-                {
-                    if(opName == spec->GetName())
-                    {
-                        specHandle->RemoveProperty(spec);
-                        break;
-                    }
-                }
-            }
-
-            // if when creating the original translate op we added a new xformOpOrder attribute
-            // as a side effect, be sure we remove that here.
-            if(fCreatedOrderedAttr)
-            {
-                auto attrSpecView = specHandle->GetAttributes();
-                for(auto spec : attrSpecView)
-                {
-                    if("xformOpOrder" == spec->GetName())
-                    {
-                        specHandle->RemoveProperty(spec);
-                        break;
-                    }
-                }
-            }
-            else
-            // otherwise hunt for the xformOp in the list, and remove it.
-            {
-                for(auto it = ops.begin(); it != ops.end(); ++it)
-                {
-                    if(it->GetName() == opName)
-                    {
-                        ops.erase(it);
-                        UsdGeomXformable(prim()).SetXformOpOrder(ops, reset);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        // do nothing
-        if(GfIsClose(fNewValue, fPrevValue, 1e-5f))
-        {
-            return;
-        }
-        switch(fOp.GetOpType())
+        switch(fInfo.fOp.GetOpType())
         {
         case UsdGeomXformOp::TypeTranslate:
             {
-                switch(fOp.GetPrecision())
+                switch(fInfo.fOp.GetPrecision())
                 {
                 case UsdGeomXformOp::PrecisionHalf:
                     {
-                        fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                        fInfo.fOp.Set(GfVec3h(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
                     }
                     break;
 
                 case UsdGeomXformOp::PrecisionFloat:
                     {
-                        fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
+                        fInfo.fOp.Set(GfVec3f(fPrevValue[0], fPrevValue[1], fPrevValue[2]), fTimeCode);
                     }
                     break;
                     
                 case UsdGeomXformOp::PrecisionDouble:
                     {
-                        fOp.Set(fPrevValue, fTimeCode);
+                        fInfo.fOp.Set(fPrevValue, fTimeCode);
                     }
                     break;
                 }
@@ -197,11 +120,11 @@ void UsdTranslateUndoableCommand::undo()
         case UsdGeomXformOp::TypeTransform:
             {
                 GfMatrix4d M;
-                fOp.Get(&M, fTimeCode);
+                fInfo.fOp.Get(&M, fTimeCode);
                 M[3][0] = fPrevValue[0];
                 M[3][1] = fPrevValue[1];
                 M[3][2] = fPrevValue[2];
-                fOp.Set(M, fTimeCode);
+                fInfo.fOp.Set(M, fTimeCode);
             }
             break;
 

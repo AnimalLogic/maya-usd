@@ -45,8 +45,8 @@ class TransformOpInserter
 {
 public:
 
-  MAYA_USD_UTILS_PUBLIC
-  static TransformOpInserter DefaultInserter;
+  TransformOpInserter() = default;
+  ~TransformOpInserter() = default;
 
   MAYA_USD_UTILS_PUBLIC
   virtual UsdGeomXformOp InsertRotate(UsdGeomXformable& xform);
@@ -64,6 +64,7 @@ public:
   MAYA_USD_UTILS_PUBLIC
   bool DoRemoveOp(UsdGeomXformable& xform, const TransformOpInserterUndoInfo& op);
 };
+typedef TfRefPtr<TransformOpInserter> TransformOpInserterRefPtr;
 
 } // MayaUsdUtils
 

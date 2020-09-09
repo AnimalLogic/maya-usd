@@ -24,6 +24,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
+#include <mayaUsdUtils/TransformOpInserter.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,17 +62,14 @@ protected:
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
 	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdRotateUndoableCommand() override;
+
+	MayaUsdUtils::TransformOpInserterUndoInfo fInfo;
 	
 	UsdPrim fPrim;
-	UsdGeomXformOp fOp;
 	GfQuatd fPrevValue;
 	GfQuatd fNewValue;
 	Ufe::Path fPath;
 	UsdTimeCode fTimeCode;
-
-	bool fCreatedOp = false;
-	bool fCreatedOrderedAttr = false;
-	UsdEditTarget fEditTarget;
 
 }; // UsdRotateUndoableCommand
 

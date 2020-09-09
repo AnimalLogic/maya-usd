@@ -21,6 +21,7 @@
 
 #include <mayaUsdUtils/TransformManipulatorEx.h>
 #include <mayaUsdUtils/TransformMaths.h>
+#include <mayaUsdUtils/TransformOpInserter.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <iostream>
@@ -54,63 +55,21 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     try 
     {
         MayaUsdUtils::TransformManipulator proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kRotate, timeCode);
-        fOp = proc.op();
+        auto op = proc.op();
 		// only write time samples if op already has samples
-		if(!ExistingOpHasSamples(fOp))
+		if(!ExistingOpHasSamples(op))
 		{
 			fTimeCode = UsdTimeCode::Default();
 		}
         fPrevValue = proc.Rotation();
+
+	    auto stage = fPrim.GetStage();
+    	fInfo = MayaUsdUtils::TransformOpInserterUndoInfo{ stage->GetEditTarget(), proc.op(), false, false };
     }
     catch(const std::exception& e)
     {
-		// use default time code if using a new op?
-		fTimeCode = UsdTimeCode::Default();
-        auto xformOpOrderAttr = fPrim.GetAttribute(TfToken("xformOpOrder"));
-        fCreatedOrderedAttr = xformOpOrderAttr ? !xformOpOrderAttr.HasAuthoredValue() : true;
-		
-        //
-        // For rotation, I'm going to attempt a reasonably sensible guess. 
-        // 
-        // uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", 
-        //                                 "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", 
-        //                                                                     ^^ This one ^^
-        //                                 "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", 
-        //                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
-        // 
-        UsdGeomXformable xform(fPrim);
-        bool reset;
-        std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
-        fOp = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat);
-		if(ops.empty())
-		{
-			// do nothing, rotate will have just been added, so will be the only op in the stack
-		}
-		else
-		{
-			// step through the non-inverted translations in the stack
-			auto it = ops.begin();
-			while(it != ops.end())
-			{
-				auto isTranslateOp = (it->GetOpType() == UsdGeomXformOp::TypeTranslate);
-				if(!isTranslateOp)
-					break;
-
-				auto isInverseOp = it->IsInverseOp();
-				if(isInverseOp)
-					break;
-				++it;
-			}
-
-		    ops.insert(it, fOp);
-
-			// update the xform op order
-	        xform.SetXformOpOrder(ops, reset);
-		}
-
-        fCreatedOp = true;
-        auto stage = fPrim.GetStage();
-        fEditTarget = stage->GetEditTarget();
+		UsdGeomXformable xform(fPrim);
+		fInfo = getTransformOpInserter()->DoInsertRotate(xform);
 		fPrevValue = GfQuatd(1.0, 0, 0, 0);
     }
 }
@@ -129,61 +88,10 @@ UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
 
 void UsdRotateUndoableCommand::undo()
 {
-    if(fCreatedOp)
+	UsdGeomXformable xform(fPrim);
+    if(!getTransformOpInserter()->DoRemoveOp(xform, fInfo))
     {
-        SdfPrimSpecHandle specHandle = fEditTarget.GetPrimSpecForScenePath(fPrim.GetPath());
-        if(specHandle)
-        {
-            // annoyingly, we have to get the xform ops first, otherwise removal of the 
-            // attribute spec will cause a bother later on.
-            bool reset;
-            auto ops = UsdGeomXformable(fPrim).GetOrderedXformOps(&reset);
-
-            auto opName = fOp.GetName(); 
-            {
-                auto attrSpecView = specHandle->GetAttributes();
-                for(auto spec : attrSpecView)
-                {
-                    if(opName == spec->GetName())
-                    {
-                        specHandle->RemoveProperty(spec);
-                        break;
-                    }
-                }
-            }
-
-            // if when creating the original translate op we added a new xformOpOrder attribute
-            // as a side effect, be sure we remove that here.
-            if(fCreatedOrderedAttr)
-            {
-                auto attrSpecView = specHandle->GetAttributes();
-                for(auto spec : attrSpecView)
-                {
-                    if("xformOpOrder" == spec->GetName())
-                    {
-                        specHandle->RemoveProperty(spec);
-                        break;
-                    }
-                }
-            }
-            else
-            // otherwise hunt for the xformOp in the list, and remove it.
-            {
-                for(auto it = ops.begin(); it != ops.end(); ++it)
-                {
-                    if(it->GetName() == opName)
-                    {
-                        ops.erase(it);
-                        UsdGeomXformable(fPrim).SetXformOpOrder(ops, reset);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-		switch(fOp.GetOpType())
+		switch(fInfo.fOp.GetOpType())
 		{
 		// invalid types here
 		case UsdGeomXformOp::TypeScale:
@@ -253,7 +161,6 @@ bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << std::endl;
 		return false;
 	}
     return true;

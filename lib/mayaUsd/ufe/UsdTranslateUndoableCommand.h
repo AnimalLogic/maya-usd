@@ -24,6 +24,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
+#include <mayaUsdUtils/TransformOpInserter.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,16 +62,13 @@ public:
 	Ufe::Path path() const { return fPath; };
 protected:
 
+	MayaUsdUtils::TransformOpInserterUndoInfo fInfo;
+	
 	UsdPrim fPrim;
-	UsdGeomXformOp fOp;
 	GfVec3d fPrevValue;
 	GfVec3d fNewValue;
 	Ufe::Path fPath;
 	UsdTimeCode fTimeCode;
-
-	bool fCreatedOp = false;
-	bool fCreatedOrderedAttr = false;
-	UsdEditTarget fEditTarget;
 
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
 	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);

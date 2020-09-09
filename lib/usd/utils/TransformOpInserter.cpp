@@ -24,8 +24,6 @@
 
 namespace MayaUsdUtils {
 
-TransformOpInserter TransformOpInserter::DefaultInserter;
-
 //------------------------------------------------------------------------------
 UsdGeomXformOp TransformOpInserter::InsertRotate(UsdGeomXformable& xform)
 {
@@ -106,6 +104,7 @@ UsdGeomXformOp TransformOpInserter::InsertScale(UsdGeomXformable& xform)
     bool reset;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
     auto op = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat);
+    op.Set(GfVec3f(1.0f, 1.0f, 1.0f));
     if(ops.empty())
     {
         // do nothing, scale will have just been added, so will be the only op in the stack
