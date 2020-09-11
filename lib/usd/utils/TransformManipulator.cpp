@@ -619,7 +619,7 @@ bool TransformManipulator::Scale(const GfVec3d& scaleChange, const Space space)
   // if the change is close to one, ignore it. 
   {
     const auto abstemp = abs4d(sub4d(temp, splat4d(1.0)));
-    const auto eps = splat4d(1e-6);
+    const auto eps = splat4d(1e-13);
     if( (movemask4d(cmpgt4d(abstemp, eps)) & 0x7) == 0 )
     {
       // technically not a failure. It just doesn't seem worth applying the change...
@@ -657,22 +657,28 @@ bool TransformManipulator::Scale(const GfVec3d& scaleChange, const Space space)
       break;
     }
 
+
     // multiply scaling
-    temp = mul4d(temp, original);
+    auto newScale = mul4d(temp, original);
+
+    // if the previous scale value is zero, we won't be able to scale anything. 
+    // So add a check, and fudge the value to make sure it doesn't stay zero
+    auto cmp = cmpne4d(original, zero4d());
+    newScale = select4d(temp, newScale, cmp);
 
     // write back into USD
     switch(precision)
     {
     case UsdGeomXformOp::PrecisionDouble:
       {
-        void* ptr = &temp;
+        void* ptr = &newScale;
         xformOp.Set(*(GfVec3d*)ptr, _timeCode);
       }
       break;
 
     case UsdGeomXformOp::PrecisionFloat:
       {
-        f128 v = cvt4d_to_4f(temp);
+        f128 v = cvt4d_to_4f(newScale);
         void* ptr = &v;
         xformOp.Set(*(GfVec3f*)ptr, _timeCode);
       }
@@ -680,7 +686,7 @@ bool TransformManipulator::Scale(const GfVec3d& scaleChange, const Space space)
 
     case UsdGeomXformOp::PrecisionHalf:
       {
-        i128 v = cvtph4(cvt4d_to_4f(temp));
+        i128 v = cvtph4(cvt4d_to_4f(newScale));
         void* ptr = &v;
         xformOp.Set(*(GfVec3h*)ptr, _timeCode);
       }
@@ -841,6 +847,23 @@ bool TransformManipulator::Rotate(const GfQuatd& quatChange, Space space)
         //multiply(rotateMatrix, rmatrix, rotateMatrix);
         //multiply(rmatrix, omatrix, rotateMatrix);
 
+/*
+        d256 rotateMatrix[4], frameMatrix[4] = {loadu4d(_postFrame[0]), loadu4d(_postFrame[1]), loadu4d(_postFrame[2]), zero4d()}, originalMatrix[4];
+        quatToMatrix(offset, rotateMatrix);
+        quatToMatrix(original, originalMatrix);
+        rotateMatrix[3] = originalMatrix[3] = zero4d();
+        // compute object space rotation
+        multiply(frameMatrix, frameMatrix, originalMatrix);
+        // apply child rotation
+        multiply(rotateMatrix, rotateMatrix, frameMatrix);
+        // remove effect of post xform ops 
+        multiply4x4(rotateMatrix, (d256*)&_invPostFrame, rotateMatrix);
+        d256 ctest = cross(rotateMatrix[0], rotateMatrix[1]);
+        if(dot3(ctest, rotateMatrix[2]) < 0)
+          rotateMatrix[2] = sub4d(zero4d(), rotateMatrix[2]);
+        extractEuler(rotateMatrix, order , rot);
+        */
+
       }
       break;
       
@@ -890,7 +913,7 @@ bool TransformManipulator::Rotate(const GfQuatd& quatChange, Space space)
         // remove translation
         rmatrix[3] = zero4d();
         multiply(rotateMatrix, rmatrix, rotateMatrix);
-        rotateMatrix[3] = loadu4d(_worldFrame[3]);
+        rotateMatrix[3] = loadu4d(_coordFrame[3]);
         multiply4x4(rmatrix, rotateMatrix, (d256*)&_invCoordFrame);
         d256 ctest = cross(rmatrix[0], rmatrix[1]);
         if(dot3(ctest, rmatrix[2]) < 0)

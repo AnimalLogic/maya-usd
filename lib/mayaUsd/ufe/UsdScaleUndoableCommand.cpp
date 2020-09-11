@@ -21,7 +21,7 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 
-#include <mayaUsdUtils/TransformManipulator.h>
+#include <mayaUsdUtils/TransformManipulatorEx.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -111,6 +111,12 @@ void UsdScaleUndoableCommand::undo()
                 GfMatrix4d M;
                 fInfo.fOp.Get(&M, fTimeCode);
                 GfVec3d relativeScalar(fNewValue[0] / fPrevValue[0], fNewValue[1] / fPrevValue[1], fNewValue[2] / fPrevValue[2]);
+
+                // check for INF as a result of division by zero, and set scale back to zero. 
+                if(std::isinf(relativeScalar[0])) relativeScalar[0] = 0;
+                if(std::isinf(relativeScalar[1])) relativeScalar[1] = 0;
+                if(std::isinf(relativeScalar[2])) relativeScalar[2] = 0;
+
                 M[0][0] *= relativeScalar[0]; M[0][1] *= relativeScalar[0]; M[0][2] *= relativeScalar[0];
                 M[1][0] *= relativeScalar[1]; M[1][1] *= relativeScalar[1]; M[1][2] *= relativeScalar[1];
                 M[2][0] *= relativeScalar[2]; M[2][1] *= relativeScalar[2]; M[2][2] *= relativeScalar[2];
@@ -137,16 +143,16 @@ bool UsdScaleUndoableCommand::scale(double x, double y, double z)
     fNewValue = GfVec3d(x, y, z);
     try
     {
-        MayaUsdUtils::TransformManipulator proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, fTimeCode);
+        MayaUsdUtils::TransformManipulatorEx proc(fPrim, TfToken(""), MayaUsdUtils::TransformManipulator::kScale, fTimeCode);
 		auto s = proc.Scale();
 		
-		// do nothing 
-		if(GfIsClose(fNewValue, s, 1e-5f))
-		{
-			return true;
-		}
-
         GfVec3d diff(fNewValue[0] / s[0], fNewValue[1] / s[1], fNewValue[2] / s[2]);
+
+        // Guard against INF 
+        if(std::isinf(diff[0])) diff[0] = fNewValue[0];
+        if(std::isinf(diff[1])) diff[1] = fNewValue[1];
+        if(std::isinf(diff[2])) diff[2] = fNewValue[2];
+
         proc.Scale(diff);
     }
     catch(std::exception e)

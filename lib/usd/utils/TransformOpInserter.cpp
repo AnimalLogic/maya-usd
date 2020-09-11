@@ -104,10 +104,12 @@ UsdGeomXformOp TransformOpInserter::InsertScale(UsdGeomXformable& xform)
     bool reset;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
     auto op = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat);
+    // As a safety measure, I've set the scaling to 1,1,1 after creation. 
+    // I was encountering a few 
     op.Set(GfVec3f(1.0f, 1.0f, 1.0f));
     if(ops.empty())
     {
-        // do nothing, scale will have just been added, so will be the only op in the stack
+        // do nothing, scale will have just been added, so will be the only op in the stack 
     }
     else
     {

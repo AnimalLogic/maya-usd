@@ -4788,3 +4788,98 @@ TEST(TransformManipulator, os_rotate2h)
   EXPECT_NEAR(39.309652, R[1], 1e-2f);
   EXPECT_NEAR(3.50343, R[2], 1e-2f);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+// Testing the edge cases when scale is zero (hoping to avoid INFs/NANs)
+//----------------------------------------------------------------------------------------------------------------------
+TEST(TransformManipulator, zero_scale)
+{
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  ASSERT_TRUE(stage);
+  UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/xform"));
+
+  UsdGeomXformOp T = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("T"));
+  UsdGeomXformOp R = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("R"));
+  UsdGeomXformOp S = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("S"));
+
+  T.Set(GfVec3f(0, 0, 0));
+  R.Set(GfVec3f(0, 0, 0));
+  S.Set(GfVec3f(0, 0, 0));
+
+  bool resetsXformStack = false;
+  std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
+
+  {
+    MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 0);
+    EXPECT_EQ(MayaUsdUtils::TransformManipulator::kTranslate, processor.ManipMode());
+    
+    // 
+    EXPECT_TRUE(processor.Translate(GfVec3d(2, 2, 2), MayaUsdUtils::TransformManipulator::kPostTransform));
+
+    GfVec3f V;
+    T.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+    R.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+    S.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+  }
+
+  // The behaviour differs from Maya slightly here. 
+  // 
+  // If you call: rotate -r -os 45 0 0
+  //
+  // Maya will set the rotation to [45, 0, 0]. I set it to [0, 0, 0]
+  {
+    MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 1);
+    EXPECT_EQ(MayaUsdUtils::TransformManipulator::kRotate, processor.ManipMode());
+
+    double angle = 45.0 * (M_PI / 360.0);
+    double sa = std::sin(angle);
+    double ca = std::cos(angle);
+    GfQuatd Q(ca, sa, 0, 0);
+
+    // 
+    EXPECT_TRUE(processor.Rotate(Q, MayaUsdUtils::TransformManipulator::kPostTransform));
+    GfVec3f V;
+    T.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+    R.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+    S.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+  }
+
+  {
+    MayaUsdUtils::TransformManipulator processor(xform.GetPrim(), 2);
+    EXPECT_EQ(MayaUsdUtils::TransformManipulator::kScale, processor.ManipMode());
+
+    // 
+    EXPECT_TRUE(processor.Scale(GfVec3d(1, 1, 1), MayaUsdUtils::TransformManipulator::kPostTransform));
+    GfVec3f V;
+    T.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+    R.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+    S.Get(&V);
+    EXPECT_NEAR(0, V[0], 1e-5f);
+    EXPECT_NEAR(0, V[1], 1e-5f);
+    EXPECT_NEAR(0, V[2], 1e-5f);
+  }
+}

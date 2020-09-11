@@ -876,6 +876,7 @@ inline d256 sub4d(const d256 a, const d256 b) { return _mm256_sub_pd(a, b); }
 inline i256 sub4i64(const i256 a, const i256 b) { return _mm256_sub_epi64(a, b); }
 
 inline f256 select8f(const f256 falseResult, const f256 trueResult, const f256 cmp) { return _mm256_blendv_ps(falseResult, trueResult, cmp); }
+inline d256 select4d(const d256 falseResult, const d256 trueResult, const d256 cmp) { return _mm256_blendv_pd(falseResult, trueResult, cmp); }
 
 template<bool x, bool y, bool z, bool w>
 inline d256 select4d(const d256 a, const d256 b)
@@ -1227,6 +1228,9 @@ inline i256 sub4i64(const i256 a, const i256 b) {
 
 inline f256 select8f(const f256 falseResult, const f256 trueResult, const f256 cmp) { 
   return f256{ select4f(falseResult.a, trueResult.a, cmp.a), select4f(falseResult.b, trueResult.b, cmp.b) };
+}
+inline d256 select4d(const d256 falseResult, const d256 trueResult, const d256 cmp) { 
+  return d256{ select2d(falseResult.a, trueResult.a, cmp.a), select2d(falseResult.b, trueResult.b, cmp.b) };
 }
 template<bool X, bool Y, bool Z, bool W>
 inline d256 select4d(const d256 a, const d256 b)

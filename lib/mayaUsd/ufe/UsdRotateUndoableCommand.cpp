@@ -133,7 +133,7 @@ bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 
 		// if the local space offset implies that we have a rotation only in x, y, or z, 
 		// then apply that as a single angle offset to a single axis. In some cases this will 
-		// result in a faster 
+		// allow us to take a faster and more accurate code path
 		if(is_zero(diff.GetImaginary()[1]) && is_zero(diff.GetImaginary()[2]))
 		{
 			// turn this back into an x rotation value

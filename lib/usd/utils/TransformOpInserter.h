@@ -70,6 +70,90 @@ public:
 };
 typedef TfRefPtr<TransformOpInserter> TransformOpInserterRefPtr;
 
+/**! An example python transform op inserter implementation (re-implements the default behaviour)
+
+from pxr import Sdf, Usd, UsdGeom
+from mayaUsdUtils import TransformManipulator, TransformOpInserter, TransformEvaluator
+import mayaUsd.ufe
+from pxr import Gf
+
+#
+# This interface provides the methods for creating new xform ops (when no xform op exists)
+# This example re-implements the default op inserter behaviour. 
+#
+class CustomTransformOpInserter(TransformOpInserter):
+
+    #
+    # So I'm going to make the assumption here that you *probably* want to manipulate the very 
+    # first translate in the xform op stack?
+    # 
+    # uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", 
+    #                                 "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", 
+    #                                 "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", 
+    #                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
+    # 
+    def InsertTranslate(self, xform):
+        ops = xform.GetOrderedXformOps()
+        op = xform.AddTranslateOp(UsdGeom.XformOp.PrecisionDouble)
+        ops.insert(0, op)
+        xform.SetXformOpOrder(ops, reset);
+        return op
+
+    #
+    # For rotation, I'm going to attempt a reasonably sensible guess. 
+    # 
+    # uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", 
+    #                                 "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", 
+    #                                                                     ^^ This one ^^
+    #                                 "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", 
+    #                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
+    #
+    def InsertRotate(self, xform):
+        ops = xform.GetOrderedXformOps()
+        op = xform.AddRotateXYZOp(UsdGeom.XformOp.PrecisionFloat)
+        if len(ops) != 0:
+            count = 0
+            for o in ops:
+                if o.GetOpType() != UsdGeom.Xform.TypeTranslate:
+                    break
+                if o.IsInverseOp():
+                    break
+                count = count + 1
+            ops.insert(count, op)
+            xform.SetXformOpOrder(ops);
+        return op
+
+    #
+    # So I'm going to make the assumption here that you *probably* want to manipulate the very 
+    # last scale in the xform op stack?
+    # 
+    # uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", 
+    #                                 "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", 
+    #                                 "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", 
+    #                                 "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
+    #                                                                 ^^ This one ^^
+    # 
+    def InsertScale(self, xform):
+        ops = xform.GetOrderedXformOps()
+        precision = UsdGeom.XformOp.PrecisionDouble
+        op = xform.AddScaleOp(precision)
+        op.Set(Gf.Vec3f(1, 1, 1))
+        count = len(ops)
+        # check for the existance of a pivot
+        if count > 0:
+            isInverse = ops[count-1].IsInverseOp()
+            isTranslate = (ops[count-1].GetOpType() == UsdGeom.XformOp.TypeTranslate)
+            names = ops[count-1].SplitName()
+            last = names[len(names) - 1]
+            if last == "scalePivot" or last == "pivot":
+                ops.insert(count - 1, op)
+                xform.SetXformOpOrder(ops)
+        return op
+
+
+mayaUsd.ufe.setTransformOpInserter(CustomTransformOpInserter())
+*/
+
 } // MayaUsdUtils
 
 #endif

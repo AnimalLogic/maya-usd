@@ -149,7 +149,7 @@ public:
   inline GfMatrix4d ManipulatorMatrix() const
     { return EvaluateCoordinateFrameForIndex(_ops, _opIndex + 1, _timeCode); }
 
-  /// returns the inclusive matrix of the manipulator frame, and the transformation of the xform op applied 
+  /// returns the transform op being manipulated
   inline GfMatrix4d MayaManipulatorMatrix() const
     { return _ops[_opIndex].GetOpTransform(_timeCode); }
 
